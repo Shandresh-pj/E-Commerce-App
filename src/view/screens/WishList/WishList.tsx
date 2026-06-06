@@ -37,7 +37,7 @@ const WishListCard = ({ product, onRemove }: WishListCardProps) => {
     let imgPath = product.images[0].replace(/\\/g, '/');
     imageUrl = imgPath.startsWith('http')
       ? imgPath
-      : `${Defaults.apis.baseUrl}/api/v1/${imgPath.replace(/^\/+/, '')}`;
+      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(/^\/+/, '')}`;
   }
 
   const handleRemove = async () => {

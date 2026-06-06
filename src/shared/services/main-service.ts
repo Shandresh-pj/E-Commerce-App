@@ -136,15 +136,15 @@ export const submitContestEntry = async (
   try {
     const endpoint = `/ContestSubmission/Add`;
     const formData = new FormData();
-    
+
     formData.append('ContestId', contestId);
     formData.append('SubmissionText', title || '');
-    formData.append('Description', description || ''); 
-    
+    formData.append('Description', description || '');
+
     // Capitalize Type (e.g., 'image' -> 'Image')
     const displayType = type.charAt(0).toUpperCase() + type.slice(1);
     formData.append('Type', displayType);
-    
+
     if (file) {
       console.log('submitContestEntry: Raw File URI =', file.uri);
       const ext = file.uri.split('.').pop()?.toLowerCase() || 'jpg';
@@ -154,11 +154,11 @@ export const submitContestEntry = async (
         else if (type === 'video') mimeType = 'video/mp4';
         else if (type === 'audio') mimeType = 'audio/mpeg';
       }
-      
+
       const resolvedUri = Platform.OS === 'android' && !file.uri.startsWith('file://') && !file.uri.startsWith('content://')
         ? `file://${file.uri}`
         : file.uri;
-      
+
       console.log('submitContestEntry: Resolved File URI =', resolvedUri, 'MIME =', mimeType);
 
       formData.append('SubmissionFile', {
@@ -229,7 +229,7 @@ export const uploadVideo = async (
     onProgress?.(10);
     const result = await postFormData(url, formData);
     onProgress?.(100);
-    
+
     return result;
   } catch (error) {
     console.log('uploadVideo error', error);
@@ -238,60 +238,60 @@ export const uploadVideo = async (
 };
 
 
- const API_URL = Defaults.apis.baseUrl+Defaults.apis.public.base;
+const API_URL = Defaults.apis.baseUrl + Defaults.apis.public.base;
 
-export const getData = async ( url: string ): Promise<any | void> => {
-  console.log("API_URL",`${API_URL}${url}`)
-    try {
-      const result:any = await axios({
-        method: 'GET', 
-        url: `${API_URL}${url}`,
-        validateStatus: function(status) {
-          return status < 600;
-        }, 
-        headers: { "Access-Control-Allow-Origin": "*", ...await authHeaderNew() },
-      });
-      console.log("result",result)
-      return result;
-    } catch (error) { 
-      console.log('getErr',error);       
-    }
-};
-
-export const getPublicData = async ( url: string ): Promise<any | void> => {
-  console.log("API_URL (public)",`${API_URL}${url}`)
-    try {
-      const result:any = await axios({
-        method: 'GET', 
-        url: `${API_URL}${url}`,
-        validateStatus: function(status) {
-          return status < 600;
-        }, 
-        headers: { 'Content-Type': 'application/json', 'API_KEY': Defaults.apis.api_key, 'Authorization': `Bearer ${Defaults.apis.api_key}` },
-      });
-      console.log('result getPublicData', result);
-      return result;
-
-    } catch (error) { 
-      console.log('getPublicDataErr',error);       
-    }
-};
-
-
-export const postData = async ( url: string, data: any ): Promise<string | void> => {  
+export const getData = async (url: string): Promise<any | void> => {
+  console.log("API_URL", `${API_URL}${url}`)
   try {
-    const result:any = await axios({
-      method: "POST", 
+    const result: any = await axios({
+      method: 'GET',
       url: `${API_URL}${url}`,
-      validateStatus: function(status) {
+      validateStatus: function (status) {
         return status < 600;
-      }, 
+      },
+      headers: { "Access-Control-Allow-Origin": "*", ...await authHeaderNew() },
+    });
+    console.log("result", result)
+    return result;
+  } catch (error) {
+    console.log('getErr', error);
+  }
+};
+
+export const getPublicData = async (url: string): Promise<any | void> => {
+  console.log("API_URL (public)", `${API_URL}${url}`)
+  try {
+    const result: any = await axios({
+      method: 'GET',
+      url: `${API_URL}${url}`,
+      validateStatus: function (status) {
+        return status < 600;
+      },
+      headers: { 'Content-Type': 'application/json', 'API_KEY': Defaults.apis.api_key, 'Authorization': `Bearer ${Defaults.apis.api_key}` },
+    });
+    console.log('result getPublicData', result);
+    return result;
+
+  } catch (error) {
+    console.log('getPublicDataErr', error);
+  }
+};
+
+
+export const postData = async (url: string, data: any): Promise<string | void> => {
+  try {
+    const result: any = await axios({
+      method: "POST",
+      url: `${API_URL}${url}`,
+      validateStatus: function (status) {
+        return status < 600;
+      },
       data: data,
       headers: { ...await authHeaderNew() },
     });
     return result;
-  } catch (error) { 
-    console.log('postErr',error);       
+  } catch (error) {
+    console.log('postErr', error);
   }
 };
 
@@ -307,7 +307,7 @@ export const postFormData = async (
   try {
     const fullUrl = `${API_URL}${url}`;
     console.log('postFormData Fetch posting to:', fullUrl);
-    
+
     if (data && data._parts) {
       console.log('postFormData FormData parts detail:', JSON.stringify(data._parts));
     }
@@ -327,7 +327,7 @@ export const postFormData = async (
     onProgress?.(90);
     const text = await response.text();
     console.log('postFormData Fetch response status:', response.status, 'body:', text);
-    
+
     let resultData = null;
     try {
       resultData = JSON.parse(text);
@@ -346,20 +346,20 @@ export const postFormData = async (
   }
 };
 
-export const deleteData = async ( url: string, data: any ): Promise<string | void> => {  
+export const deleteData = async (url: string, data: any): Promise<string | void> => {
   try {
-    const result:any = await axios({
-      method: "DELETE", 
+    const result: any = await axios({
+      method: "DELETE",
       url: `${API_URL}${url}`,
-      validateStatus: function(status) {
+      validateStatus: function (status) {
         return status < 600;
-      }, 
+      },
       data: data,
       headers: { ...await authHeaderNew() },
     });
     return result;
-  } catch (error) { 
-    console.log('deleteErr',error);       
+  } catch (error) {
+    console.log('deleteErr', error);
   }
 };
 
@@ -393,213 +393,214 @@ export const fetchMyWishlist = async (): Promise<any[]> => {
     return [];
   }
 };
-  
-  /**
-   * Toggles a product in the wishlist (Add/Remove).
-   */
-  export const toggleWishlist = async (productId: number, isLiked: boolean): Promise<boolean> => {
-    try {
-      const response: any = isLiked
-        ? await deleteData(`/Product/Wishlist/${productId}`, {})
-        : await postData(`/Product/Wishlist/${productId}`, {});
-      
-      return !!(response && response.status);
-    } catch (error) {
-      console.log('toggleWishlist error:', error);
-      return false;
-    }
-  };
-  
-  /**
-   * Fetches products with pagination.
-   * @param currentPage - page number (1-indexed)
-   * @param pageSize - number of items per page (default 50)
-   * @returns object with `items` array, `totalPages`, `totalCount`, and `currentPage`
-   */
-  export const fetchAllProducts = async (
-    currentPage: number = 1,
-    pageSize: number = 50,
-  ): Promise<{ items: any[]; totalPages: number; totalCount: number; currentPage: number }> => {
-    try {
-      const maxPages = Math.ceil(500 / pageSize); // reasonable upper bound
-      const url = `/Product/All?currentPage=${currentPage}&pageSize=${pageSize}&maxPages=${maxPages}`;
-      const response = await getData(url);
-      console.log("API Product page", currentPage, response);
-      if (response && response.status) {
-        const responseData = response.data?.data || response.data || {};
-        const items = responseData?.data || responseData?.items || responseData?.Items || [];
-        const totalPages = responseData?.totalPages || responseData?.TotalPages || 1;
-        const totalCount = responseData?.totalCount || responseData?.TotalCount || items.length;
-        return {
-          items: Array.isArray(items) ? items : [],
-          totalPages,
-          totalCount,
-          currentPage,
-        };
-      }
-      return { items: [], totalPages: 1, totalCount: 0, currentPage };
-    } catch (error) {
-      console.log('fetchAllProducts error:', error);
-      return { items: [], totalPages: 1, totalCount: 0, currentPage };
-    }
-  };
-  
-  export const privatePostData = async ( url: any, data: any ): Promise<string | void> => {   
-  
-    try {
-      const result:any = await axios({
-        method: "POST", 
-        url: `${API_URL}${url}`,
-        validateStatus: function(status) {
-          return status < 600;
-      },
-      data: data, // data can be `string` or {object}! 
-      headers: { 'Content-Type': 'application/json', ...await authHeaderNew(),'API_KEY': Defaults.apis.api_key },
-    });
-    return result;
-  } catch (error) {      
+
+/**
+ * Toggles a product in the wishlist (Add/Remove).
+ */
+export const toggleWishlist = async (productId: number, isLiked: boolean): Promise<boolean> => {
+  try {
+    const response: any = isLiked
+      ? await deleteData(`/Product/Wishlist/${productId}`, {})
+      : await postData(`/Product/Wishlist/${productId}`, {});
+
+    return !!(response && response.status);
+  } catch (error) {
+    console.log('toggleWishlist error:', error);
+    return false;
   }
 };
 
-export const publicPostData = async ( url: any, data: any ): Promise<string | void> => {  
-  
+/**
+ * Fetches products with pagination.
+ * @param currentPage - page number (1-indexed)
+ * @param pageSize - number of items per page (default 50)
+ * @returns object with `items` array, `totalPages`, `totalCount`, and `currentPage`
+ */
+export const fetchAllProducts = async (
+  currentPage: number = 1,
+  pageSize: number = 50,
+): Promise<{ items: any[]; totalPages: number; totalCount: number; currentPage: number }> => {
+  try {
+    const maxPages = Math.ceil(500 / pageSize); // reasonable upper bound
+    const url = `/Product/All?currentPage=${currentPage}&pageSize=${pageSize}&maxPages=${maxPages}`;
+    const response = await getData(url);
+    console.log("API Product page", currentPage, response);
+    if (response && response.status) {
+      const responseData = response.data?.data || response.data || {};
+      const items = responseData?.data || responseData?.items || responseData?.Items || [];
+      const totalPages = responseData?.totalPages || responseData?.TotalPages || 1;
+      const totalCount = responseData?.totalCount || responseData?.TotalCount || items.length;
+      return {
+        items: Array.isArray(items) ? items : [],
+        totalPages,
+        totalCount,
+        currentPage,
+      };
+    }
+    return { items: [], totalPages: 1, totalCount: 0, currentPage };
+  } catch (error) {
+    console.log('fetchAllProducts error:', error);
+    return { items: [], totalPages: 1, totalCount: 0, currentPage };
+  }
+};
+
+export const privatePostData = async (url: any, data: any): Promise<string | void> => {
+
+  try {
+    const result: any = await axios({
+      method: "POST",
+      url: `${API_URL}${url}`,
+      validateStatus: function (status) {
+        return status < 600;
+      },
+      data: data, // data can be `string` or {object}! 
+      headers: { 'Content-Type': 'application/json', ...await authHeaderNew(), 'API_KEY': Defaults.apis.api_key },
+    });
+    return result;
+  } catch (error) {
+  }
+};
+
+export const publicPostData = async (url: any, data: any): Promise<string | void> => {
+
   try {
     console.log(`${API_URL}${url}`)
-    const result:any = await axios({
-      method: "POST", 
+    const result: any = await axios({
+      method: "POST",
       url: `${API_URL}${url}`,
-      validateStatus: function(status) {
+      validateStatus: function (status) {
         return status < 600;
       },
       data: data, // data can be `string` or {object}! 
-      headers: { 'Content-Type': 'application/json','API_KEY': Defaults.apis.api_key },
+      headers: { 'Content-Type': 'application/json', 'API_KEY': Defaults.apis.api_key },
     });
-    console.log("data show",result)
+    console.log("data show", result)
     return result;
-  } catch (error) {      
+  } catch (error) {
   }
 };
 
-export const localPostData = async ( url: any, data: any ): Promise<string | void> => {  
-  
+export const localPostData = async (url: any, data: any): Promise<string | void> => {
+
   try {
-    
-    let LOCAL_API_URL='http://localhost:5000/api';
-    let apiKey=3162
+
+    let LOCAL_API_URL = 'http://localhost:5000/api';
+    let apiKey = 3162
     let deviceSettings = await getAsyncData('deviceSettings')
     if (deviceSettings && deviceSettings.hasOwnProperty('apiUrl')) {
-      LOCAL_API_URL = deviceSettings.apiUrl+":"+deviceSettings.apiPort+'/api';
-      apiKey=deviceSettings.apiKey
+      LOCAL_API_URL = deviceSettings.apiUrl + ":" + deviceSettings.apiPort + '/api';
+      apiKey = deviceSettings.apiKey
     }
     console.log(`${LOCAL_API_URL}${url}`)
-    const result:any = await axios({
-      method: "POST", 
+    const result: any = await axios({
+      method: "POST",
       url: `${LOCAL_API_URL}${url}`,
-      validateStatus: function(status) {
+      validateStatus: function (status) {
         return status < 600;
       },
       data: data, // data can be `string` or {object}! 
-      headers: { 'Content-Type': 'application/json','Authorization': apiKey },
+      headers: { 'Content-Type': 'application/json', 'Authorization': apiKey },
     });
-    console.log("data show",result)
+    console.log("data show", result)
     return result;
-  } catch (error) {      
+  } catch (error) {
   }
 };
 
-export const  localGetData = async ( url: any ): Promise<string | void> => {
- 
-    try {
-      let LOCAL_API_URL='http://localhost:5000/api';
-      let apiKey=3162
-      let deviceSettings = await getAsyncData('deviceSettings')
-      if (deviceSettings && deviceSettings.hasOwnProperty('apiUrl')) {
-        LOCAL_API_URL = deviceSettings.apiUrl+":"+deviceSettings.apiPort+'/api';
-        apiKey=deviceSettings.apiKey
+export const localGetData = async (url: any): Promise<string | void> => {
 
-      }
-      console.log(`LOCAL_API_URL===${LOCAL_API_URL}${url}`)
-      const result:any = await axios({
-        method: 'GET', 
-        url: `${LOCAL_API_URL}${url}`,
-        validateStatus: function(status) {
-          return status < 600;
-        }, 
-        headers: { "Access-Control-Allow-Origin": "*",  'Authorization': apiKey },
-      });
-      //let response = result;      
-      
-      return result;
-    } catch (error:any) { 
-      
-      console.log('getErr',JSON.stringify(error));    
-      return error   
-    }
-};
-
-export const  localDeleteData = async ( url: any ): Promise<string | void> => {
- 
   try {
-    let LOCAL_API_URL='http://localhost:5000/api';
-    let apiKey=3162
+    let LOCAL_API_URL = 'http://localhost:5000/api';
+    let apiKey = 3162
     let deviceSettings = await getAsyncData('deviceSettings')
     if (deviceSettings && deviceSettings.hasOwnProperty('apiUrl')) {
-      LOCAL_API_URL = deviceSettings.apiUrl+":"+deviceSettings.apiPort+'/api';
-      apiKey=deviceSettings.apiKey
+      LOCAL_API_URL = deviceSettings.apiUrl + ":" + deviceSettings.apiPort + '/api';
+      apiKey = deviceSettings.apiKey
 
     }
     console.log(`LOCAL_API_URL===${LOCAL_API_URL}${url}`)
-    const result:any = await axios({
-      method: 'DELETE', 
+    const result: any = await axios({
+      method: 'GET',
       url: `${LOCAL_API_URL}${url}`,
-      validateStatus: function(status) {
+      validateStatus: function (status) {
         return status < 600;
-      }, 
-      headers: { "Access-Control-Allow-Origin": "*",  'Authorization': apiKey },
+      },
+      headers: { "Access-Control-Allow-Origin": "*", 'Authorization': apiKey },
     });
     //let response = result;      
-    
+
     return result;
-  } catch (error:any) { 
-    
-    console.log('getErr',JSON.stringify(error));    
-    return error   
+  } catch (error: any) {
+
+    console.log('getErr', JSON.stringify(error));
+    return error
   }
 };
 
-export const  getOOSData = async ( url: any ): Promise<string | void> => {
+export const localDeleteData = async (url: any): Promise<string | void> => {
+
   try {
-    const result:any = await axios({
-      method: 'GET', 
-      url: `https://oos.memoria.app/api/v1${url}`,
-      validateStatus: function(status) {
+    let LOCAL_API_URL = 'http://localhost:5000/api';
+    let apiKey = 3162
+    let deviceSettings = await getAsyncData('deviceSettings')
+    if (deviceSettings && deviceSettings.hasOwnProperty('apiUrl')) {
+      LOCAL_API_URL = deviceSettings.apiUrl + ":" + deviceSettings.apiPort + '/api';
+      apiKey = deviceSettings.apiKey
+
+    }
+    console.log(`LOCAL_API_URL===${LOCAL_API_URL}${url}`)
+    const result: any = await axios({
+      method: 'DELETE',
+      url: `${LOCAL_API_URL}${url}`,
+      validateStatus: function (status) {
         return status < 600;
-      }, 
-      headers: { "Access-Control-Allow-Origin": "*",  
+      },
+      headers: { "Access-Control-Allow-Origin": "*", 'Authorization': apiKey },
+    });
+    //let response = result;      
+
+    return result;
+  } catch (error: any) {
+
+    console.log('getErr', JSON.stringify(error));
+    return error
+  }
+};
+
+export const getOOSData = async (url: any): Promise<string | void> => {
+  try {
+    const result: any = await axios({
+      method: 'GET',
+      url: `https://oos.memoria.app/api${url}`,
+      validateStatus: function (status) {
+        return status < 600;
+      },
+      headers: {
+        "Access-Control-Allow-Origin": "*",
         Authorization: 'esW2sdw-ssdfSwS1Dqd12azs2fs34fsd'//'esW2sdw-ssdfSwS1Dqd12azs2fs34fsd'
-    },
+      },
     });
     //let response = result;      
-    
+
     return result;
-  } catch (error) { 
-    console.log('getErr',error);       
+  } catch (error) {
+    console.log('getErr', error);
   }
 };
 
-export const postOOSData = async ( url: any, data: any ): Promise<string | void> => {  
+export const postOOSData = async (url: any, data: any): Promise<string | void> => {
   try {
-    const result:any = await axios({
-      method: "POST", 
-      url: `https://oos.memoria.app/api/v1${url}`,
-      validateStatus: function(status) {
+    const result: any = await axios({
+      method: "POST",
+      url: `https://oos.memoria.app/api${url}`,
+      validateStatus: function (status) {
         return status < 600;
       },
       data: data, // data can be `string` or {object}! 
-      headers: { 'Content-Type': 'application/json', ...await authHeaderNew(),Authorization: 'esW2sdw-ssdfSwS1Dqd12azs2fs34fsd' },
+      headers: { 'Content-Type': 'application/json', ...await authHeaderNew(), Authorization: 'esW2sdw-ssdfSwS1Dqd12azs2fs34fsd' },
     });
     return result;
-  } catch (error) {      
+  } catch (error) {
   }
 };
 

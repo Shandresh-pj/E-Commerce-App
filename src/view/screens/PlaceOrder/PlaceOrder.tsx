@@ -69,7 +69,7 @@ const OrderItemRow = ({ item }: { item: CartItem }) => {
     let imgPath = item.images[0].replace(/\\/g, '/');
     imageUrl = imgPath.startsWith('http')
       ? imgPath
-      : `${Defaults.apis.baseUrl}/api/v1/${imgPath.replace(/^\/+/, '')}`;
+      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(/^\/+/, '')}`;
   }
 
   return (

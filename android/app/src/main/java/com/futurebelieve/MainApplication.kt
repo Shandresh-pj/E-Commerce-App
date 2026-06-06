@@ -17,6 +17,7 @@ class MainApplication : Application(), ReactApplication {
         PackageList(this).packages.apply {
           add(ReactVideoPackage())
           add(PackageCheckerPackage())
+          add(LocationEnablerPackage())
         },
     )
   }

@@ -18,14 +18,11 @@ import {
 import styles from '../view/assets/styles/styles';
 import splashContainer from '../view/screens/splash';
 import loginContainer from '../view/screens/login';
+import LocationPermissionContainer from '../view/screens/LocationPermission';
 import ProductListContainer from '../view/screens/ProductLIst';
-import SignUpContainer from '../view/screens/SignUp';
-import ForgotPasswordContainer from '../view/screens/ForgotPassword';
 import ProfileContainer from '../view/screens/Profile';
 import HomeBottomTabNavigator from './HomeTabNavigator';
-import NotificationsContainer from '../view/screens/Notifications';
 import inviteContainer from '../view/screens/Invite';
-import ChangePasswordContainer from '../view/screens/ChangePassword';
 import myordersContainer from '../view/screens/Myorders';
 import ViewOrderScreen from '../view/screens/Myorders/Vieworders';
 import EditProfileScreen from '../view/screens/Profile/EditProfile';
@@ -33,6 +30,7 @@ import WishListContainer from '../view/screens/WishList';
 import CartContainer from '../view/screens/Cart';
 import PlaceOrderScreen from '../view/screens/PlaceOrder/PlaceOrder';
 import ContactUsContainer from '../view/screens/ContactUs';
+import AddressScreen from '../view/screens/Address/AddressScreen';
 
 
 const Stack = createStackNavigator();
@@ -151,8 +149,8 @@ const MainStackNavigator = (props: any) => {
           }}
         />
         <Stack.Screen
-          name="ForgotPassword"
-          component={ForgotPasswordContainer}
+          name="LocationPermission"
+          component={LocationPermissionContainer}
           options={{
             headerShown: false,
             transitionSpec: {
@@ -162,19 +160,7 @@ const MainStackNavigator = (props: any) => {
             cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
           }}
         />
-        <Stack.Screen
-          name="SignUp"
-          component={SignUpContainer}
-          options={{
-            headerShown: false,
-            gestureEnabled: false,
-            transitionSpec: {
-              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-            },
-            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          }}
-        />
+     
 
         <Stack.Screen
           name="Home"
@@ -216,18 +202,7 @@ const MainStackNavigator = (props: any) => {
         />
 
 
-        <Stack.Screen
-          name="Notifications"
-          component={NotificationsContainer}
-          options={({ navigation }) => ({
-            headerShown: false,
-            transitionSpec: {
-              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-            },
-            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          })}
-        />
+     
         <Stack.Screen
           name="Invite"
           component={inviteContainer}
@@ -243,20 +218,6 @@ const MainStackNavigator = (props: any) => {
    
       </>
 
-      <Stack.Screen
-        name="ChangePassword"
-        component={ChangePasswordContainer}
-        options={({ navigation }) => ({
-          headerShown: false,
-          transitionSpec: {
-            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-          },
-          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-        })}
-      />
-
-  
       <Stack.Screen
         name="MyOrders"
         component={myordersContainer}
@@ -338,6 +299,19 @@ const MainStackNavigator = (props: any) => {
       <Stack.Screen
         name="ContactUs"
         component={ContactUsContainer}
+        options={({ navigation }) => ({
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        })}
+      />
+
+      <Stack.Screen
+        name="Addresses"
+        component={AddressScreen}
         options={({ navigation }) => ({
           headerShown: false,
           transitionSpec: {

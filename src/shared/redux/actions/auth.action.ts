@@ -73,3 +73,54 @@ export const loginAction = (data: any) => (dispatch: Dispatch) => {
     },
   );
 };
+
+export const sendOtpAction = (email: string) => (dispatch: Dispatch) => {
+  (dispatch as any)(setData(true, 'formSubmitted'));
+  return AuthService.sendOtp(email).then(
+    (response: any) => {
+      dispatch({
+        type: SET_MESSAGE,
+        payload: { message: response.data?.message || 'OTP sent successfully', variant: 'success' },
+      });
+      (dispatch as any)(setData(false, 'formSubmitted'));
+      return Promise.resolve(response);
+    },
+    (error: any) => {
+      const message = error.response?.data?.message || error.message || error.toString();
+      dispatch({ type: SET_MESSAGE, payload: { message, variant: 'danger' } });
+      (dispatch as any)(setData(false, 'formSubmitted'));
+      return Promise.reject(error);
+    },
+  );
+};
+
+export const verifyOtpAction = (email: string, otp: string) => (dispatch: Dispatch) => {
+  (dispatch as any)(setData(true, 'formSubmitted'));
+  return AuthService.verifyOtp(email, otp).then(
+    async (response: any) => {
+      const userData = response.data?.response || response.data;
+      if (userData) {
+        await setAsyncData('user', userData);
+        dispatch({ type: LOGIN_SUCCESS, payload: { user: userData } });
+        dispatch({
+          type: SET_MESSAGE,
+          payload: { message: 'Login successful', variant: 'success' },
+        });
+      } else {
+        dispatch({
+          type: SET_MESSAGE,
+          payload: { message: 'Something went wrong', variant: 'danger' },
+        });
+      }
+      (dispatch as any)(setData(false, 'formSubmitted'));
+      return Promise.resolve(response);
+    },
+    (error: any) => {
+      const message = error.response?.data?.message || error.message || error.toString();
+      dispatch({ type: LOGIN_FAIL });
+      dispatch({ type: SET_MESSAGE, payload: { message, variant: 'danger' } });
+      (dispatch as any)(setData(false, 'formSubmitted'));
+      return Promise.reject(error);
+    },
+  );
+};

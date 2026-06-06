@@ -16,7 +16,7 @@ import useInAppUpdate from './shared/services/useInAppUpdate';
 
 export default function App(props: any) {
 
-useInAppUpdate();
+  useInAppUpdate();
 
   return (
     <SafeAreaProvider>

@@ -47,7 +47,7 @@ const CartCard = ({ product, onRemove, onQtyUpdate }: CartCardProps) => {
     let imgPath = product.images[0].replace(/\\/g, '/');
     imageUrl = imgPath.startsWith('http')
       ? imgPath
-      : `${Defaults.apis.baseUrl}/api/v1/${imgPath.replace(/^\/+/, '')}`;
+      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(/^\/+/, '')}`;
   }
 
   const handleRemove = async () => {
@@ -250,36 +250,36 @@ export default function CartScreen() {
           style={styles.bakcgroundImage}
         >
           <FlatList
-              data={cartItems}
-              keyExtractor={item => item.id.toString()}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-              renderItem={({ item }) => (
-                <CartCard
-                  product={item}
-                  onRemove={removeItem}
-                  onQtyUpdate={updateQuantity}
-                />
-              )}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <CartSvg width={64} height={64} fill="#ddd" />
-                  <Text style={styles.emptyTitle}>Your Cart is Empty!</Text>
-                  <Text style={styles.emptySubtitle}>
-                    You haven't added anything to your cart yet. Go shopping!
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.shopNowBtn}
-                    onPress={() => (navigation as any).navigate('ProductList')}
-                  >
-                    <Text style={styles.shopNowText}>Shop Now</Text>
-                  </TouchableOpacity>
-                </View>
-              }
-              ListFooterComponent={<View style={{ height: 40 }} />}
-            />
+            data={cartItems}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => (
+              <CartCard
+                product={item}
+                onRemove={removeItem}
+                onQtyUpdate={updateQuantity}
+              />
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <CartSvg width={64} height={64} fill="#ddd" />
+                <Text style={styles.emptyTitle}>Your Cart is Empty!</Text>
+                <Text style={styles.emptySubtitle}>
+                  You haven't added anything to your cart yet. Go shopping!
+                </Text>
+                <TouchableOpacity
+                  style={styles.shopNowBtn}
+                  onPress={() => (navigation as any).navigate('ProductList')}
+                >
+                  <Text style={styles.shopNowText}>Shop Now</Text>
+                </TouchableOpacity>
+              </View>
+            }
+            ListFooterComponent={<View style={{ height: 40 }} />}
+          />
           {cartItems.length > 0 && (
             <View
               style={[styles.footer,]}

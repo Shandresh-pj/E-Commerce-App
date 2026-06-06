@@ -77,7 +77,7 @@ const buildImageUrl = (imageName: string): string => {
   const cleaned = imageName.replace(/\\/g, '/').replace(/^\/+/, '');
   return cleaned.startsWith('http')
     ? cleaned
-    : `${Defaults.apis.baseUrl}/api/v1/${cleaned}`;
+    : `${Defaults.apis.baseUrl}/api/${cleaned}`;
 };
 // ─── ProductCard ──────────────────────────────────────────────────────────────
 interface ProductCardProps {
@@ -187,10 +187,10 @@ const ProductCard = ({
           product.productType === 'Variant'
             ? { backgroundColor: '#e91e63' }
             : isInCart
-            ? { backgroundColor: '#10b981' }
-            : !product.StockInHand || Number(product.StockInHand) === 0
-            ? { backgroundColor: '#d1d5db' }
-            : {},
+              ? { backgroundColor: '#10b981' }
+              : !product.StockInHand || Number(product.StockInHand) === 0
+                ? { backgroundColor: '#d1d5db' }
+                : {},
         ]}
         onPress={() => {
           if (product.productType === 'Variant') {
@@ -207,10 +207,10 @@ const ProductCard = ({
           {product.productType === 'Variant'
             ? 'View Options'
             : !product.StockInHand || Number(product.StockInHand) === 0
-            ? 'Out of Stock'
-            : isInCart
-            ? 'Go to Cart'
-            : 'Add to Cart'}
+              ? 'Out of Stock'
+              : isInCart
+                ? 'Go to Cart'
+                : 'Add to Cart'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -239,8 +239,8 @@ export default function FlipkartProductListing() {
   const [wishListIds, setWishListIds] = useState<Set<number>>(new Set());
   const [cartIds, setCartIds] = useState<Set<number>>(new Set());
   const { showTabBar, hideTabBar } = useTabBar() || {
-    showTabBar: () => {},
-    hideTabBar: () => {},
+    showTabBar: () => { },
+    hideTabBar: () => { },
   };
   const scrollY = useRef(0);
 
@@ -423,10 +423,10 @@ export default function FlipkartProductListing() {
         selectedPriceRange === 'all'
           ? true
           : selectedPriceRange === 'under500'
-          ? price < 500
-          : selectedPriceRange === '500to1000'
-          ? price >= 500 && price <= 1000
-          : price > 1000;
+            ? price < 500
+            : selectedPriceRange === '500to1000'
+              ? price >= 500 && price <= 1000
+              : price > 1000;
       const matchBrand = selectedBrand === 'all' || p.brand === selectedBrand;
       return (
         matchSearch && matchRating && matchDiscount && matchPrice && matchBrand
@@ -562,7 +562,7 @@ export default function FlipkartProductListing() {
                         style={[
                           styles.filterOptionChip,
                           selectedPriceRange === item.key &&
-                            styles.filterOptionChipActive,
+                          styles.filterOptionChipActive,
                         ]}
                         onPress={() => setSelectedPriceRange(item.key)}
                       >
@@ -570,7 +570,7 @@ export default function FlipkartProductListing() {
                           style={[
                             styles.filterOptionText,
                             selectedPriceRange === item.key &&
-                              styles.filterOptionTextActive,
+                            styles.filterOptionTextActive,
                           ]}
                         >
                           {item.label}
@@ -586,7 +586,7 @@ export default function FlipkartProductListing() {
                         style={[
                           styles.filterOptionChip,
                           selectedBrand === brand &&
-                            styles.filterOptionChipActive,
+                          styles.filterOptionChipActive,
                         ]}
                         onPress={() => setSelectedBrand(brand)}
                       >
@@ -594,7 +594,7 @@ export default function FlipkartProductListing() {
                           style={[
                             styles.filterOptionText,
                             selectedBrand === brand &&
-                              styles.filterOptionTextActive,
+                            styles.filterOptionTextActive,
                           ]}
                         >
                           {brand === 'all' ? 'All' : brand}

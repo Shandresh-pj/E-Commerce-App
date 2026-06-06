@@ -35,7 +35,7 @@ const buildImageUrl = (imageName: string): string => {
   const cleaned = imageName.replace(/\\/g, "/").replace(/^\/+/, "");
   return cleaned.startsWith("http")
     ? cleaned
-    : `${Defaults.apis.baseUrl}/api/v1/${cleaned}`;
+    : `${Defaults.apis.baseUrl}/api/${cleaned}`;
 };
 
 // ─── Product Detail Modal ─────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ const ProductDetailModal = ({
   const stock: number = isVariantType
     ? selectedVariant?.Stock
     : Math.floor(parseFloat(productDetail?.StockInHand ?? "0"));
-console.log('stock',stock);
+  console.log('stock', stock);
 
   const isInCart = productDetail ? cartIds.has(productDetail.Id) : false;
 
@@ -108,18 +108,18 @@ console.log('stock',stock);
     id: productDetail?.Id,
     name: productName,
     // Use variant price as points if it's a variant, else the product points
-    points: 
-      isVariantType && selectedVariant 
-        ? parseFloat(selectedVariant.Price) 
+    points:
+      isVariantType && selectedVariant
+        ? parseFloat(selectedVariant.Price)
         : (productDetail?.Points ?? 0),
     images: images,
     quantity: 1,
     ...(isVariantType && selectedVariant
       ? {
-          variantId: selectedVariant.Id,
-          variantCode: selectedVariant.ProductVariantCode,
-          variantPrice: parseFloat(selectedVariant.Price),
-        }
+        variantId: selectedVariant.Id,
+        variantCode: selectedVariant.ProductVariantCode,
+        variantPrice: parseFloat(selectedVariant.Price),
+      }
       : {}),
   };
 
@@ -204,17 +204,17 @@ console.log('stock',stock);
               <View style={modalStyles.infoSection}>
                 <Text style={modalStyles.productTitle}>{productName}</Text>
 
-             {/* Score / Price based on ProductType */}
+                {/* Score / Price based on ProductType */}
 
-  <View>
-    <Text style={modalStyles.pricemodal}>
-      {selectedVariant && parseFloat(selectedVariant.Price) > 0
-        ? parseFloat(selectedVariant.Price).toFixed(0)
-        : productDetail.Points}{' '}
-      Scores
-    </Text>
-  </View>
-             
+                <View>
+                  <Text style={modalStyles.pricemodal}>
+                    {selectedVariant && parseFloat(selectedVariant.Price) > 0
+                      ? parseFloat(selectedVariant.Price).toFixed(0)
+                      : productDetail.Points}{' '}
+                    Scores
+                  </Text>
+                </View>
+
                 {/* ── Stock Badge ── */}
                 <View style={modalStyles.stockRow}>
                   <View
@@ -516,14 +516,14 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
   },
   cartBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-   pricemodal: { fontSize: 22, fontWeight: "800", color: "#2874f0" },
-     variantChipDisabled: {
+  pricemodal: { fontSize: 22, fontWeight: "800", color: "#2874f0" },
+  variantChipDisabled: {
     borderColor: "#e0e0e0",
     backgroundColor: "#f5f5f5",
     opacity: 0.5,
   },
-    variantChipTextDisabled: { color: "#aaa" },
-      variantStockBadge: {
+  variantChipTextDisabled: { color: "#aaa" },
+  variantStockBadge: {
     fontSize: 10,
     fontWeight: "700",
     borderWidth: 1,
@@ -531,7 +531,7 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1,
   },
-    cartBtnModal: {
+  cartBtnModal: {
     backgroundColor: '#612C7E',
     borderRadius: 10,
     paddingVertical: 14,

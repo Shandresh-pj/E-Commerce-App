@@ -372,10 +372,10 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
                     let imgPath = img.replace(/\\/g, '/');
                     imageUrl = imgPath.startsWith('http')
                       ? imgPath
-                      : `${Defaults.apis.baseUrl}/api/v1/${imgPath.replace(
-                          /^\/+/,
-                          '',
-                        )}`;
+                      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(
+                        /^\/+/,
+                        '',
+                      )}`;
                   }
 
                   return (
