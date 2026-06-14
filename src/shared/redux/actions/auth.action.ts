@@ -47,7 +47,8 @@ export const loginAction = (data: any) => (dispatch: Dispatch) => {
   (dispatch as any)(setData(true, 'formSubmitted'));
   return AuthService.loginNew(data).then(
     async (response: any) => {
-      const userData = response.data?.response || response.data;
+      const raw = response.data?.response || response.data;
+      const userData = raw?.user ? { ...raw, id: raw.user.id } : raw;
       if (userData) {
         await setAsyncData('user', userData);
         dispatch({ type: LOGIN_SUCCESS, payload: { user: userData } });
@@ -98,7 +99,8 @@ export const verifyOtpAction = (email: string, otp: string) => (dispatch: Dispat
   (dispatch as any)(setData(true, 'formSubmitted'));
   return AuthService.verifyOtp(email, otp).then(
     async (response: any) => {
-      const userData = response.data?.response || response.data;
+      const raw = response.data?.response || response.data;
+      const userData = raw?.user ? { ...raw, id: raw.user.id } : raw;
       if (userData) {
         await setAsyncData('user', userData);
         dispatch({ type: LOGIN_SUCCESS, payload: { user: userData } });

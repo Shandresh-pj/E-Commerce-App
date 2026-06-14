@@ -109,7 +109,7 @@ export const submitTaskEntry = async (
       // Exponential back-off: 1s, 2s, 4s
       const delay = Math.pow(2, attempt - 1) * 1000;
       console.log(`[submitTaskEntry] Retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise<void>(resolve => setTimeout(resolve, delay));
     }
   }
 
@@ -346,6 +346,58 @@ export const postFormData = async (
   }
 };
 
+export const putData = async (url: string, data: any): Promise<any | void> => {
+  try {
+    const result: any = await axios({
+      method: "PUT",
+      url: `${API_URL}${url}`,
+      validateStatus: (status) => status < 600,
+      data,
+      headers: { 'Content-Type': 'application/json', ...await authHeaderNew() },
+    });
+    return result;
+  } catch (error) {
+    console.log('putErr', error);
+  }
+};
+
+export const patchData = async (url: string, data: any): Promise<any | void> => {
+  try {
+    const result: any = await axios({
+      method: "PATCH",
+      url: `${API_URL}${url}`,
+      validateStatus: (status) => status < 600,
+      data,
+      headers: { 'Content-Type': 'application/json', ...await authHeaderNew() },
+    });
+    return result;
+  } catch (error) {
+    console.log('patchErr', error);
+  }
+};
+
+export const putFormData = async (url: string, data: any): Promise<any> => {
+  try {
+    const fullUrl = `${API_URL}${url}`;
+    const headers = {
+      'API_KEY': String(Defaults.apis.api_key),
+      ...await authHeaderNew(),
+    };
+    const response = await fetch(fullUrl, {
+      method: 'PUT',
+      body: data,
+      headers,
+    });
+    const text = await response.text();
+    let resultData = null;
+    try { resultData = JSON.parse(text); } catch { resultData = text; }
+    return { status: response.status, data: resultData, ok: response.ok };
+  } catch (error) {
+    console.error('putFormData error:', error);
+    throw error;
+  }
+};
+
 export const deleteData = async (url: string, data: any): Promise<string | void> => {
   try {
     const result: any = await axios({
@@ -366,14 +418,56 @@ export const deleteData = async (url: string, data: any): Promise<string | void>
 // --- Centralized API Methods ---
 
 /**
- * Fetches the current user's profile details.
+ * Fetches the current user's profile details from /profile/all.
  */
 export const fetchMyProfile = async (): Promise<any> => {
   try {
-    const response = await getData('/User/MyProfile');
-    return response?.data?.data || response?.data?.object?.data || null;
+    const response = await getData('/profile/all');
+    const list = response?.data?.data || response?.data?.object?.data || response?.data || null;
+    if (Array.isArray(list)) {
+      const stored = await getAsyncData('user');
+      const userId = stored?.user?.id || stored?.id || stored?.Id || stored?.userId;
+      if (userId) {
+        return list.find((p: any) => p.id === userId || p.Id === userId) ?? list[0] ?? null;
+      }
+      return list[0] ?? null;
+    }
+    return list;
   } catch (error) {
     console.log('fetchMyProfile error:', error);
+    return null;
+  }
+};
+
+/**
+ * Updates the current user's profile via PUT /profile/{id}. Accepts FormData for image uploads.
+ */
+export const updateMyProfile = async (formData: FormData): Promise<{ status: number; data: any } | null> => {
+  try {  
+    const stored = await getAsyncData('user');
+    let userId = stored?.user?.id || stored?.id || stored?.Id || stored?.userId;
+
+    if (!userId) {
+      // Fallback: fetch profile list and match by stored email
+      const email = stored?.user?.email || stored?.email || stored?.Email;
+      const res = await getData('/profile/all');
+      const list = res?.data?.data || res?.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        const match = email
+          ? list.find((p: any) => p.email === email)
+          : list[0];
+        userId = match?.id ?? list[0]?.id;
+      }
+    }
+
+    if (!userId) {
+      console.log('updateMyProfile: no user id found');
+      return null;
+    }
+    const response = await putFormData(`/profile/${userId}`, formData);
+    return response;
+  } catch (error) {
+    console.log('updateMyProfile error:', error);
     return null;
   }
 };

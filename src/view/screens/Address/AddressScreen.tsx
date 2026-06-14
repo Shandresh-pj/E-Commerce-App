@@ -16,8 +16,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Svg, { Path, Circle, Polyline, Line } from 'react-native-svg';
+import { getData, postData, putData, patchData, deleteData } from '../../../shared/services/main-service';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 const C = {
@@ -253,41 +254,42 @@ const AddressCard: React.FC<CardProps> = ({ address, onEdit, onDelete, onSetDefa
 // ─── Main screen ──────────────────────────────────────────────────────────────
 const AddressScreen = () => {
   const navigation = useNavigation<any>();
-  const [addresses, setAddresses] = useState<Address[]>([
-    // Seed data — replace with API call
-    {
-      id: '1',
-      label: 'Home',
-      name: 'John Doe',
-      phone: '+91 98765 43210',
-      line1: '42 Maple Street',
-      line2: 'Apt 3B',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400001',
-      isDefault: true,
-    },
-    {
-      id: '2',
-      label: 'Work',
-      name: 'John Doe',
-      phone: '+91 98765 43210',
-      line1: 'Tower C, Bandra Kurla Complex',
-      line2: '',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400051',
-      isDefault: false,
-    },
-  ]);
-
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
 
-  // Modal slide animation
   const slideAnim = useRef(new Animated.Value(height)).current;
+
+  const loadAddresses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getData('/address');
+      const data: any[] = res?.data?.data || [];
+      setAddresses(
+        data.map(a => ({
+          id: String(a.id),
+          label: a.label as AddressType,
+          name: a.name,
+          phone: a.phone,
+          line1: a.line1,
+          line2: a.line2 || '',
+          city: a.city,
+          state: a.state,
+          pincode: a.pincode,
+          isDefault: !!a.isDefault,
+        }))
+      );
+    } catch (e) {
+      console.log('Address fetch error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadAddresses(); }, [loadAddresses]));
 
   const openModal = (address?: Address) => {
     if (address) {
@@ -308,20 +310,13 @@ const AddressScreen = () => {
       setForm(emptyForm());
     }
     setModalVisible(true);
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
+    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
   };
 
   const closeModal = () => {
-    Animated.timing(slideAnim, {
-      toValue: height,
-      duration: 260,
-      useNativeDriver: true,
-    }).start(() => setModalVisible(false));
+    Animated.timing(slideAnim, { toValue: height, duration: 260, useNativeDriver: true }).start(() =>
+      setModalVisible(false)
+    );
   };
 
   const setF = (key: keyof FormState) => (value: any) =>
@@ -329,7 +324,7 @@ const AddressScreen = () => {
 
   const validate = () => {
     if (!form.name.trim()) { Alert.alert('Error', 'Full name is required.'); return false; }
-    if (!form.phone.trim()) { Alert.alert('Error', 'Phone number is required.'); return false; }
+    if (!form.phone.trim() || form.phone.length !== 10) { Alert.alert('Error', 'Enter a valid 10-digit phone number.'); return false; }
     if (!form.line1.trim()) { Alert.alert('Error', 'Address line 1 is required.'); return false; }
     if (!form.city.trim()) { Alert.alert('Error', 'City is required.'); return false; }
     if (!form.state.trim()) { Alert.alert('Error', 'State is required.'); return false; }
@@ -340,33 +335,37 @@ const AddressScreen = () => {
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
+    try {
+      const payload = {
+        label: form.label,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        line1: form.line1.trim(),
+        line2: form.line2.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        isDefault: form.isDefault,
+      };
 
-    // TODO: replace with real API call
-    // await postData('/Address/Add', form)  or  await postData(`/Address/Update/${editingId}`, form)
-
-    setTimeout(() => {
+      let res: any;
       if (editingId) {
-        setAddresses(prev =>
-          prev.map(a => (a.id === editingId ? { ...a, ...form } : a)),
-        );
+        res = await putData(`/address/${editingId}`, payload);
       } else {
-        const newAddr: Address = {
-          ...form,
-          id: Date.now().toString(),
-          isDefault: addresses.length === 0 ? true : form.isDefault,
-        };
-        if (newAddr.isDefault) {
-          setAddresses(prev => [
-            ...prev.map(a => ({ ...a, isDefault: false })),
-            newAddr,
-          ]);
-        } else {
-          setAddresses(prev => [...prev, newAddr]);
-        }
+        res = await postData('/address', payload);
       }
+
+      if (res?.data?.success) {
+        await loadAddresses();
+        closeModal();
+      } else {
+        Alert.alert('Error', res?.data?.message || 'Failed to save address.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
       setSaving(false);
-      closeModal();
-    }, 600);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -375,17 +374,25 @@ const AddressScreen = () => {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          // TODO: await deleteData(`/Address/Delete/${id}`, {})
-          setAddresses(prev => prev.filter(a => a.id !== id));
+        onPress: async () => {
+          const res: any = await deleteData(`/address/${id}`, {});
+          if (res?.data?.success) {
+            setAddresses(prev => prev.filter(a => a.id !== id));
+          } else {
+            Alert.alert('Error', res?.data?.message || 'Failed to delete address.');
+          }
         },
       },
     ]);
   };
 
-  const handleSetDefault = (id: string) => {
-    // TODO: await postData(`/Address/SetDefault/${id}`, {})
-    setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
+  const handleSetDefault = async (id: string) => {
+    const res: any = await patchData(`/address/${id}/default`, {});
+    if (res?.data?.success) {
+      setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
+    } else {
+      Alert.alert('Error', res?.data?.message || 'Failed to update default address.');
+    }
   };
 
   const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other'];
@@ -412,7 +419,11 @@ const AddressScreen = () => {
           contentContainerStyle={s.scroll}
           showsVerticalScrollIndicator={false}
         >
-          {addresses.length === 0 ? (
+          {loading ? (
+            <View style={s.emptyState}>
+              <ActivityIndicator size="large" color={C.accent} />
+            </View>
+          ) : addresses.length === 0 ? (
             <View style={s.emptyState}>
               <MapPinIcon color={C.textLight} />
               <Text style={s.emptyTitle}>No addresses saved</Text>
@@ -483,7 +494,7 @@ const AddressScreen = () => {
                 </View>
 
                 <Field label="Full Name *" value={form.name} onChange={setF('name')} placeholder="Your full name" />
-                <Field label="Phone Number *" value={form.phone} onChange={setF('phone')} placeholder="+91 XXXXX XXXXX" keyboardType="phone-pad" maxLength={15} />
+                <Field label="Phone Number *" value={form.phone} onChange={v => setF('phone')(v.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" keyboardType="phone-pad" maxLength={10} />
                 <Field label="Address Line 1 *" value={form.line1} onChange={setF('line1')} placeholder="House / Flat / Block No." />
                 <Field label="Address Line 2" value={form.line2} onChange={setF('line2')} placeholder="Area, Colony, Street (optional)" />
 

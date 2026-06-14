@@ -27,7 +27,7 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { logout } from '../shared/redux/actions/auth.action';
-import { getData } from '../shared/services/main-service';
+import { fetchMyProfile } from '../shared/services/main-service';
 
 const Drawer = createDrawerNavigator();
 const DRAWER_DISABLED_ROUTES = ['Splash', 'Login', 'SignUp'];
@@ -44,32 +44,25 @@ const CustomDrawerContent = (props: any) => {
   const [profileName, setProfileName] = useState({
     firstName: '',
     lastName: '',
-    Email: '',
+    email: '',
   });
 
-  useEffect(() => {
-    if (drawerStatus === 'open') {
-      console.log('Drawer opened, refreshing profile...');
-      loadData();
-    }
-  }, [drawerStatus]);
+  // useEffect(() => {
+  //   if (drawerStatus === 'open') {
+  //     console.log('Drawer opened, refreshing profile...');
+  //     loadData();
+  //   }
+  // }, [drawerStatus]);
 
   const loadData = async () => {
     try {
-      let res = await getData(`/User/MyProfile`);
-      console.log('Fetched customer data:', res);
-      const customerData = res?.data?.data || res?.data?.object?.data || null;
-      console.log('Fetched customer data:', customerData);
-      if (customerData) {
-        setPoints({
-          available: Number(customerData.AvailablePoints) || 0,
-          totalCredit: Number(customerData.TotalCreditPoints) || 0,
-          totalDebit: Number(customerData.TotalDebitPoints) || 0,
-        });
+      const profile = await fetchMyProfile();
+      if (profile) {
+        const nameParts = (profile.name || '').trim().split(' ');
         setProfileName({
-          firstName: customerData.FirstName || '',
-          lastName: customerData.LastName || '',
-          Email: customerData.Email || '',
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: profile.email || '',
         });
       }
     } catch (error) {
@@ -111,7 +104,7 @@ const CustomDrawerContent = (props: any) => {
                 {profileName.lastName ? ' ' + profileName.lastName : ''}
               </Text>
               <Text style={styles.emailText}>
-                {profileName.Email ? profileName.Email : 'N/A'}
+                {profileName.email ? profileName.email : 'N/A'}
               </Text>
             </View>
           </View>

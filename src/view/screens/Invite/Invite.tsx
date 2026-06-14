@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Invite from '../../assets/images/svg/invite.svg';
 import styles from './InviteStyle';
-import { getData } from '../../../shared/services/main-service';
+import { fetchMyProfile } from '../../../shared/services/main-service';
 import { ChevronLeftIcon } from '../../assets/images/svg/Svg2/ChevronLeftIcon';
 import { THEME } from '../../assets/styles/theme';
 
@@ -233,13 +233,10 @@ function InviteScreen(props: any) {
 
   const loadData = async () => {
     try {
-      let res = await getData(`/User/MyProfile`);
-      const customerData = res?.data?.data || res?.data?.object?.data || null;
-      setCustomerData(customerData);
-      console.log('Fetched customer data:', customerData);
+      const profile = await fetchMyProfile();
+      setCustomerData(profile);
     } catch (error) {
       console.log('Error in loadData:', error);
-    } finally {
     }
   };
 

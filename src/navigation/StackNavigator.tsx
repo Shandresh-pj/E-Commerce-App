@@ -20,17 +20,19 @@ import splashContainer from '../view/screens/splash';
 import loginContainer from '../view/screens/login';
 import LocationPermissionContainer from '../view/screens/LocationPermission';
 import ProductListContainer from '../view/screens/ProductLIst';
-import ProfileContainer from '../view/screens/Profile';
+import ProfileContainer from '../view/screens/Account';
 import HomeBottomTabNavigator from './HomeTabNavigator';
 import inviteContainer from '../view/screens/Invite';
 import myordersContainer from '../view/screens/Myorders';
 import ViewOrderScreen from '../view/screens/Myorders/Vieworders';
-import EditProfileScreen from '../view/screens/Profile/EditProfile';
+import EditProfileScreen from '../view/screens/Account/EditProfile';
 import WishListContainer from '../view/screens/WishList';
 import CartContainer from '../view/screens/Cart';
 import PlaceOrderScreen from '../view/screens/PlaceOrder/PlaceOrder';
 import ContactUsContainer from '../view/screens/ContactUs';
 import AddressScreen from '../view/screens/Address/AddressScreen';
+import CategoryScreen from '../view/screens/Categories/CategoryScreen';
+import CategoryProductScreen from '../view/screens/Categories/CategoryProductScreen';
 
 
 const Stack = createStackNavigator();
@@ -160,7 +162,7 @@ const MainStackNavigator = (props: any) => {
             cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
           }}
         />
-     
+
 
         <Stack.Screen
           name="Home"
@@ -202,7 +204,7 @@ const MainStackNavigator = (props: any) => {
         />
 
 
-     
+
         <Stack.Screen
           name="Invite"
           component={inviteContainer}
@@ -215,7 +217,7 @@ const MainStackNavigator = (props: any) => {
             cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
           })}
         />
-   
+
       </>
 
       <Stack.Screen
@@ -312,14 +314,40 @@ const MainStackNavigator = (props: any) => {
       <Stack.Screen
         name="Addresses"
         component={AddressScreen}
-        options={({ navigation }) => ({
+        options={{
           headerShown: false,
           transitionSpec: {
             open: TransitionSpecs.FadeInFromBottomAndroidSpec,
             close: TransitionSpecs.FadeOutToBottomAndroidSpec,
           },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-        })}
+        }}
+      />
+
+      <Stack.Screen
+        name="Categories"
+        component={CategoryScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="CategoryProducts"
+        component={CategoryProductScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
       />
 
     </Stack.Navigator>

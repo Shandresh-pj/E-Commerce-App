@@ -19,10 +19,9 @@ import {
   useFocusEffect,
   CommonActions,
 } from '@react-navigation/native';
-import { getData } from '../../../shared/services/main-service';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchMyProfile } from '../../../shared/services/main-service';
 import { logout } from '../../../shared/redux/actions/auth.action';
-import Svg, { Path, Circle, Rect, G, Line, Polyline } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import Defaults from '../../../config';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -43,7 +42,7 @@ const C = {
   shadow: '#1C1C2E',
 };
 
-const { width } = Dimensions.get('window');
+Dimensions.get('window');
 
 // ─── Inline icon set ──────────────────────────────────────────────────────────
 const Icon = {
@@ -119,6 +118,7 @@ interface ProfileData {
   TotalDebitPoints: number;
   CreatedAt: string;
   DOB: string | null;
+  image?: string;
   Status: { StatusCode: string };
 }
 
@@ -175,6 +175,7 @@ const ProfileScreen = (props: any) => {
   const { dispatch } = props;
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -184,28 +185,22 @@ const ProfileScreen = (props: any) => {
 
   const loadProfile = async () => {
     setLoading(true);
+    setImageError(false);
     try {
-      const res = await getData('/profile');
-      const data = res?.data?.user || res?.data?.data || res?.data?.object?.data || null;
+      const data = await fetchMyProfile();
       if (data) {
-        // Map database fields to ProfileData interface fields
         if (data.name && !data.FirstName) {
           const parts = data.name.trim().split(/\s+/);
           data.FirstName = parts[0] || '';
           data.LastName = parts.slice(1).join(' ') || '';
         }
-        if (data.email && !data.Email) {
-          data.Email = data.email;
-        }
-        if (data.mobilenumber && !data.MobileNumber) {
-          data.MobileNumber = data.mobilenumber;
-        }
-        if (data.usertype && !data.UserType) {
-          data.UserType = data.usertype;
-        }
+        if (data.email && !data.Email) data.Email = data.email;
+        if (data.mobilenumber && !data.MobileNumber) data.MobileNumber = data.mobilenumber;
+        if (data.usertype && !data.UserType) data.UserType = data.usertype;
         if (data.status && !data.Status) {
           data.Status = { StatusCode: String(data.status).toUpperCase() };
         }
+        if (data.created_at && !data.CreatedAt) data.CreatedAt = data.created_at;
         setProfile(data);
       }
     } catch (e) {
@@ -248,8 +243,8 @@ const ProfileScreen = (props: any) => {
     } catch (e) { }
   };
 
-  const getAvatarUri = () => {
-    if (!profile?.image) return null;
+  const getAvatarUri = (): string | undefined => {
+    if (!profile?.image) return undefined;
     if (profile.image.startsWith('http://') || profile.image.startsWith('https://')) {
       return profile.image;
     }
@@ -287,8 +282,12 @@ const ProfileScreen = (props: any) => {
           <View style={s.headerCard}>
             {/* Avatar */}
             <View style={s.avatarOuter}>
-              {getAvatarUri() ? (
-                <Image source={{ uri: getAvatarUri() }} style={s.avatarImg} />
+              {getAvatarUri() && !imageError ? (
+                <Image
+                  source={{ uri: getAvatarUri() }}
+                  style={s.avatarImg}
+                  onError={() => setImageError(true)}
+                />
               ) : (
                 <View style={s.avatarInner}>
                   <Text style={s.avatarText}>{initials.toUpperCase()}</Text>
@@ -317,7 +316,7 @@ const ProfileScreen = (props: any) => {
               iconBg={C.accentLight}
               label="Edit Profile"
               sublabel="Update your personal details"
-              onPress={() => navigation.navigate('EditProfile')}
+              onPress={() => navigation.navigate('EditProfile', { profile })}
             />
             <MenuRow
               IconComp={Icon.Orders}

@@ -16,9 +16,9 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
-import { getData, postData, postFormData } from '../../../shared/services/main-service';
+import { updateMyProfile } from '../../../shared/services/main-service';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Svg, { Path, Circle, Polyline } from 'react-native-svg';
 import Defaults from '../../../config';
@@ -77,6 +77,13 @@ const PhoneIcon = () => (
   </Svg>
 );
 
+const AddressIcon = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+    <Path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" stroke={C.accent} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    <Circle cx={12} cy={10} r={3} stroke={C.accent} strokeWidth={1.8} />
+  </Svg>
+);
+
 const CheckIcon = () => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
     <Path d="M20 6L9 17l-5-5" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
@@ -89,10 +96,10 @@ interface EditProfileForm {
   LastName: string;
   Email: string;
   MobileNumber: string;
+  Address: string;
 }
 
 const NAME_REGEX = /^[a-zA-Z .'-]+$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ─── Animated input field ─────────────────────────────────────────────────────
 interface FieldProps {
@@ -158,70 +165,50 @@ const Field: React.FC<FieldProps> = ({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 const EditProfileScreen = () => {
   const navigation = useNavigation<any>();
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const route = useRoute<any>();
   const [saving, setSaving] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const [savedName, setSavedName] = useState('');
   const [savedEmail, setSavedEmail] = useState('');
-  const [userId, setUserId] = useState<number | string>('');
-  const [userAddress, setUserAddress] = useState<string>('');
 
-  const { control, handleSubmit, reset, watch, formState: { errors } } =
+  const d = route.params?.profile;
+
+  const nameParts = (d?.name || '').trim().split(/\s+/);
+  const initFirstName = d?.FirstName || nameParts[0] || '';
+  const initLastName = d?.LastName || nameParts.slice(1).join(' ') || '';
+  const initEmail = d?.email || d?.Email || '';
+  const initPhone = d?.mobilenumber || d?.MobileNumber || '';
+  const initAddress = d?.address || d?.Address || '';
+
+  const { control, handleSubmit, watch, formState: { errors } } =
     useForm<EditProfileForm>({
       mode: 'onBlur',
       reValidateMode: 'onChange',
-      defaultValues: { FirstName: '', LastName: '', Email: '', MobileNumber: '' },
+      defaultValues: {
+        FirstName: initFirstName,
+        LastName: initLastName,
+        Email: initEmail,
+        MobileNumber: initPhone,
+        Address: initAddress,
+      },
     });
 
   const firstNameVal = watch('FirstName');
   const lastNameVal = watch('LastName');
 
-  // ── Fetch profile ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await getData('/profile');
-        const d = res?.data?.user || res?.data?.data || res?.data?.object?.data || null;
-        if (d) {
-          let firstName = '';
-          let lastName = '';
-          if (d.name) {
-            const parts = d.name.trim().split(/\s+/);
-            firstName = parts[0] || '';
-            lastName = parts.slice(1).join(' ') || '';
-          } else {
-            firstName = d.FirstName ?? '';
-            lastName = d.LastName ?? '';
-          }
-
-          reset({
-            FirstName: firstName,
-            LastName: lastName,
-            Email: d.email || d.Email || '',
-            MobileNumber: d.mobilenumber || d.MobileNumber || '',
-          });
-          setSavedName(`${firstName} ${lastName}`.trim());
-          setSavedEmail(d.email || d.Email || '');
-          setUserId(d.id || d.Id || '');
-          setUserAddress(d.address || d.Address || '');
-
-          if (d.image || d.Image) {
-            const imgPath = d.image || d.Image;
-            if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
-              setAvatarUri(imgPath);
-            } else {
-              setAvatarUri(`${Defaults.apis.baseUrl}${imgPath.startsWith('/') ? '' : '/'}${imgPath}`);
-            }
-          }
-        }
-      } catch (e) {
-        console.log('EditProfile fetch error:', e);
-      } finally {
-        setLoadingProfile(false);
+    setSavedName(`${initFirstName} ${initLastName}`.trim());
+    setSavedEmail(initEmail);
+    if (d?.image || d?.Image) {
+      const imgPath = d.image || d.Image;
+      if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+        setAvatarUri(imgPath);
+      } else {
+        setAvatarUri(`${Defaults.apis.baseUrl}${imgPath.startsWith('/') ? '' : '/'}${imgPath}`);
       }
-    };
-    fetch();
-  }, [reset]);
+    }
+  }, []);
 
   // ── Image pick ─────────────────────────────────────────────────────────────
   const pickImage = () => {
@@ -229,7 +216,7 @@ const EditProfileScreen = () => {
       { mediaType: 'photo', quality: 0.8, selectionLimit: 1 },
       res => {
         const asset = res.assets?.[0];
-        if (asset?.uri) setAvatarUri(asset.uri);
+        if (asset?.uri) { setAvatarUri(asset.uri); setImageError(false); }
       },
     );
   };
@@ -241,10 +228,9 @@ const EditProfileScreen = () => {
       const name = `${data.FirstName.trim()} ${data.LastName.trim()}`.trim();
       const email = data.Email.trim();
       const mobilenumber = data.MobileNumber.trim();
-      const address = userAddress.trim() || 'N/A';
+      const address = data.Address.trim() || 'N/A';
 
       const formData = new FormData();
-      formData.append('id', String(userId));
       formData.append('name', name);
       formData.append('email', email);
       formData.append('mobilenumber', mobilenumber);
@@ -253,7 +239,7 @@ const EditProfileScreen = () => {
       if (avatarUri && !avatarUri.startsWith('http://') && !avatarUri.startsWith('https://')) {
         const filename = avatarUri.split('/').pop() || 'avatar.jpg';
         const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
+        const type = match ? `image/${match[1]}` :  `image/jpeg`;
         formData.append('image', {
           uri: Platform.OS === 'android' && !avatarUri.startsWith('file://') && !avatarUri.startsWith('content://')
             ? `file://${avatarUri}`
@@ -263,7 +249,7 @@ const EditProfileScreen = () => {
         } as any);
       }
 
-      const res = await postFormData('/profile/update', formData);
+      const res = await updateMyProfile(formData);
       const status = res?.status;
       const msg = res?.data?.message || res?.data?.Message ||
         (status === 200 ? 'Profile updated successfully!' : 'Update failed. Try again.');
@@ -284,13 +270,7 @@ const EditProfileScreen = () => {
   // ── Initials ───────────────────────────────────────────────────────────────
   const initials = ((firstNameVal?.[0] ?? '') + (lastNameVal?.[0] ?? '')).toUpperCase() || '?';
 
-  if (loadingProfile) {
-    return (
-      <View style={s.loader}>
-        <ActivityIndicator size="large" color={C.accent} />
-      </View>
-    );
-  }
+
 
   return (
     <>
@@ -312,8 +292,12 @@ const EditProfileScreen = () => {
           <View style={s.heroCard}>
             {/* Avatar with camera overlay */}
             <View style={s.avatarWrapper}>
-              {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={s.avatarImg} />
+              {avatarUri && !imageError ? (
+                <Image
+                  source={{ uri: avatarUri }}
+                  style={s.avatarImg}
+                  onError={() => setImageError(true)}
+                />
               ) : (
                 <View style={s.avatarPlaceholder}>
                   <Text style={s.avatarText}>{initials}</Text>
@@ -398,16 +382,14 @@ const EditProfileScreen = () => {
               <Controller
                 control={control}
                 name="Email"
-                rules={{
-                  required: 'Email is required.',
-                  pattern: { value: EMAIL_REGEX, message: 'Enter a valid email address.' },
-                }}
+                rules={{}}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Field
-                    label="Email *"
+                    label="Email"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
+                    editable={false}
                     error={errors.Email?.message}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -421,21 +403,40 @@ const EditProfileScreen = () => {
                 control={control}
                 name="MobileNumber"
                 rules={{
-                  minLength: { value: 10, message: 'Enter a valid mobile number.' },
-                  maxLength: { value: 15, message: 'Max 15 digits.' },
+                  validate: v => !v || v.length === 10 || 'Enter a valid 10-digit mobile number.',
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Field
                     label="Mobile Number"
                     value={value}
-                    onChangeText={t => onChange(t.replace(/[^0-9+\s-]/g, ''))}
+                    onChangeText={t => onChange(t.replace(/\D/g, '').slice(0, 10))}
                     onBlur={onBlur}
+                    editable={false}
                     error={errors.MobileNumber?.message}
                     keyboardType="phone-pad"
                     autoCapitalize="none"
-                    maxLength={15}
+                    maxLength={10}
                     IconComp={PhoneIcon}
-                    hint="Optional — used for delivery alerts"
+                  />
+                )}
+              />
+            </View>
+
+            <Text style={s.sectionLabel}>Delivery Address</Text>
+            <View style={s.card}>
+              <Controller
+                control={control}
+                name="Address"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Field
+                    label="Address"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    error={errors.Address?.message}
+                    autoCapitalize="sentences"
+                    IconComp={AddressIcon}
+                    hint="Street, city, pincode"
                   />
                 )}
               />

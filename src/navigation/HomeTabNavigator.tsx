@@ -1,14 +1,13 @@
 import React from 'react';
-import { Animated, useWindowDimensions } from 'react-native';
+import { Animated } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarProvider, useTabBar } from '../shared/context/TabBarContext';
 import PremiumTabBar from './PremiumTabBar';
 
 import homeContainer from '../view/screens/home';
-import ProductListContainer from '../view/screens/ProductLIst';
+import CategoryScreen from '../view/screens/Categories/CategoryScreen';
 import CartContainer from '../view/screens/Cart';
-import ProfileContainer from '../view/screens/Profile';
+import ProfileContainer from '../view/screens/Account';
 
 const Tab = createBottomTabNavigator();
 
@@ -45,7 +44,7 @@ const HomeBottomTabNavigatorContent = () => {
 
       <Tab.Screen
         name="ProductList"
-        component={ProductListContainer}
+        component={CategoryScreen}
         options={{ tabBarLabel: 'Categories' }}
       />
 

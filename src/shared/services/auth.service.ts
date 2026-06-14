@@ -19,11 +19,19 @@ class AuthService {
   }
 
   sendOtp(email: string) {
-    return axios.post(Defaults.apis.baseUrl + '/api/send-otp', { email }, { headers: HEADERS });
+    return axios.post(
+      Defaults.apis.baseUrl + '/api/auth/send-otp',
+      { email },
+      { headers: HEADERS },
+    );
   }
 
   verifyOtp(email: string, otp: string) {
-    return axios.post(Defaults.apis.baseUrl + '/api/verify-otp', { email, otp }, { headers: HEADERS });
+    return axios.post(
+      Defaults.apis.baseUrl + '/api/auth/verify-otp',
+      { email, otp },
+      { headers: HEADERS },
+    );
   }
 
   logout() {
