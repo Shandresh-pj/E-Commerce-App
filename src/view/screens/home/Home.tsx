@@ -286,11 +286,11 @@ const DashboardContent = ({ activeTab }: { activeTab: string }) => {
   }, []);
 
   // Fetch when tab changes
-  useEffect(() => {
-    if (activeTab === 'DASHBOARD') {
-      fetchDownline();
-    }
-  }, [activeTab, fetchDownline]);
+  // useEffect(() => {
+  //   if (activeTab === 'DASHBOARD') {
+  //     fetchDownline();
+  //   }
+  // }, [activeTab, fetchDownline]);
 
   // Fetch when screen gains focus
   useFocusEffect(
@@ -464,20 +464,20 @@ const MyNetworkContent = ({ activeTab }: { activeTab: string }) => {
   }, []);
 
   // Fetch when tab changes
-  useEffect(() => {
-    if (activeTab === 'MY NETWORK') {
-      fetchNetwork();
-    }
-  }, [activeTab, fetchNetwork]);
+  // useEffect(() => {
+  //   if (activeTab === 'MY NETWORK') {
+  //     fetchNetwork();
+  //   }
+  // }, [activeTab, fetchNetwork]);
 
-  // Fetch when screen gains focus
-  useFocusEffect(
-    useCallback(() => {
-      if (activeTab === 'MY NETWORK') {
-        fetchNetwork();
-      }
-    }, [activeTab, fetchNetwork])
-  );
+  // // Fetch when screen gains focus
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (activeTab === 'MY NETWORK') {
+  //       fetchNetwork();
+  //     }
+  //   }, [activeTab, fetchNetwork])
+  // );
 
   return (
     <View style={netStyles.container}>
@@ -765,16 +765,16 @@ function Home(props: any) {
   }, [activeTab, fetchHomeData]);
 
   // Fetch when screen gains focus (always update points/summary and notifications)
-  useFocusEffect(
-    useCallback(() => {
-      if (isReturningFromNotifications) {
-        isReturningFromNotifications = false;
-      } else {
-        fetchNotifications();
-      }
-      fetchHomeData();
-    }, [fetchHomeData, fetchNotifications])
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (isReturningFromNotifications) {
+  //       isReturningFromNotifications = false;
+  //     } else {
+  //       fetchNotifications();        
+  //     }
+  //     fetchHomeData();
+  //   }, [fetchHomeData, fetchNotifications])
+  // );
 
   return (
     <>
