@@ -442,7 +442,7 @@ function Login(props: any) {
                     key={s}
                     style={[
                       authStyles.dot,
-                      step === s || (step === 'success' && s === 'otp')
+                      step === s
                         ? authStyles.dotActive
                         : null,
                     ]}

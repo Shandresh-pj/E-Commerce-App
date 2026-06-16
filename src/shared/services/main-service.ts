@@ -505,7 +505,7 @@ export const toggleWishlist = async (productId: number, isLiked: boolean): Promi
 };
 
 /**
- * Fetches products with pagination.
+ * Fetches products with pagination from `/products`.
  * @param currentPage - page number (1-indexed)
  * @param pageSize - number of items per page (default 50)
  * @returns object with `items` array, `totalPages`, `totalCount`, and `currentPage`
@@ -515,15 +515,15 @@ export const fetchAllProducts = async (
   pageSize: number = 50,
 ): Promise<{ items: any[]; totalPages: number; totalCount: number; currentPage: number }> => {
   try {
-    const maxPages = Math.ceil(500 / pageSize); // reasonable upper bound
-    const url = `/Product/All?currentPage=${currentPage}&pageSize=${pageSize}&maxPages=${maxPages}`;
+    const url = `/products?page=${currentPage}&limit=${pageSize}`;
     const response = await getData(url);
     console.log("API Product page", currentPage, response);
     if (response && response.status) {
-      const responseData = response.data?.data || response.data || {};
-      const items = responseData?.data || responseData?.items || responseData?.Items || [];
-      const totalPages = responseData?.totalPages || responseData?.TotalPages || 1;
-      const totalCount = responseData?.totalCount || responseData?.TotalCount || items.length;
+      const body = response.data ?? {};
+      const items = body?.data ?? [];
+      const pagination = body?.pagination ?? {};
+      const totalPages = pagination?.totalPages ?? 1;
+      const totalCount = pagination?.totalRecords ?? items.length;
       return {
         items: Array.isArray(items) ? items : [],
         totalPages,
@@ -535,6 +535,42 @@ export const fetchAllProducts = async (
   } catch (error) {
     console.log('fetchAllProducts error:', error);
     return { items: [], totalPages: 1, totalCount: 0, currentPage };
+  }
+};
+
+/**
+ * Fetches every product from `/products` by walking all pages.
+ */
+export const fetchAllProductsComplete = async (pageSize: number = 100): Promise<any[]> => {
+  let page = 1;
+  let totalPages = 1;
+  const all: any[] = [];
+
+  do {
+    const result = await fetchAllProducts(page, pageSize);
+    all.push(...result.items);
+    totalPages = result.totalPages;
+    page++;
+  } while (page <= totalPages);
+
+  return all;
+};
+
+/**
+ * Fetches a single product's full detail from `/products/:id`, including
+ * variant `ProductAttribute` / `ProductAttributeValue` names (e.g. "Color: Navy")
+ * that the list endpoint (`/products`) does not join in.
+ */
+export const fetchProductDetail = async (id: number): Promise<any | null> => {
+  try {
+    const response = await getData(`/products/${id}`);
+    if (response && response.status === 200) {
+      return response.data?.data ?? null;
+    }
+    return null;
+  } catch (error) {
+    console.log('fetchProductDetail error:', error);
+    return null;
   }
 };
 

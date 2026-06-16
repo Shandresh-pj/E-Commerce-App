@@ -59,10 +59,33 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
 
     // Subscribe to AppState changes to automatically transition when returning from system settings
     const subscription = AppState.addEventListener('change', handleAppStateChange);
+    checkExistingPermission();
     return () => {
       subscription.remove();
     };
   }, []);
+
+  const checkExistingPermission = async () => {
+    try {
+      let permissionGranted = false;
+      if (Platform.OS === 'android') {
+        permissionGranted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+      } else {
+        permissionGranted = true;
+      }
+
+      if (permissionGranted) {
+        const locationEnabled = await DeviceInfo.isLocationEnabled();
+        if (locationEnabled) {
+          navigateToHome();
+        }
+      }
+    } catch (err) {
+      console.warn('Initial permission check error:', err);
+    }
+  };
 
   const navigateToHome = () => {
     navigation.reset({
