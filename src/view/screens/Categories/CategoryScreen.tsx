@@ -8,40 +8,18 @@ import {
   StatusBar,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { THEME } from '../../assets/styles/theme'
 import { useResponsive } from '../../assets/styles/responsive'
-import { fetchAllProductsComplete } from '../../../shared/services/main-service'
+import { fetchCategories } from '../../../shared/services/main-service'
+import Defaults from '../../../config'
 
 const GUTTER = 12
 
-// ─── Category metadata by API value ──────────────────────────────────────────
-
-type CategoryMeta = { icon: string; bgColor: string; iconBg: string; label: string }
-
-const CATEGORY_META: Record<string, CategoryMeta> = {
-  mobile:      { icon: '📱', bgColor: '#E3F2FD', iconBg: '#90CAF9', label: 'Mobiles' },
-  mobiles:     { icon: '📱', bgColor: '#E3F2FD', iconBg: '#90CAF9', label: 'Mobiles' },
-  electronics: { icon: '💻', bgColor: '#E8EAF6', iconBg: '#9FA8DA', label: 'Electronics' },
-  laptop:      { icon: '💻', bgColor: '#EDE7F6', iconBg: '#CE93D8', label: 'Laptops' },
-  laptops:     { icon: '💻', bgColor: '#EDE7F6', iconBg: '#CE93D8', label: 'Laptops' },
-  grocery:     { icon: '🛒', bgColor: '#E8F5E9', iconBg: '#A5D6A7', label: 'Grocery' },
-  clothing:    { icon: '👕', bgColor: '#FCE4EC', iconBg: '#F48FB1', label: 'Clothing' },
-  fashion:     { icon: '👗', bgColor: '#FCE4EC', iconBg: '#F48FB1', label: 'Fashion' },
-  footwear:    { icon: '👟', bgColor: '#FFF3E0', iconBg: '#FFCC80', label: 'Footwear' },
-  appliances:  { icon: '🏠', bgColor: '#E0F7FA', iconBg: '#80DEEA', label: 'Appliances' },
-  furniture:   { icon: '🛋️', bgColor: '#EFEBE9', iconBg: '#BCAAA4', label: 'Furniture' },
-  toys:        { icon: '🧸', bgColor: '#FFF8E1', iconBg: '#FFE082', label: 'Toys' },
-  books:       { icon: '📚', bgColor: '#F3E5F5', iconBg: '#CE93D8', label: 'Books' },
-  sports:      { icon: '⚽', bgColor: '#E8F5E9', iconBg: '#A5D6A7', label: 'Sports' },
-  beauty:      { icon: '💄', bgColor: '#FCE4EC', iconBg: '#F48FB1', label: 'Beauty' },
-  health:      { icon: '💊', bgColor: '#E8F5E9', iconBg: '#A5D6A7', label: 'Health' },
-  food:        { icon: '🍱', bgColor: '#FFF3E0', iconBg: '#FFCC80', label: 'Food' },
-  beverages:   { icon: '🥤', bgColor: '#E3F2FD', iconBg: '#90CAF9', label: 'Beverages' },
-  accessories: { icon: '⌚', bgColor: '#FBE9E7', iconBg: '#FFAB91', label: 'Accessories' },
-}
+const BASE_URL = `http://${Defaults.domain}`
 
 const FALLBACK_PALETTES = [
   { bgColor: '#E8F5E9', iconBg: '#A5D6A7' },
@@ -54,62 +32,59 @@ const FALLBACK_PALETTES = [
   { bgColor: '#F9FBE7', iconBg: '#DCE775' },
 ]
 
-const getCategoryMeta = (value: string, index: number): CategoryMeta => {
-  const key = value.toLowerCase().trim()
-  if (CATEGORY_META[key]) return CATEGORY_META[key]
-  const palette = FALLBACK_PALETTES[index % FALLBACK_PALETTES.length]
-  return {
-    icon: '🏪',
-    label: value.charAt(0).toUpperCase() + value.slice(1),
-    ...palette,
-  }
+type Category = {
+  id: number
+  name: string
+  description: string
+  image: string | null
+  parent_id: number | null
+  status: boolean
 }
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type CategoryItem = {
-  value: string
-  label: string
-  icon: string
-  bgColor: string
-  iconBg: string
-  count: number
-}
-
-// ─── Category Card ────────────────────────────────────────────────────────────
 
 const CategoryCard = React.memo(({
   item,
   width,
+  palette,
   onPress,
 }: {
-  item: CategoryItem
+  item: Category
   width: number
+  palette: { bgColor: string; iconBg: string }
   onPress: () => void
-}) => (
-  <TouchableOpacity
-    style={[styles.card, { width }]}
-    onPress={onPress}
-    activeOpacity={0.8}
-    accessibilityRole="button"
-    accessibilityLabel={`${item.label}, ${item.count} item${item.count !== 1 ? 's' : ''}`}
-  >
-    <View style={[styles.iconContainer, { backgroundColor: item.iconBg }]}>
-      <Text style={styles.icon}>{item.icon}</Text>
-    </View>
-    <Text style={styles.categoryName} numberOfLines={2}>{item.label}</Text>
-    <View style={styles.countPill}>
-      <Text style={styles.itemCount}>{item.count} item{item.count !== 1 ? 's' : ''}</Text>
-    </View>
-  </TouchableOpacity>
-))
+}) => {
+  const imageUri = item.image ? `${BASE_URL}${item.image}` : null
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+  return (
+    <TouchableOpacity
+      style={[styles.card, { width, backgroundColor: palette.bgColor }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={item.name}
+    >
+      <View style={[styles.imageContainer, { backgroundColor: palette.iconBg }]}>
+        {imageUri ? (
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.categoryImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={styles.placeholderIcon}>🏪</Text>
+        )}
+      </View>
+      <Text style={styles.categoryName} numberOfLines={2}>{item.name}</Text>
+      {item.description ? (
+        <Text style={styles.categoryDesc} numberOfLines={2}>{item.description}</Text>
+      ) : null}
+    </TouchableOpacity>
+  )
+})
 
 const CategoryScreen = () => {
   const navigation = useNavigation<any>()
   const r = useResponsive()
-  const [allProducts, setAllProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [search, setSearch] = useState('')
@@ -120,16 +95,16 @@ const CategoryScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchProducts()
+      loadCategories()
     }, [])
   )
 
-  const fetchProducts = async () => {
+  const loadCategories = async () => {
     setLoading(true)
     setError(false)
     try {
-      const products = await fetchAllProductsComplete()
-      setAllProducts(products)
+      const data = await fetchCategories()
+      setCategories(data.filter(c => c.status !== false))
     } catch {
       setError(true)
     } finally {
@@ -137,44 +112,26 @@ const CategoryScreen = () => {
     }
   }
 
-  const categories: CategoryItem[] = useMemo(() => {
-    const map = new Map<string, number>()
-    allProducts.forEach(p => {
-      const cat = (p.category ?? '').trim()
-      if (!cat) return
-      map.set(cat, (map.get(cat) ?? 0) + 1)
-    })
-    return Array.from(map.entries()).map(([value, count], index) => {
-      const meta = getCategoryMeta(value, index)
-      return { value, count, ...meta }
-    })
-  }, [allProducts])
-
   const filtered = useMemo(() =>
     search.trim()
-      ? categories.filter(c => c.label.toLowerCase().includes(search.toLowerCase()))
+      ? categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
       : categories,
     [categories, search]
   )
 
-  const renderItem = useCallback(({ item }: { item: CategoryItem }) => (
+  const renderItem = useCallback(({ item, index }: { item: Category; index: number }) => (
     <CategoryCard
       item={item}
       width={cardWidth}
-      onPress={() => navigation.navigate('CategoryProducts', {
-        category: item,
-        products: allProducts.filter(p =>
-          (p.category ?? '').toLowerCase() === item.value.toLowerCase()
-        ),
-      })}
+      palette={FALLBACK_PALETTES[index % FALLBACK_PALETTES.length]}
+      onPress={() => navigation.navigate('CategoryProducts', { category: item })}
     />
-  ), [navigation, allProducts, cardWidth])
+  ), [navigation, cardWidth])
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header */}
       <View style={[styles.header, { paddingHorizontal: hPad }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Categories</Text>
@@ -187,7 +144,6 @@ const CategoryScreen = () => {
         )}
       </View>
 
-      {/* Search Bar */}
       <View style={[styles.searchWrapper, { paddingHorizontal: hPad }]}>
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
@@ -212,7 +168,6 @@ const CategoryScreen = () => {
         </View>
       </View>
 
-      {/* Content */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={THEME.COLOR.primary} />
@@ -223,7 +178,7 @@ const CategoryScreen = () => {
           <Text style={styles.errorEmoji}>⚠️</Text>
           <Text style={styles.errorTitle}>Couldn't load categories</Text>
           <Text style={styles.errorSubtitle}>Check your connection and try again</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchProducts} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadCategories} activeOpacity={0.85}>
             <Text style={styles.retryTxt}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -231,7 +186,7 @@ const CategoryScreen = () => {
         <FlatList
           key={numColumns}
           data={filtered}
-          keyExtractor={item => item.value}
+          keyExtractor={item => String(item.id)}
           numColumns={numColumns}
           renderItem={renderItem}
           contentContainerStyle={[styles.grid, { paddingHorizontal: hPad }]}
@@ -249,8 +204,6 @@ const CategoryScreen = () => {
     </SafeAreaView>
   )
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: THEME.COLOR.background },
@@ -320,20 +273,24 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
-    backgroundColor: THEME.COLOR.surface,
     borderWidth: 1,
     borderColor: THEME.COLOR.border,
     ...THEME.SHADOW.card,
   },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  imageContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+    overflow: 'hidden',
   },
-  icon: { fontSize: 26 },
+  categoryImage: {
+    width: 64,
+    height: 64,
+  },
+  placeholderIcon: { fontSize: 28 },
   categoryName: {
     fontSize: 12.5,
     fontFamily: THEME.FONTWEIGHT.Bold,
@@ -341,17 +298,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
   },
-  countPill: {
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: THEME.RADIUS.pill,
-    backgroundColor: THEME.COLOR.surfaceAlt,
-  },
-  itemCount: {
+  categoryDesc: {
+    marginTop: 4,
     fontSize: 10,
-    fontFamily: THEME.FONTWEIGHT.Medium,
+    fontFamily: THEME.FONTWEIGHT.Regular,
     color: THEME.COLOR.textSecondary,
+    textAlign: 'center',
+    lineHeight: 13,
   },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 },
   loadingText: { fontSize: 14, color: THEME.COLOR.textSecondary, fontFamily: THEME.FONTWEIGHT.Regular },

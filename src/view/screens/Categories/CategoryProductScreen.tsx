@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import {
   View,
   Text,
@@ -10,13 +10,14 @@ import {
   ScrollView,
   Animated,
   Image,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { THEME } from '../../assets/styles/theme'
 import { useResponsive } from '../../assets/styles/responsive'
 import Defaults from '../../../config'
-import { fetchProductDetail } from '../../../shared/services/main-service'
+import { fetchProductDetail, fetchProductsByCategory } from '../../../shared/services/main-service'
 import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal'
 
 const GUTTER = 12
@@ -244,17 +245,31 @@ const CategoryProductScreen = () => {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
   const r = useResponsive()
-  const category = route.params?.category ?? { value: '', label: 'Products', icon: '📦', bgColor: '#F5F5F5', iconBg: '#E0E0E0', count: 0 }
-  const products: ApiProduct[] = route.params?.products ?? []
+  const category = route.params?.category ?? { id: 0, name: 'Products', description: '', image: null }
 
   const hPad = r.select({ phone: 16, tablet: 24, large: 32 })
   const numColumns = r.columns(2, 3, 4)
   const cardWidth = r.cellWidth(r.width, numColumns, hPad, GUTTER)
 
+  const [products, setProducts] = useState<ApiProduct[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(true)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SortKey>('default')
   const [cart, setCart] = useState<CartState>({})
   const searchRef = useRef<TextInput>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoadingProducts(true)
+      try {
+        const data = await fetchProductsByCategory(category.id, category.name)
+        setProducts(data)
+      } finally {
+        setLoadingProducts(false)
+      }
+    }
+    load()
+  }, [category.id, category.name])
 
   const [detailVisible, setDetailVisible] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -321,15 +336,26 @@ const CategoryProductScreen = () => {
     />
   ), [cart, cardWidth, addToCart, increase, decrease, openDetail])
 
+  const categoryImageUri = category.image
+    ? `http://${Defaults.domain}${category.image}`
+    : null
+
   const ListHeader = (
     <>
       {/* Category Banner */}
-      <View style={[s.banner, { backgroundColor: category.bgColor ?? '#F5F5F5' }]}>
-        <View style={[s.bannerIcon, { backgroundColor: category.iconBg ?? '#E0E0E0' }]}>
-          <Text style={s.bannerEmoji}>{category.icon ?? '📦'}</Text>
+      <View style={s.banner}>
+        <View style={s.bannerIcon}>
+          {categoryImageUri ? (
+            <Image source={{ uri: categoryImageUri }} style={s.bannerImg} resizeMode="cover" />
+          ) : (
+            <Text style={s.bannerEmoji}>📦</Text>
+          )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.bannerName}>{category.label}</Text>
+          <Text style={s.bannerName}>{category.name}</Text>
+          {category.description ? (
+            <Text style={s.bannerDesc} numberOfLines={2}>{category.description}</Text>
+          ) : null}
           <Text style={s.bannerCount}>{filtered.length} products available</Text>
         </View>
       </View>
@@ -390,7 +416,7 @@ const CategoryProductScreen = () => {
           <TextInput
             ref={searchRef}
             style={s.searchInput}
-            placeholder={`Search in ${category.label}…`}
+            placeholder={`Search in ${category.name}…`}
             placeholderTextColor={THEME.COLOR.textTertiary}
             value={search}
             onChangeText={setSearch}
@@ -405,24 +431,31 @@ const CategoryProductScreen = () => {
       </View>
 
       {/* Body */}
-      <FlatList
-        key={numColumns}
-        data={filtered}
-        keyExtractor={item => String(item.id)}
-        numColumns={numColumns}
-        renderItem={renderItem}
-        ListHeaderComponent={ListHeader}
-        contentContainerStyle={[s.grid, { paddingHorizontal: hPad }]}
-        columnWrapperStyle={{ gap: GUTTER, marginBottom: GUTTER }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={s.empty}>
-            <Text style={s.emptyEmoji}>🔍</Text>
-            <Text style={s.emptyTitle}>No products found</Text>
-            <Text style={s.emptySubtitle}>Try a different search or sort</Text>
-          </View>
-        }
-      />
+      {loadingProducts ? (
+        <View style={s.loadingCenter}>
+          <ActivityIndicator size="large" color={THEME.COLOR.primary} />
+          <Text style={s.loadingText}>Loading products…</Text>
+        </View>
+      ) : (
+        <FlatList
+          key={numColumns}
+          data={filtered}
+          keyExtractor={item => String(item.id)}
+          numColumns={numColumns}
+          renderItem={renderItem}
+          ListHeaderComponent={ListHeader}
+          contentContainerStyle={[s.grid, { paddingHorizontal: hPad }]}
+          columnWrapperStyle={{ gap: GUTTER, marginBottom: GUTTER }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <Text style={s.emptyEmoji}>🔍</Text>
+              <Text style={s.emptyTitle}>No products found</Text>
+              <Text style={s.emptySubtitle}>Try a different search or sort</Text>
+            </View>
+          }
+        />
+      )}
 
       {/* Cart footer */}
       {cartCount > 0 && (
@@ -494,9 +527,11 @@ const s = StyleSheet.create({
     padding: 16,
     borderRadius: THEME.RADIUS.large,
   },
-  bannerIcon: { width: 54, height: 54, borderRadius: 27, justifyContent: 'center', alignItems: 'center' },
+  bannerIcon: { width: 54, height: 54, borderRadius: 27, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', backgroundColor: '#E0E0E0' },
+  bannerImg: { width: 54, height: 54 },
   bannerEmoji: { fontSize: 27 },
   bannerName: { fontSize: 18, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary, letterSpacing: -0.2 },
+  bannerDesc: { fontSize: 12, fontFamily: THEME.FONTWEIGHT.Regular, color: THEME.COLOR.textSecondary, marginTop: 2 },
   bannerCount: { fontSize: 12.5, fontFamily: THEME.FONTWEIGHT.Regular, color: THEME.COLOR.textSecondary, marginTop: 3 },
 
   sortRow: { paddingVertical: 14, gap: 8 },
@@ -521,6 +556,8 @@ const s = StyleSheet.create({
 
   grid: { paddingBottom: 110 },
 
+  loadingCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loadingText: { fontSize: 14, color: THEME.COLOR.textSecondary, fontFamily: THEME.FONTWEIGHT.Regular },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyEmoji: { fontSize: 52, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary },

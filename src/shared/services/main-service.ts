@@ -417,6 +417,15 @@ export const deleteData = async (url: string, data: any): Promise<string | void>
 
 // --- Centralized API Methods ---
 
+// Returns true if an item is a parent product, not a bare variant row.
+// Variants are identified by having a `ProductId` field (the FK back to the product)
+// and no `name` field (products always have a name).
+const isProductItem = (item: any): boolean =>
+  item != null &&
+  (typeof item.id === 'number' || typeof item.Id === 'number') &&
+  item.name != null &&
+  item.ProductId == null;
+
 /**
  * Fetches the current user's profile details from /profile/all.
  */
@@ -505,27 +514,51 @@ export const toggleWishlist = async (productId: number, isLiked: boolean): Promi
 };
 
 /**
+ * Fetches all categories from `/categories`.
+ */
+export const fetchCategories = async (): Promise<any[]> => {
+  try {
+    const response = await getData('/categories');
+    if (response && response.status === 200) {
+      const data = response.data?.data ?? response.data ?? [];
+      return Array.isArray(data) ? data : [];
+    }
+    return [];
+  } catch (error) {
+    console.log('fetchCategories error:', error);
+    return [];
+  }
+};
+
+/**
  * Fetches products with pagination from `/products`.
  * @param currentPage - page number (1-indexed)
  * @param pageSize - number of items per page (default 50)
- * @returns object with `items` array, `totalPages`, `totalCount`, and `currentPage`
+ * @param categoryId - optional category id to filter on the server
  */
 export const fetchAllProducts = async (
   currentPage: number = 1,
   pageSize: number = 50,
+  categoryId?: number,
 ): Promise<{ items: any[]; totalPages: number; totalCount: number; currentPage: number }> => {
   try {
-    const url = `/products?page=${currentPage}&limit=${pageSize}`;
+    let url = `/products?page=${currentPage}&limit=${pageSize}`;
+    if (categoryId) url += `&category_id=${categoryId}`;
     const response = await getData(url);
     console.log("API Product page", currentPage, response);
     if (response && response.status) {
       const body = response.data ?? {};
-      const items = body?.data ?? [];
+      const rawItems = body?.data ?? [];
       const pagination = body?.pagination ?? {};
       const totalPages = pagination?.totalPages ?? 1;
+      const items = Array.isArray(rawItems)
+        ? rawItems
+            .filter(isProductItem)
+            .map((p: any) => (p.id == null && p.Id != null ? { ...p, id: p.Id } : p))
+        : [];
       const totalCount = pagination?.totalRecords ?? items.length;
       return {
-        items: Array.isArray(items) ? items : [],
+        items,
         totalPages,
         totalCount,
         currentPage,
@@ -557,6 +590,45 @@ export const fetchAllProductsComplete = async (pageSize: number = 100): Promise<
 };
 
 /**
+ * Fetches all products for a specific category.
+ * First tries server-side filtering via category_id, then falls back to
+ * fetching all products and filtering client-side by category name.
+ * Variant rows (uppercase Id) that some APIs surface as top-level list items
+ * are silently dropped — only parent product objects are returned.
+ */
+export const fetchProductsByCategory = async (
+  categoryId: number,
+  categoryName: string,
+  pageSize: number = 100,
+): Promise<any[]> => {
+  // Try server-side filter first
+  let page = 1;
+  let totalPages = 1;
+  const byId: any[] = [];
+
+  do {
+    const result = await fetchAllProducts(page, pageSize, categoryId);
+    byId.push(...result.items.filter(isProductItem));
+    totalPages = result.totalPages;
+    page++;
+  } while (page <= totalPages);
+
+  // If the API honoured the category_id filter the result should only contain
+  // products for this category. Verify by checking if any came back and that
+  // they match the expected name; otherwise fall back to fetching all.
+  if (byId.length > 0) {
+    const nameLC = categoryName.toLowerCase();
+    const allMatch = byId.every(p => (p.category ?? '').toLowerCase() === nameLC);
+    if (allMatch) return byId;
+  }
+
+  // Fallback: fetch everything and filter client-side
+  const all = await fetchAllProductsComplete(pageSize);
+  const nameLC = categoryName.toLowerCase();
+  return all.filter(isProductItem).filter(p => (p.category ?? '').toLowerCase() === nameLC);
+};
+
+/**
  * Fetches a single product's full detail from `/products/:id`, including
  * variant `ProductAttribute` / `ProductAttributeValue` names (e.g. "Color: Navy")
  * that the list endpoint (`/products`) does not join in.
@@ -565,7 +637,13 @@ export const fetchProductDetail = async (id: number): Promise<any | null> => {
   try {
     const response = await getData(`/products/${id}`);
     if (response && response.status === 200) {
-      return response.data?.data ?? null;
+      const data = response.data?.data ?? null;
+      // If the endpoint returned a bare variant (has ProductId, no name)
+      // re-fetch using the parent product id.
+      if (data && data.ProductId != null && data.name == null) {
+        return fetchProductDetail(data.ProductId);
+      }
+      return data;
     }
     return null;
   } catch (error) {

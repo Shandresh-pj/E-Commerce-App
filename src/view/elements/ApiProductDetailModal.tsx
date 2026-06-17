@@ -51,6 +51,19 @@ type DetailVariant = {
   ProductAttributeValue?: { Id: number; Name: string; AttributeValueCode: string }
 }
 
+type ProductAttribute = {
+  Id: number
+  Name: string
+  AttributeNameCode: string
+}
+
+type ProductAttributeValue = {
+  Id: number
+  ProductAttributeId: number
+  Name: string
+  AttributeValueCode: string
+}
+
 export type ApiProductDetail = {
   id: number
   name: string
@@ -65,6 +78,8 @@ export type ApiProductDetail = {
   stock_in_hand: number
   status: 'active' | 'inactive'
   variants: DetailVariant[]
+  ProductAttributes?: ProductAttribute[]
+  ProductAttributeValues?: ProductAttributeValue[]
 }
 
 interface ApiProductDetailModalProps {
@@ -132,10 +147,6 @@ const ApiProductDetailModal = ({
   const selectedVariant = productDetail?.variants?.find(v => v.Id === selectedVariantId)
 
   const description = stripHtml(productDetail?.description ?? '')
-
-  const basePrice = parseFloat(productDetail?.price ?? '0')
-  const variantPrice = selectedVariant ? parseFloat(selectedVariant.Price) : null
-  const displayPrice = variantPrice ?? basePrice
 
   const stock: number = isVariantType
     ? selectedVariant?.Stock ?? 0
@@ -250,86 +261,100 @@ const ApiProductDetailModal = ({
               <View style={modalStyles.infoSection}>
                 <Text style={modalStyles.productTitle}>{productDetail.name}</Text>
 
+                {/* ── Meta chips: category, status, barcode ── */}
                 <View style={modalStyles.metaRow}>
                   {productDetail.category ? (
                     <View style={modalStyles.metaChip}>
-                      <Text style={modalStyles.metaText}>📁 {productDetail.category}</Text>
+                      <Text style={modalStyles.metaText}>{productDetail.category}</Text>
                     </View>
                   ) : null}
-                  {productDetail.barcode ? (
-                    <View style={modalStyles.metaChip}>
-                      <Text style={modalStyles.metaText}>🏷️ {productDetail.barcode}</Text>
-                    </View>
-                  ) : null}
+                  <View style={[modalStyles.metaChip, { backgroundColor: productDetail.status === 'active' ? THEME.COLOR.successBg : THEME.COLOR.dangerBg }]}>
+                    <Text style={[modalStyles.metaText, { color: productDetail.status === 'active' ? THEME.COLOR.success : THEME.COLOR.danger }]}>
+                      {productDetail.status === 'active' ? 'Active' : 'Inactive'}
+                    </Text>
+                  </View>
+                  <View style={modalStyles.metaChip}>
+                    <Text style={modalStyles.metaText}>#{productDetail.barcode}</Text>
+                  </View>
                 </View>
 
-                <Text style={modalStyles.price}>₹{displayPrice.toLocaleString('en-IN')}</Text>
-
-                {/* ── Stock Badge ── */}
-                <View
-                  style={[
-                    modalStyles.stockRow,
-                    { backgroundColor: stock > 0 ? THEME.COLOR.successBg : THEME.COLOR.dangerBg },
-                  ]}
-                >
-                  <View style={[modalStyles.stockDot, { backgroundColor: stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger }]} />
-                  <Text style={[modalStyles.stockText, { color: stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger }]}>
-                    {stock > 0 ? `In Stock · ${stock} available` : 'Out of Stock'}
-                  </Text>
+                {/* ── Product-level price & total stock ── */}
+                <View style={modalStyles.priceStockRow}>
+                  <View>
+                    <Text style={modalStyles.priceLabelSmall}>
+                      {isVariantType ? 'Base Price' : 'Price'}
+                    </Text>
+                    <Text style={modalStyles.price}>
+                      ₹{parseFloat(productDetail.price).toLocaleString('en-IN')}
+                    </Text>
+                  </View>
+                  <View style={modalStyles.stockInfoBox}>
+                    <Text style={modalStyles.stockInfoValue}>{productDetail.stock_in_hand}</Text>
+                    <Text style={modalStyles.stockInfoLabel}>Total Units</Text>
+                  </View>
                 </View>
 
-                {/* ── Variants ── */}
-                {isVariantType && productDetail.variants?.length > 0 && (
+                {/* ── Attribute Selector ── */}
+                {isVariantType && (productDetail.ProductAttributes?.length ?? 0) > 0 && (
                   <View style={modalStyles.variantSection}>
-                    <Text style={modalStyles.sectionLabel}>Select Option</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={modalStyles.variantRow}>
-                        {productDetail.variants.map(variant => {
-                          const isSelected = variant.Id === selectedVariantId
-                          const isOutOfStock = variant.Stock === 0
-                          const attrName = variant.ProductAttribute?.Name
-                          const attrValue = variant.ProductAttributeValue?.Name
-                          const label = attrName && attrValue ? `${attrName}: ${attrValue}` : variant.Barcode
-
-                          return (
-                            <TouchableOpacity
-                              key={variant.Id}
-                              style={[
-                                modalStyles.variantChip,
-                                isSelected && modalStyles.variantChipSelected,
-                                isOutOfStock && modalStyles.variantChipDisabled,
-                              ]}
-                              onPress={() => !isOutOfStock && setSelectedVariantId(variant.Id)}
-                              disabled={isOutOfStock}
-                            >
-                              <Text
-                                style={[
-                                  modalStyles.variantChipText,
-                                  isSelected && modalStyles.variantChipTextSelected,
-                                  isOutOfStock && modalStyles.variantChipTextDisabled,
-                                ]}
-                              >
-                                {label}
-                              </Text>
-                              <Text style={[modalStyles.variantPrice, isSelected && modalStyles.variantPriceSelected]}>
-                                ₹{parseFloat(variant.Price).toLocaleString('en-IN')}
-                              </Text>
-                              <Text
-                                style={[
-                                  modalStyles.variantStockBadge,
-                                  {
-                                    color: variant.Stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger,
-                                    borderColor: variant.Stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger,
-                                  },
-                                ]}
-                              >
-                                {variant.Stock > 0 ? `Qty: ${variant.Stock}` : 'N/A'}
-                              </Text>
-                            </TouchableOpacity>
-                          )
-                        })}
-                      </View>
-                    </ScrollView>
+                    {productDetail.ProductAttributes!.map(attr => {
+                      const values = (productDetail.ProductAttributeValues ?? []).filter(
+                        v => v.ProductAttributeId === attr.Id,
+                      )
+                      return (
+                        <View key={attr.Id} style={modalStyles.attrGroup}>
+                          <Text style={modalStyles.attrGroupLabel}>{attr.Name}</Text>
+                          <View style={modalStyles.chipRow}>
+                            {values.map(val => {
+                              const variant = productDetail.variants?.find(
+                                v => v.ProductAttributeValueId === val.Id,
+                              )
+                              const effectiveStock = variant ? variant.Stock : productDetail.stock_in_hand
+                              const isSelected = !!variant && variant.Id === selectedVariantId
+                              const isUnavailable = effectiveStock === 0
+                              return (
+                                <TouchableOpacity
+                                  key={val.Id}
+                                  style={[
+                                    modalStyles.chip,
+                                    isSelected && modalStyles.chipSelected,
+                                    isUnavailable && modalStyles.chipUnavailable,
+                                  ]}
+                                  onPress={() => {
+                                    if (variant && !isUnavailable) setSelectedVariantId(variant.Id)
+                                  }}
+                                  disabled={isUnavailable}
+                                  activeOpacity={0.75}
+                                >
+                                  <Text
+                                    style={[
+                                      modalStyles.chipValueName,
+                                      isSelected && modalStyles.chipTextSelected,
+                                      isUnavailable && modalStyles.chipTextUnavailable,
+                                    ]}
+                                  >
+                                    {val.Name}
+                                  </Text>
+                                  <>
+                                    <Text style={[modalStyles.chipPrice, isSelected && modalStyles.chipTextSelected]}>
+                                      ₹{parseFloat(variant ? variant.Price : productDetail.price).toLocaleString('en-IN')}
+                                    </Text>
+                                    <Text
+                                      style={[
+                                        modalStyles.chipStock,
+                                        { color: effectiveStock > 0 ? THEME.COLOR.success : THEME.COLOR.danger },
+                                      ]}
+                                    >
+                                      {effectiveStock > 0 ? `${effectiveStock} left` : 'Out of Stock'}
+                                    </Text>
+                                  </>
+                                </TouchableOpacity>
+                              )
+                            })}
+                          </View>
+                        </View>
+                      )
+                    })}
                   </View>
                 )}
 
@@ -437,7 +462,12 @@ const modalStyles = StyleSheet.create({
   metaChip: { backgroundColor: THEME.COLOR.surfaceAlt, borderRadius: THEME.RADIUS.small, paddingHorizontal: 10, paddingVertical: 5 },
   metaText: { fontSize: 12, color: THEME.COLOR.textSecondary, fontFamily: THEME.FONTWEIGHT.Medium },
 
-  price: { fontSize: 26, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.primary, marginBottom: 12 },
+  priceStockRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 },
+  priceLabelSmall: { fontSize: 11, fontFamily: THEME.FONTWEIGHT.Medium, color: THEME.COLOR.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 },
+  price: { fontSize: 26, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.primary },
+  stockInfoBox: { alignItems: 'center', backgroundColor: THEME.COLOR.surfaceAlt, borderRadius: THEME.RADIUS.medium, paddingHorizontal: 16, paddingVertical: 8 },
+  stockInfoValue: { fontSize: 20, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary },
+  stockInfoLabel: { fontSize: 10, fontFamily: THEME.FONTWEIGHT.Medium, color: THEME.COLOR.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4 },
 
   stockRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, marginBottom: 18, paddingHorizontal: 12, paddingVertical: 7, borderRadius: THEME.RADIUS.pill },
   stockDot: { width: 8, height: 8, borderRadius: 4 },
@@ -446,25 +476,31 @@ const modalStyles = StyleSheet.create({
   sectionLabel: { fontSize: 12, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.6 },
 
   variantSection: { marginBottom: 18 },
-  variantRow: { flexDirection: 'row', gap: 10, paddingRight: 4 },
-  variantChip: {
-    alignItems: 'center',
-    gap: 4,
+
+  attrGroup: { marginBottom: 16 },
+  attrGroupLabel: { fontSize: 13, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
     borderWidth: 1.5,
     borderColor: THEME.COLOR.border,
-    borderRadius: THEME.RADIUS.medium,
+    borderRadius: THEME.RADIUS.small,
     paddingHorizontal: 14,
     paddingVertical: 10,
     backgroundColor: THEME.COLOR.surface,
+    alignItems: 'center',
+    flexDirection: 'column',
+    gap: 3,
+    minWidth: 80,
   },
-  variantChipSelected: { borderColor: THEME.COLOR.primary, backgroundColor: THEME.COLOR.primaryLight },
-  variantChipText: { fontSize: 13, color: THEME.COLOR.textPrimary, fontFamily: THEME.FONTWEIGHT.Medium },
-  variantChipTextSelected: { color: THEME.COLOR.primaryDark, fontFamily: THEME.FONTWEIGHT.Bold },
-  variantPrice: { fontSize: 12, color: THEME.COLOR.textSecondary, fontFamily: THEME.FONTWEIGHT.Medium },
-  variantPriceSelected: { color: THEME.COLOR.primaryDark, fontFamily: THEME.FONTWEIGHT.Bold },
-  variantChipDisabled: { borderColor: THEME.COLOR.border, backgroundColor: THEME.COLOR.surfaceAlt, opacity: 0.5 },
-  variantChipTextDisabled: { color: THEME.COLOR.textTertiary },
-  variantStockBadge: { fontSize: 10, fontFamily: THEME.FONTWEIGHT.Bold, borderWidth: 1, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+  chipSelected: { borderColor: THEME.COLOR.primary, backgroundColor: THEME.COLOR.primaryLight },
+  chipUnavailable: { opacity: 0.4, backgroundColor: THEME.COLOR.surfaceAlt },
+  chipValueName: { fontSize: 15, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary },
+  chipText: { fontSize: 14, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary },
+  chipTextSelected: { color: THEME.COLOR.primaryDark },
+  chipTextUnavailable: { color: THEME.COLOR.textTertiary },
+  chipPrice: { fontSize: 12, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.textPrimary },
+  chipStock: { fontSize: 10, fontFamily: THEME.FONTWEIGHT.Medium },
+  chipUnavailableLabel: { fontSize: 10, fontFamily: THEME.FONTWEIGHT.Bold, color: THEME.COLOR.danger },
 
   descSection: { marginBottom: 16 },
   descText: { fontSize: 14, color: THEME.COLOR.textSecondary, lineHeight: 22, fontFamily: THEME.FONTWEIGHT.Regular },
