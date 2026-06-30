@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -6,108 +6,127 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  StatusBar,
-  ImageBackground,
-} from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import Defaults from '../../../config/index';
-import HeartIcon from '../../assets/images/svg/Svg2/HeartIcon';
+} from 'react-native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import Defaults from '../../../config/index'
+import HeartIcon from '../../assets/images/svg/Svg2/HeartIcon'
+import HeartIconWhite from '../../assets/images/svg/Svg2/HeartIconWhite'
 import {
   fetchMyWishlist,
   toggleWishlist,
-} from '../../../shared/services/main-service';
-import CloseIcon from '../../assets/images/svg/Svg2/CloseIcon';
-import { ChevronLeftIcon } from '../../assets/images/svg/Svg2/ChevronLeftIcon';
-import styles from './WishListStyle';
-import { THEME } from '../../assets/styles/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import HeartIconWhite from '../../assets/images/svg/Svg2/HeartIconWhite';
+} from '../../../shared/services/main-service'
+import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
+import CloseIcon from '../../assets/images/svg/Svg2/CloseIcon'
+import Toast from 'react-native-root-toast'
+import styles from './WishListStyle'
+import { THEME } from '../../assets/styles/theme'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import AppHeader, { HeaderIconButton } from '../../elements/AppHeader'
+import PrimaryButton from '../../elements/PrimaryButton'
+import EmptyState from '../../elements/EmptyState'
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 interface WishListCardProps {
-  product: any;
-  onRemove: (productId: number) => Promise<void>;
+  product: any
+  onRemove: (productId: number) => Promise<void>
+  onMoveToCart: (product: any) => Promise<void>
 }
 
-const WishListCard = ({ product, onRemove }: WishListCardProps) => {
-  const [removing, setRemoving] = useState(false);
+const WishListCard = ({
+  product,
+  onRemove,
+  onMoveToCart,
+}: WishListCardProps) => {
+  const [removing, setRemoving] = useState(false)
+  const [moving, setMoving] = useState(false)
 
-  let imageUrl: string | null = null;
+  let imageUrl: string | null = null
   if (product.images && product.images.length > 0) {
-    let imgPath = product.images[0].replace(/\\/g, '/');
+    let imgPath = product.images[0].replace(/\\/g, '/')
     imageUrl = imgPath.startsWith('http')
       ? imgPath
-      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(/^\/+/, '')}`;
+      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(/^\/+/, '')}`
   }
 
   const handleRemove = async () => {
-    if (removing) return;
-    setRemoving(true);
+    if (removing) return
+    setRemoving(true)
     try {
-      await onRemove(product.id);
+      await onRemove(product.id)
     } finally {
-      setRemoving(false);
+      setRemoving(false)
     }
-  };
+  }
+
+  const handleMove = async () => {
+    if (moving) return
+    setMoving(true)
+    try {
+      await onMoveToCart(product)
+    } finally {
+      setMoving(false)
+    }
+  }
 
   return (
     <View style={styles.card}>
-      {/* Image */}
       <View style={styles.imageBox}>
         {imageUrl ? (
-          <Image
-            source={{ uri: imageUrl }}
-            style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-          />
+          <Image source={{ uri: imageUrl }} style={styles.image} />
         ) : (
           <Text style={styles.imageFallback}>{product.emoji || 'Img'}</Text>
         )}
       </View>
 
-      {/* Info */}
       <View style={styles.infoCol}>
-        <Text style={styles.productName} numberOfLines={1}>
+        <Text style={styles.productName} numberOfLines={2}>
           {product.name}
         </Text>
-
-        <View style={styles.priceRow}>
-          <Text style={styles.points}>Score : </Text>
-          <Text style={styles.points}>{product.points}</Text>
+        <View style={styles.scorePill}>
+          <Text style={styles.scoreValue}>{product.points}</Text>
+          <Text style={styles.scoreLabel}>Score</Text>
         </View>
+        <PrimaryButton
+          label="Move to Cart"
+          size="sm"
+          loading={moving}
+          style={styles.moveBtn}
+          onPress={handleMove}
+        />
       </View>
 
-      {/* Remove */}
       <TouchableOpacity
         style={styles.removeBtn}
         onPress={handleRemove}
         disabled={removing}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       >
         {removing ? (
-          <ActivityIndicator size="small" color={THEME.COLOR.bgPurple} />
+          <ActivityIndicator size="small" color={THEME.COLOR.primary} />
         ) : (
-          <CloseIcon />
+          <CloseIcon size={15} color={THEME.COLOR.textSecondary} />
         )}
       </TouchableOpacity>
     </View>
-  );
-};
+  )
+}
 
 // ─── WishList Screen ──────────────────────────────────────────────────────────
 export default function WishListScreen() {
-  const navigation = useNavigation<any>();
-  const [loading, setLoading] = useState(true);
-  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const navigation = useNavigation<any>()
+  const [loading, setLoading] = useState(true)
+  const [wishlistItems, setWishlistItems] = useState<any[]>([])
 
   useFocusEffect(
     useCallback(() => {
-      fetchWishlist();
+      fetchWishlist()
     }, []),
-  );
+  )
 
   const fetchWishlist = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const dataList = await fetchMyWishlist();
+      const dataList = await fetchMyWishlist()
       if (dataList && dataList.length >= 0) {
         const mapped = dataList.map((item: any) => ({
           id: item.ProductId || item.Product?.Id || item.Id,
@@ -127,96 +146,91 @@ export default function WishListScreen() {
           rating: 4.0,
           discount: 0,
           emoji: item.Code || item.Product?.Code,
-        }));
-        setWishlistItems(mapped);
+        }))
+        setWishlistItems(mapped)
       }
     } catch (error) {
-      console.log('fetchWishlist error:', error);
+      console.log('fetchWishlist error:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const removeItem = async (productId: number) => {
     try {
-      const success = await toggleWishlist(productId, true); // true since we are removing
+      const success = await toggleWishlist(productId, true) // true since we are removing
       if (success) {
-        setWishlistItems(prev => prev.filter(item => item.id !== productId));
+        setWishlistItems(prev => prev.filter(item => item.id !== productId))
       }
     } catch (error) {
-      console.log('removeItem error:', error);
+      console.log('removeItem error:', error)
     }
-  };
+  }
 
-  if (loading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color='#fff' />
-      </View>
-    );
+  const moveToCart = async (product: any) => {
+    try {
+      const existingCart = (await getAsyncData('cart_items')) || []
+      const cartArray = Array.isArray(existingCart) ? existingCart : []
+      const alreadyInCart = cartArray.some((item: any) => item.id === product.id)
+      if (!alreadyInCart) {
+        await setAsyncData('cart_items', [
+          ...cartArray,
+          { ...product, quantity: 1 },
+        ] as any)
+      }
+      // Remove from wishlist after moving
+      const success = await toggleWishlist(product.id, true)
+      if (success) {
+        setWishlistItems(prev => prev.filter(item => item.id !== product.id))
+      }
+      Toast.show('Moved to cart', { duration: Toast.durations.SHORT })
+    } catch (error) {
+      console.log('moveToCart error:', error)
+      Toast.show('Failed to move to cart', { duration: Toast.durations.SHORT })
+    }
   }
 
   return (
-    <>
-      <StatusBar
-        barStyle="light-content"
-        hidden={false}
-        backgroundColor='#2a2c40'
-        translucent
-      />
-      <SafeAreaView edges={['left', 'right',]} style={styles.container}>
-
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => navigation.goBack()}
-            >
-              <ChevronLeftIcon />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>My Wishlist</Text>
-          </View>
-          <View style={styles.cartCountBadge}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
+      <AppHeader
+        title="My Wishlist"
+        right={
+          <HeaderIconButton onPress={() => {}} badge={wishlistItems.length}>
             <HeartIconWhite filled={false} />
-            <Text style={[styles.countText, { marginLeft: 5 }]}>{wishlistItems.length}</Text>
-          </View>
-        </View>
+          </HeaderIconButton>
+        }
+      />
 
-        <ImageBackground
-          source={require("../../assets/images/login-bg.jpg")}
-          imageStyle={{ resizeMode: "cover", alignSelf: "flex-end" }}
-          style={styles.bakcgroundImage}
-        >
-          <FlatList
-            data={wishlistItems}
-            keyExtractor={item => item.id.toString()}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <WishListCard product={item} onRemove={removeItem} />
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <HeartIcon filled={false} />
-                <Text style={styles.emptyTitle}>Your Wishlist is Empty!</Text>
-                <Text style={styles.emptySubtitle}>
-                  Explore our products and tap the heart icon to save them here.
-                </Text>
-                <TouchableOpacity
-                  style={styles.shopNowBtn}
-                  onPress={() =>
-                    (navigation as any).navigate('Home', { screen: 'ProductList' })
-                  }
-                >
-                  <Text style={styles.shopNowText}>Shop Now</Text>
-                </TouchableOpacity>
-              </View>
-            }
-            ListFooterComponent={<View style={{ height: 40 }} />}
-          />
-        </ImageBackground>
-      </SafeAreaView>
-    </>
-  );
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={THEME.COLOR.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={wishlistItems}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <WishListCard
+              product={item}
+              onRemove={removeItem}
+              onMoveToCart={moveToCart}
+            />
+          )}
+          ListEmptyComponent={
+            <EmptyState
+              icon={<HeartIcon filled size={42} color={THEME.COLOR.primary} />}
+              title="Your wishlist is empty"
+              subtitle="Tap the heart on any product to save it here for later."
+              ctaLabel="Shop Now"
+              onCtaPress={() =>
+                navigation.navigate('Home', { screen: 'ProductList' })
+              }
+            />
+          }
+        />
+      )}
+    </SafeAreaView>
+  )
 }

@@ -1,6 +1,4 @@
 const base = '/api';
-//  const domain = (__DEV__)?'api.ction.in':'api.ction.in';
-//  const domain = (__DEV__)?'dev.futurebelieve.in':'dev.futurebelieve.in';
 const domain = __DEV__ ? '10.47.206.245:3000' : '10.47.206.245:3000';
 // const domain = (__DEV__)?'192.168.29.243:5005':'192.168.29.243:5005';
 import { name as appName } from '../../app.json';

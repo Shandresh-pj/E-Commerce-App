@@ -1,249 +1,208 @@
-import { StyleSheet } from 'react-native';
-import { THEME } from '../../assets/styles/theme';
+import { StyleSheet } from 'react-native'
+import { THEME } from '../../assets/styles/theme'
 
 const styles = StyleSheet.create({
-  container: { flex: 1, },
-  bakcgroundImage: {
-    flex: 1,
-    justifyContent: 'center',
-    height: '100%',
+  container: { flex: 1, backgroundColor: THEME.COLOR.background },
+
+  // ── Search + filter area ──────────────────────────────────────────────────
+  searchSection: {
+    paddingHorizontal: THEME.SPACING.lg,
+    paddingTop: THEME.SPACING.md,
+    backgroundColor: THEME.COLOR.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.COLOR.border,
+    paddingBottom: THEME.SPACING.md,
   },
-  header: {
-    paddingVertical: 15,
-    elevation: 0,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    backgroundColor: '#2a2c40',
-    paddingHorizontal: 15,
-  },
-  topBar: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: THEME.COLOR.surfaceAlt,
+    borderRadius: THEME.RADIUS.pill,
+    borderWidth: 1,
+    borderColor: THEME.COLOR.border,
+    paddingHorizontal: THEME.SPACING.lg,
+    height: 46,
+    gap: THEME.SPACING.sm,
   },
-  topBarTitle: {
-    color: THEME.COLOR.textWhite,
-    fontSize: THEME.FONTSIZE.large,
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: THEME.COLOR.textPrimary,
+    fontFamily: THEME.FONTWEIGHT.Regular,
+    padding: 0,
+  },
+  clearBtnInline: { padding: 2 },
+  clearBtnText: {
+    fontSize: 15,
+    color: THEME.COLOR.textSecondary,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+    lineHeight: 18,
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.SPACING.sm,
+    marginTop: THEME.SPACING.md,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: THEME.SPACING.lg,
+    paddingVertical: 8,
+    borderRadius: THEME.RADIUS.pill,
+    borderWidth: 1,
+    borderColor: THEME.COLOR.border,
+    backgroundColor: THEME.COLOR.surface,
+  },
+  chipActive: {
+    borderColor: THEME.COLOR.primary,
+    backgroundColor: THEME.COLOR.primarySoft,
+  },
+  chipText: {
+    fontSize: 13,
+    color: THEME.COLOR.textSecondary,
+    fontFamily: THEME.FONTWEIGHT.Medium,
+  },
+  chipTextActive: { color: THEME.COLOR.primary },
+  resultCount: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 12,
+    color: THEME.COLOR.textTertiary,
     fontFamily: THEME.FONTWEIGHT.Medium,
   },
 
-  backBtn: {
-    marginRight: 15,
-    width: 45,
-    height: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 100,
+  // ── Product grid ──────────────────────────────────────────────────────────
+  productList: {
+    paddingHorizontal: THEME.SPACING.md,
+    paddingTop: THEME.SPACING.md,
+    paddingBottom: THEME.SPACING.xl,
   },
-  cartCountBadge: {
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 30,
-    flexDirection: "row",
-    paddingHorizontal: 15
-
-  },
-  searchBase: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  cartBtn: { padding: 4 },
-  searchBar: {
-    flex: 1,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchInput: {
-    fontSize: 14,
-    color: '#111',
-    flex: 1,
-    fontWeight: '500',
-    padding: 0,
-  },
-
-  filterBar: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    height: 70,
-  },
-  filterContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
-    alignItems: 'center',
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderLeftWidth: 1,
-    borderLeftColor: '#e0e0e0',
-    borderRadius: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-  },
-  filterChipText: { fontSize: 13, color: '#212121', fontWeight: '400' },
-
-  productList: { paddingHorizontal: 10, paddingTop: 10 },
   columnWrapper: { justifyContent: 'space-between' },
+
   card: {
-    backgroundColor: '#fff',
-    marginBottom: 12,
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    paddingBottom: 12,
+    backgroundColor: THEME.COLOR.surface,
+    borderRadius: THEME.RADIUS.large,
+    marginBottom: THEME.SPACING.md,
+    padding: THEME.SPACING.sm,
+    ...THEME.SHADOW.card,
   },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  imageWrap: {
+    width: '100%',
+    height: 130,
+    borderRadius: THEME.RADIUS.medium,
+    backgroundColor: THEME.COLOR.surfaceAlt,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 0,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: THEME.SPACING.sm,
+  },
+  image: { width: '100%', height: '100%', resizeMode: 'contain' },
+  noImageText: {
+    color: THEME.COLOR.textTertiary,
+    fontSize: 13,
+    fontFamily: THEME.FONTWEIGHT.Medium,
   },
   heartBtn: {
-    top: 15,
-    right: 15,
     position: 'absolute',
-    zIndex: 10,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 100,
-  },
-  cardRow: {
-    flexDirection: 'column',
-    paddingHorizontal: 12,
-    gap: 8,
-    alignItems: 'center',
-  },
-  imageBox: {
-    width: '100%',
-    height: 100,
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.COLOR.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#e2e2e2',
-    borderRadius: 10,
-    overflow: 'hidden',
-    padding: 8
+    ...THEME.SHADOW.sm,
   },
-  detailsBox: { width: '100%', marginTop: 4 },
 
+  info: { paddingHorizontal: THEME.SPACING.xs, paddingTop: THEME.SPACING.sm },
   productName: {
-    fontSize: 14,
-    color: '#212121',
-    lineHeight: 20,
-    fontWeight: '400',
+    fontSize: 13.5,
+    lineHeight: 18,
+    color: THEME.COLOR.textPrimary,
+    fontFamily: THEME.FONTWEIGHT.Medium,
+    minHeight: 36,
   },
-  ratingRow: {
+  scorePill: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
+    alignItems: 'baseline',
+    gap: 3,
+    backgroundColor: THEME.COLOR.primaryLight,
+    borderRadius: THEME.RADIUS.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: THEME.SPACING.sm,
+  },
+  scoreValue: {
+    fontSize: 15,
+    color: THEME.COLOR.primaryDark,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+  },
+  scoreLabel: {
+    fontSize: 10,
+    color: THEME.COLOR.primaryDark,
+    fontFamily: THEME.FONTWEIGHT.Medium,
+  },
+  stockText: {
+    fontSize: 11,
+    marginTop: 6,
+    fontFamily: THEME.FONTWEIGHT.Medium,
+  },
+  stockLow: { color: THEME.COLOR.danger },
+  stockIn: { color: THEME.COLOR.success },
+  stockOut: { color: THEME.COLOR.textTertiary },
+  ctaWrap: { marginTop: THEME.SPACING.md },
+
+  // ── Loading / footer ──────────────────────────────────────────────────────
+  skeletonGrid: {
+    flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.SPACING.md,
+    paddingTop: THEME.SPACING.md,
   },
-  reviewCount: { fontSize: 12, color: '#878787' },
-
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  discount: { fontSize: 16, color: '#008a00', fontWeight: '600' },
-  originalPrice: {
-    fontSize: 14,
-    color: '#878787',
-    textDecorationLine: 'line-through',
-  },
-  price: { fontSize: 14, fontWeight: '500', color: '#e91e63' },
-
-  wowBadge: {
-    borderWidth: 1,
-    borderColor: '#1A237E',
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    marginTop: 2,
-  },
-  wowText: { fontSize: 10, fontWeight: '900', color: '#1A237E' },
-
-  assuredBadge: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  assuredIconBg: {
-    backgroundColor: '#612C7E',
-    borderRadius: 10,
-    width: 12,
-    height: 12,
-    alignItems: 'center',
+  footer: {
+    height: 56,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  assuredIcon: {
-    fontSize: 9,
-    color: '#fff',
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-  },
-  assuredText: {
+  footerText: {
+    color: THEME.COLOR.textTertiary,
     fontSize: 12,
-    color: THEME.COLOR.bgPurple,
-    fontWeight: '600',
-    fontStyle: 'italic',
+    fontFamily: THEME.FONTWEIGHT.Medium,
   },
 
-  spoylBadge: {
-    backgroundColor: '#00e676',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  spoylText: { fontSize: 11, color: '#111', fontWeight: '600' },
-
-  featuresRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 16,
-    marginTop: 12,
-  },
-
-  activeChip: { borderColor: THEME.COLOR.bgPurple, backgroundColor: '#e8f0fe' },
-  activeChipText: { color: THEME.COLOR.bgPurple },
-
+  // ── Modals (sort / filter) ────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: THEME.COLOR.overlay,
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-    paddingTop: 20,
+    backgroundColor: THEME.COLOR.surface,
+    borderTopLeftRadius: THEME.RADIUS.xlarge,
+    borderTopRightRadius: THEME.RADIUS.xlarge,
+    paddingHorizontal: THEME.SPACING.xl,
+    paddingBottom: THEME.SPACING.xxxl,
+    paddingTop: THEME.SPACING.md,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: THEME.COLOR.border,
+    alignSelf: 'center',
+    marginBottom: THEME.SPACING.lg,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#212121',
-    marginBottom: 16,
+    fontSize: 17,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: THEME.COLOR.textPrimary,
+    marginBottom: THEME.SPACING.md,
   },
   modalRow: {
     flexDirection: 'row',
@@ -251,306 +210,57 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: THEME.COLOR.border,
   },
-  modalRowText: { fontSize: 15, color: '#212121' },
-  modalRowTextActive: { color: THEME.COLOR.bgPurple, fontWeight: '600' },
-
+  modalRowText: {
+    fontSize: 15,
+    color: THEME.COLOR.textPrimary,
+    fontFamily: THEME.FONTWEIGHT.Regular,
+  },
+  modalRowTextActive: {
+    color: THEME.COLOR.primary,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+  },
   filterGroupLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#555',
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  filterChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  filterOptionChip: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  filterOptionChipActive: {
-    borderColor: '#612C7E',
-    backgroundColor: '#e8f0fe',
-  },
-  filterOptionText: { fontSize: 13, color: '#555' },
-  filterOptionTextActive: { color: THEME.COLOR.bgPurple, fontWeight: '600' },
-  clearBtn: {
-    marginTop: 24,
-    alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: THEME.COLOR.bgPurple,
-    borderRadius: 8,
-  },
-  clearBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
-
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-  },
-  emptyText: { fontSize: 16, color: '#fff' },
-  addToCartBtn: {
-    marginTop: 10,
-    marginHorizontal: 12,
-    backgroundColor: '#e91e63',
-    borderRadius: 10,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  addToCartText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  // ── Tabs ──
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  tabBtnActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#612C7E',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#878787',
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#612C7E',
-    fontWeight: '700',
-  },
-
-  // ── Product Detail Modal ──
-
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-    paddingBottom: 0,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 14,
-    right: 16,
-    zIndex: 10,
-    backgroundColor: '#f1f3f6',
-    borderRadius: 20,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: { fontSize: 14, color: '#555', fontWeight: '700' },
-
-  loaderBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    gap: 12,
-  },
-  loaderText: { fontSize: 14, color: '#888' },
-
-  scrollContent: { paddingBottom: 20 },
-
-  imageSection: { backgroundColor: '#f8f9fa' },
-  productImage: { height: 260 },
-  noImageBox: {
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f1f3f6',
-  },
-  noImageText: { color: '#aaa', fontSize: 16 },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#d0d0d0',
-  },
-  dotActive: { backgroundColor: '#2874f0', width: 18 },
-
-  infoSection: { paddingHorizontal: 16, paddingTop: 14 },
-
-  productTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#212121',
-    lineHeight: 26,
-  },
-  pricemodal: { fontSize: 22, fontWeight: '800', color: '#2874f0' },
-  mrp: {
-    fontSize: 14,
-    color: '#999',
-    textDecorationLine: 'line-through',
-    fontWeight: '500',
-  },
-
-  pointsBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#fef9c3',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 10,
-  },
-  pointsText: { fontSize: 13, color: '#2874f0', fontWeight: '600' },
-
-  stockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 14,
-  },
-  stockDot: { width: 8, height: 8, borderRadius: 4 },
-  stockText: { fontSize: 13, fontWeight: '600' },
-
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#555',
-    marginBottom: 10,
+    fontSize: 12,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: THEME.COLOR.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginTop: THEME.SPACING.xl,
+    marginBottom: THEME.SPACING.md,
   },
-
-  variantSection: { marginBottom: 16 },
-  variantRow: { flexDirection: 'row', gap: 10 },
-  variantChip: {
+  filterChipsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#fafafa',
+    flexWrap: 'wrap',
+    gap: THEME.SPACING.sm,
   },
-  variantChipSelected: {
-    borderColor: '#2874f0',
-    backgroundColor: '#e8f0fe',
-  },
-  colorDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+  filterOptionChip: {
     borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  variantChipText: { fontSize: 13, color: '#444', fontWeight: '500' },
-  variantChipTextSelected: { color: '#2874f0', fontWeight: '700' },
-  variantPrice: { fontSize: 12, color: '#888' },
-  variantPriceSelected: { color: '#2874f0', fontWeight: '600' },
-
-  attributeSection: { marginBottom: 16 },
-  attributeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderColor: THEME.COLOR.border,
+    borderRadius: THEME.RADIUS.pill,
+    paddingHorizontal: THEME.SPACING.lg,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: THEME.COLOR.surface,
   },
-  attributeKey: { fontSize: 13, color: '#888', flex: 1 },
-  attributeVal: {
+  filterOptionChipActive: {
+    borderColor: THEME.COLOR.primary,
+    backgroundColor: THEME.COLOR.primarySoft,
+  },
+  filterOptionText: {
     fontSize: 13,
-    color: '#212121',
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
+    color: THEME.COLOR.textSecondary,
+    fontFamily: THEME.FONTWEIGHT.Medium,
   },
+  filterOptionTextActive: {
+    color: THEME.COLOR.primary,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: THEME.SPACING.md,
+    marginTop: THEME.SPACING.xxl,
+  },
+})
 
-  descSection: { marginBottom: 16 },
-  descText: { fontSize: 14, color: '#555', lineHeight: 22 },
-
-  actionBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    backgroundColor: '#fff',
-  },
-  cartBtnModal: {
-    backgroundColor: '#2874f0',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  cartBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  // Add these to your existing styles object
-  cardDisabled: {
-    opacity: 0.7,
-    backgroundColor: '#f9f9f9',
-  },
-  imageBoxDisabled: {
-    opacity: 0.6,
-  },
-  outOfStockOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  outOfStockOverlayText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  textDisabled: {
-    color: '#999',
-  },
-  addToCartBtnDisabled: {
-    backgroundColor: '#ccc',
-    opacity: 0.6,
-  },
-});
-
-export default styles;
+export default styles

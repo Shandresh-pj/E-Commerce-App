@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -10,43 +10,45 @@ import {
   Dimensions,
   ActivityIndicator,
   StyleSheet,
-} from "react-native";
-import Defaults from "../../config/index";
+} from 'react-native'
+import Defaults from '../../config/index'
+import { THEME } from '../assets/styles/theme'
+import PrimaryButton from './PrimaryButton'
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get('window')
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 const stripHtml = (html: string): string => {
-  if (!html) return "";
+  if (!html) return ''
   return html
-    .replace(/<\/?[^>]+(>|$)/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-};
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 const buildImageUrl = (imageName: string): string => {
-  if (!imageName) return "";
-  const cleaned = imageName.replace(/\\/g, "/").replace(/^\/+/, "");
-  return cleaned.startsWith("http")
+  if (!imageName) return ''
+  const cleaned = imageName.replace(/\\/g, '/').replace(/^\/+/, '')
+  return cleaned.startsWith('http')
     ? cleaned
-    : `${Defaults.apis.baseUrl}/api/${cleaned}`;
-};
+    : `${Defaults.apis.baseUrl}/api/${cleaned}`
+}
 
 // ─── Product Detail Modal ─────────────────────────────────────────────────────
 interface ProductDetailModalProps {
-  visible: boolean;
-  onClose: () => void;
-  productDetail: any | null;
-  loading: boolean;
-  onAddToCart?: (product: any) => Promise<void>;
-  cartIds?: Set<number>;
-  navigation: any;
+  visible: boolean
+  onClose: () => void
+  productDetail: any | null
+  loading: boolean
+  onAddToCart?: (product: any) => Promise<void>
+  cartIds?: Set<number>
+  navigation: any
 }
 
 const ProductDetailModal = ({
@@ -58,70 +60,73 @@ const ProductDetailModal = ({
   cartIds = new Set(),
   navigation,
 }: ProductDetailModalProps) => {
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
+    null,
+  )
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   useEffect(() => {
     if (productDetail) {
       setSelectedVariantId(
         productDetail.ProductVariant?.length > 0
           ? productDetail.ProductVariant[0].Id
-          : null
-      );
-      setActiveImageIndex(0);
+          : null,
+      )
+      setActiveImageIndex(0)
     }
-  }, [productDetail?.Id]);
+    // Re-init only when a different product loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productDetail?.Id])
 
-  if (!visible) return null;
+  if (!visible) return null
 
-  const images: string[] = productDetail?.ProductImages?.map(
-    (pi: any) => buildImageUrl(pi.Images.ImageName)
-  ) ?? [];
+  const images: string[] =
+    productDetail?.ProductImages?.map((pi: any) =>
+      buildImageUrl(pi.Images.ImageName),
+    ) ?? []
 
   const selectedVariant = productDetail?.ProductVariant?.find(
-    (v: any) => v.Id === selectedVariantId
-  );
+    (v: any) => v.Id === selectedVariantId,
+  )
 
-  const productName =
-    productDetail?.ProductTranslations?.[0]?.Name ?? "Product";
+  const productName = productDetail?.ProductTranslations?.[0]?.Name ?? 'Product'
   const description = stripHtml(
-    productDetail?.ProductTranslations?.[0]?.Description ?? ""
-  );
-  const mrp = parseFloat(productDetail?.MRP ?? "0");
+    productDetail?.ProductTranslations?.[0]?.Description ?? '',
+  )
 
   // ── ProductType: "Single" | "Variant" ──────────────────────────────────────
-  const productType: string = productDetail?.ProductType ?? "Single";
-  const isVariantType = productType === "Variant";
-
-  const variantPrice = selectedVariant ? parseFloat(selectedVariant.Price) : null;
-  const displayPrice = variantPrice ?? mrp;
+  const productType: string = productDetail?.ProductType ?? 'Single'
+  const isVariantType = productType === 'Variant'
 
   const stock: number = isVariantType
     ? selectedVariant?.Stock
-    : Math.floor(parseFloat(productDetail?.StockInHand ?? "0"));
-  console.log('stock', stock);
+    : Math.floor(parseFloat(productDetail?.StockInHand ?? '0'))
 
-  const isInCart = productDetail ? cartIds.has(productDetail.Id) : false;
+  const isInCart = productDetail ? cartIds.has(productDetail.Id) : false
 
   // Cart payload includes variant details only when applicable
   const cartProduct = {
     id: productDetail?.Id,
     name: productName,
-    // Use variant price as points if it's a variant, else the product points
     points:
       isVariantType && selectedVariant
         ? parseFloat(selectedVariant.Price)
-        : (productDetail?.Points ?? 0),
+        : productDetail?.Points ?? 0,
     images: images,
     quantity: 1,
     ...(isVariantType && selectedVariant
       ? {
-        variantId: selectedVariant.Id,
-        variantCode: selectedVariant.ProductVariantCode,
-        variantPrice: parseFloat(selectedVariant.Price),
-      }
+          variantId: selectedVariant.Id,
+          variantCode: selectedVariant.ProductVariantCode,
+          variantPrice: parseFloat(selectedVariant.Price),
+        }
       : {}),
-  };
+  }
+
+  const scoreValue =
+    selectedVariant && parseFloat(selectedVariant.Price) > 0
+      ? parseFloat(selectedVariant.Price).toFixed(0)
+      : productDetail?.Points
 
   return (
     <Modal
@@ -130,50 +135,50 @@ const ProductDetailModal = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={modalStyles.overlay}>
-        <Pressable style={modalStyles.backdrop} onPress={onClose} />
-        <View style={modalStyles.sheet}>
+      <View style={s.overlay}>
+        <Pressable style={s.backdrop} onPress={onClose} />
+        <View style={s.sheet}>
           {/* Drag handle */}
-          <View style={modalStyles.handle} />
+          <View style={s.handle} />
 
           {/* Close button */}
-          <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
-            <Text style={modalStyles.closeBtnText}>✕</Text>
+          <TouchableOpacity style={s.closeBtn} onPress={onClose}>
+            <Text style={s.closeBtnText}>✕</Text>
           </TouchableOpacity>
 
           {loading ? (
-            <View style={modalStyles.loaderBox}>
-              <ActivityIndicator size="large" color="#612C7E" />
-              <Text style={modalStyles.loaderText}>Loading details...</Text>
+            <View style={s.loaderBox}>
+              <ActivityIndicator size="large" color={THEME.COLOR.primary} />
+              <Text style={s.loaderText}>Loading details...</Text>
             </View>
           ) : !productDetail ? (
-            <View style={modalStyles.loaderBox}>
-              <Text style={modalStyles.loaderText}>Failed to load product.</Text>
+            <View style={s.loaderBox}>
+              <Text style={s.loaderText}>Failed to load product.</Text>
             </View>
           ) : (
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={modalStyles.scrollContent}
+              contentContainerStyle={s.scrollContent}
             >
               {/* ── Image Carousel ── */}
               {images.length > 0 ? (
-                <View style={modalStyles.imageSection}>
+                <View style={s.imageSection}>
                   <ScrollView
                     horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
-                    onMomentumScrollEnd={(e) => {
+                    onMomentumScrollEnd={e => {
                       const idx = Math.round(
-                        e.nativeEvent.contentOffset.x / screenWidth
-                      );
-                      setActiveImageIndex(idx);
+                        e.nativeEvent.contentOffset.x / screenWidth,
+                      )
+                      setActiveImageIndex(idx)
                     }}
                   >
                     {images.map((uri, idx) => (
                       <Image
                         key={idx}
                         source={{ uri }}
-                        style={[modalStyles.productImage, { width: screenWidth }]}
+                        style={[s.productImage, { width: screenWidth }]}
                         resizeMode="contain"
                       />
                     ))}
@@ -181,13 +186,13 @@ const ProductDetailModal = ({
 
                   {/* Dot indicators */}
                   {images.length > 1 && (
-                    <View style={modalStyles.dotsRow}>
+                    <View style={s.dotsRow}>
                       {images.map((_, idx) => (
                         <View
                           key={idx}
                           style={[
-                            modalStyles.dot,
-                            idx === activeImageIndex && modalStyles.dotActive,
+                            s.dot,
+                            idx === activeImageIndex && s.dotActive,
                           ]}
                         />
                       ))}
@@ -195,68 +200,71 @@ const ProductDetailModal = ({
                   )}
                 </View>
               ) : (
-                <View style={modalStyles.noImageBox}>
-                  <Text style={modalStyles.noImageText}>No Image</Text>
+                <View style={s.noImageBox}>
+                  <Text style={s.noImageText}>No Image</Text>
                 </View>
               )}
 
               {/* ── Product Info ── */}
-              <View style={modalStyles.infoSection}>
-                <Text style={modalStyles.productTitle}>{productName}</Text>
+              <View style={s.infoSection}>
+                <Text style={s.productTitle}>{productName}</Text>
 
                 {/* Score / Price based on ProductType */}
-
-                <View>
-                  <Text style={modalStyles.pricemodal}>
-                    {selectedVariant && parseFloat(selectedVariant.Price) > 0
-                      ? parseFloat(selectedVariant.Price).toFixed(0)
-                      : productDetail.Points}{' '}
-                    Scores
-                  </Text>
+                <View style={s.scoreRow}>
+                  <Text style={s.scoreValue}>{scoreValue}</Text>
+                  <Text style={s.scoreUnit}>Scores</Text>
                 </View>
 
                 {/* ── Stock Badge ── */}
-                <View style={modalStyles.stockRow}>
+                <View style={s.stockRow}>
                   <View
                     style={[
-                      modalStyles.stockDot,
-                      { backgroundColor: stock > 0 ? "#16a34a" : "#dc2626" },
+                      s.stockDot,
+                      {
+                        backgroundColor:
+                          stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger,
+                      },
                     ]}
                   />
                   <Text
                     style={[
-                      modalStyles.stockText,
-                      { color: stock > 0 ? "#16a34a" : "#dc2626" },
+                      s.stockText,
+                      {
+                        color:
+                          stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger,
+                      },
                     ]}
                   >
-                    {stock > 0 ? `In Stock (${stock} available)` : "Out of Stock"}
+                    {stock > 0
+                      ? `In Stock (${stock} available)`
+                      : 'Out of Stock'}
                   </Text>
                 </View>
 
                 {/* ── Variants — only shown when ProductType === "Variant" ── */}
                 {isVariantType && productDetail.ProductVariant?.length > 0 && (
-                  <View style={modalStyles.variantSection}>
-                    <Text style={modalStyles.sectionLabel}>Select Variant</Text>
+                  <View style={s.variantSection}>
+                    <Text style={s.sectionLabel}>Select Variant</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={modalStyles.variantRow}>
+                      <View style={s.variantRow}>
                         {productDetail.ProductVariant.map((variant: any) => {
-                          const isSelected = variant.Id === selectedVariantId;
-                          const variantLabel = variant.ProductVariantCode;
-                          const variantPriceVal = parseFloat(variant.Price);
-                          const variantStock: number = variant.Stock ?? 0;
+                          const isSelected = variant.Id === selectedVariantId
+                          const variantLabel = variant.ProductVariantCode
+                          const variantPriceVal = parseFloat(variant.Price)
+                          const variantStock: number = variant.Stock ?? 0
                           const isColorVariant =
                             /^(red|green|blue|yellow|black|white|pink|orange|purple|grey|gray|brown)$/i.test(
-                              variantLabel
-                            );
-                          const isOutOfStock = variantStock === 0;
+                              variantLabel,
+                            )
+                          const isOutOfStock = variantStock === 0
 
                           return (
                             <TouchableOpacity
                               key={variant.Id}
                               style={[
-                                modalStyles.variantChip,
-                                isSelected && modalStyles.variantChipSelected,
-                                isOutOfStock && modalStyles.variantChipDisabled,
+                                s.variantChip,
+                                isSelected && s.variantChipSelected,
+                                isOutOfStock && s.variantChipDisabled,
                               ]}
                               onPress={() =>
                                 !isOutOfStock && setSelectedVariantId(variant.Id)
@@ -266,24 +274,26 @@ const ProductDetailModal = ({
                               {isColorVariant && (
                                 <View
                                   style={[
-                                    modalStyles.colorDot,
-                                    { backgroundColor: variantLabel.toLowerCase() },
+                                    s.colorDot,
+                                    {
+                                      backgroundColor: variantLabel.toLowerCase(),
+                                    },
                                   ]}
                                 />
                               )}
                               <Text
                                 style={[
-                                  modalStyles.variantChipText,
-                                  isSelected && modalStyles.variantChipTextSelected,
-                                  isOutOfStock && modalStyles.variantChipTextDisabled,
+                                  s.variantChipText,
+                                  isSelected && s.variantChipTextSelected,
+                                  isOutOfStock && s.variantChipTextDisabled,
                                 ]}
                               >
                                 {variantLabel}
                               </Text>
                               <Text
                                 style={[
-                                  modalStyles.variantPrice,
-                                  isSelected && modalStyles.variantPriceSelected,
+                                  s.variantPrice,
+                                  isSelected && s.variantPriceSelected,
                                 ]}
                               >
                                 {variantPriceVal.toFixed(0)} Scores
@@ -291,17 +301,23 @@ const ProductDetailModal = ({
                               {/* Per-variant stock indicator */}
                               <Text
                                 style={[
-                                  modalStyles.variantStockBadge,
+                                  s.variantStockBadge,
                                   {
-                                    color: variantStock > 0 ? "#16a34a" : "#dc2626",
-                                    borderColor: variantStock > 0 ? "#16a34a" : "#dc2626",
+                                    color:
+                                      variantStock > 0
+                                        ? THEME.COLOR.success
+                                        : THEME.COLOR.danger,
+                                    borderColor:
+                                      variantStock > 0
+                                        ? THEME.COLOR.success
+                                        : THEME.COLOR.danger,
                                   },
                                 ]}
                               >
-                                {variantStock > 0 ? `Qty: ${variantStock}` : "N/A"}
+                                {variantStock > 0 ? `Qty: ${variantStock}` : 'N/A'}
                               </Text>
                             </TouchableOpacity>
-                          );
+                          )
                         })}
                       </View>
                     </ScrollView>
@@ -310,9 +326,9 @@ const ProductDetailModal = ({
 
                 {/* ── Description ── */}
                 {description ? (
-                  <View style={modalStyles.descSection}>
-                    <Text style={modalStyles.sectionLabel}>Description</Text>
-                    <Text style={modalStyles.descText}>{description}</Text>
+                  <View style={s.descSection}>
+                    <Text style={s.sectionLabel}>Description</Text>
+                    <Text style={s.descText}>{description}</Text>
                   </View>
                 ) : null}
               </View>
@@ -320,97 +336,91 @@ const ProductDetailModal = ({
           )}
 
           {/* ── Bottom Actions ── */}
-          {!loading && productDetail && stock > 0 && (
-            <View style={modalStyles.actionBar}>
-              {onAddToCart && (
-                <TouchableOpacity
-                  style={[
-                    modalStyles.cartBtnModal,
-                    isInCart && { backgroundColor: "#10b981" },
-                  ]}
-                  onPress={() => {
-                    if (isInCart) {
-                      onClose();
-                      (navigation as any).navigate("Cart");
-                    } else {
-                      onAddToCart(cartProduct);
-                    }
-                  }}
-                >
-                  <Text style={modalStyles.cartBtnText}>
-                    {isInCart ? "Go to Cart" : "Add to Cart"}
-                  </Text>
-                </TouchableOpacity>
-              )}
+          {!loading && productDetail && stock > 0 && onAddToCart && (
+            <View style={s.actionBar}>
+              <PrimaryButton
+                label={isInCart ? 'Go to Cart' : 'Add to Cart'}
+                variant={isInCart ? 'success' : 'primary'}
+                style={s.actionBtn}
+                onPress={() => {
+                  if (isInCart) {
+                    onClose()
+                    ;(navigation as any).navigate('Cart')
+                  } else {
+                    onAddToCart(cartProduct)
+                  }
+                }}
+              />
             </View>
           )}
         </View>
       </View>
     </Modal>
-  );
-};
+  )
+}
 
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
+const s = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: THEME.COLOR.overlay,
   },
   sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "90%",
+    backgroundColor: THEME.COLOR.surface,
+    borderTopLeftRadius: THEME.RADIUS.xlarge,
+    borderTopRightRadius: THEME.RADIUS.xlarge,
+    maxHeight: '90%',
     paddingBottom: 0,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: THEME.COLOR.border,
     borderRadius: 2,
-    alignSelf: "center",
+    alignSelf: 'center',
     marginTop: 10,
     marginBottom: 4,
   },
   closeBtn: {
-    position: "absolute",
+    position: 'absolute',
     top: 14,
     right: 16,
     zIndex: 10,
-    backgroundColor: "#f1f3f6",
+    backgroundColor: THEME.COLOR.surfaceAlt,
     borderRadius: 20,
     width: 32,
     height: 32,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeBtnText: { fontSize: 14, color: "#555", fontWeight: "700" },
+  closeBtnText: {
+    fontSize: 14,
+    color: THEME.COLOR.textSecondary,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+  },
 
   loaderBox: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 60,
     gap: 12,
   },
-  loaderText: { fontSize: 14, color: "#888" },
+  loaderText: { fontSize: 14, color: THEME.COLOR.textSecondary },
 
   scrollContent: { paddingBottom: 20 },
 
-  imageSection: { backgroundColor: "#f8f9fa" },
-  productImage: { height: 260 },
+  imageSection: { backgroundColor: THEME.COLOR.surfaceAlt },
+  productImage: { height: 280 },
   noImageBox: {
-    height: 200,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f1f3f6",
+    height: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.COLOR.surfaceAlt,
   },
-  noImageText: { color: "#aaa", fontSize: 16 },
+  noImageText: { color: THEME.COLOR.textTertiary, fontSize: 16 },
   dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
   },
@@ -418,126 +428,122 @@ const modalStyles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: "#d0d0d0",
+    backgroundColor: THEME.COLOR.bgGrey,
   },
-  dotActive: { backgroundColor: "#612C7E", width: 18 },
+  dotActive: { backgroundColor: THEME.COLOR.primary, width: 18 },
 
-  infoSection: { paddingHorizontal: 16, paddingTop: 14 },
+  infoSection: { paddingHorizontal: THEME.SPACING.lg, paddingTop: 14 },
 
   productTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#212121",
+    fontSize: 19,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: THEME.COLOR.textPrimary,
     lineHeight: 26,
   },
-
-  priceRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
-  price: { fontSize: 22, fontWeight: "800", color: "#612C7E" },
-  mrp: {
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginTop: THEME.SPACING.sm,
+  },
+  scoreValue: {
+    fontSize: 26,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: THEME.COLOR.primaryDark,
+  },
+  scoreUnit: {
     fontSize: 14,
-    color: "#999",
-    textDecorationLine: "line-through",
-    fontWeight: "500",
+    fontFamily: THEME.FONTWEIGHT.Medium,
+    color: THEME.COLOR.textSecondary,
   },
 
-  pointsBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#fef9c3",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 10,
+  stockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    marginBottom: 14,
   },
-  pointsText: { fontSize: 13, color: "#612C7E", fontWeight: "600" },
-
-  stockRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 14 },
   stockDot: { width: 8, height: 8, borderRadius: 4 },
-  stockText: { fontSize: 13, fontWeight: "600" },
+  stockText: { fontSize: 13, fontFamily: THEME.FONTWEIGHT.Bold },
 
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#555",
+    fontSize: 12,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: THEME.COLOR.textSecondary,
     marginBottom: 10,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
 
   variantSection: { marginBottom: 16 },
-  variantRow: { flexDirection: "row", gap: 10 },
+  variantRow: { flexDirection: 'row', gap: 10 },
   variantChip: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
     borderWidth: 1.5,
-    borderColor: "#e0e0e0",
-    borderRadius: 10,
+    borderColor: THEME.COLOR.border,
+    borderRadius: THEME.RADIUS.medium,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "#fafafa",
+    backgroundColor: THEME.COLOR.surface,
   },
   variantChipSelected: {
-    borderColor: "#612C7E",
-    backgroundColor: "#e8f0fe",
+    borderColor: THEME.COLOR.primary,
+    backgroundColor: THEME.COLOR.primarySoft,
   },
-  colorDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: "#ccc" },
-  variantChipText: { fontSize: 13, color: "#444", fontWeight: "500" },
-  variantChipTextSelected: { color: "#612C7E", fontWeight: "700" },
-  variantPrice: { fontSize: 12, color: "#888" },
-  variantPriceSelected: { color: "#612C7E", fontWeight: "600" },
-
-  attributeSection: { marginBottom: 16 },
-  attributeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: THEME.COLOR.border,
   },
-  attributeKey: { fontSize: 13, color: "#888", flex: 1 },
-  attributeVal: { fontSize: 13, color: "#212121", fontWeight: "600", flex: 1, textAlign: "right" },
-
-  descSection: { marginBottom: 16 },
-  descText: { fontSize: 14, color: "#555", lineHeight: 22 },
-
-  actionBar: {
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-    backgroundColor: "#fff",
+  variantChipText: {
+    fontSize: 13,
+    color: THEME.COLOR.textPrimary,
+    fontFamily: THEME.FONTWEIGHT.Medium,
   },
-  cartBtn: {
-    backgroundColor: "#612C7E",
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
+  variantChipTextSelected: {
+    color: THEME.COLOR.primary,
+    fontFamily: THEME.FONTWEIGHT.Bold,
   },
-  cartBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  pricemodal: { fontSize: 22, fontWeight: "800", color: "#2874f0" },
+  variantPrice: { fontSize: 12, color: THEME.COLOR.textTertiary },
+  variantPriceSelected: {
+    color: THEME.COLOR.primary,
+    fontFamily: THEME.FONTWEIGHT.Bold,
+  },
   variantChipDisabled: {
-    borderColor: "#e0e0e0",
-    backgroundColor: "#f5f5f5",
+    borderColor: THEME.COLOR.border,
+    backgroundColor: THEME.COLOR.surfaceAlt,
     opacity: 0.5,
   },
-  variantChipTextDisabled: { color: "#aaa" },
+  variantChipTextDisabled: { color: THEME.COLOR.textTertiary },
   variantStockBadge: {
     fontSize: 10,
-    fontWeight: "700",
+    fontFamily: THEME.FONTWEIGHT.Bold,
     borderWidth: 1,
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 1,
   },
-  cartBtnModal: {
-    backgroundColor: '#612C7E',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    flex: 1,
-  },
-});
 
-export default ProductDetailModal;
+  descSection: { marginBottom: 16 },
+  descText: {
+    fontSize: 14,
+    color: THEME.COLOR.textSecondary,
+    lineHeight: 22,
+  },
+
+  actionBar: {
+    paddingHorizontal: THEME.SPACING.lg,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: THEME.COLOR.border,
+    backgroundColor: THEME.COLOR.surface,
+  },
+  actionBtn: { width: '100%' },
+})
+
+export default ProductDetailModal
