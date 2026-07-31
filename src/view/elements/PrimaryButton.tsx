@@ -9,9 +9,8 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native'
-import { THEME } from '../assets/styles/theme'
 
-type Variant = 'primary' | 'success' | 'outline'
+type Variant = 'primary' | 'success' | 'dark' | 'outline'
 type Size = 'sm' | 'md'
 
 interface PrimaryButtonProps {
@@ -42,37 +41,27 @@ const PrimaryButton = ({
   const isDisabled = disabled || loading
 
   const onPressIn = () =>
-    Animated.spring(scale, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 10,
-    }).start()
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 300, friction: 10 }).start()
 
   const onPressOut = () =>
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 10,
-    }).start()
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 300, friction: 10 }).start()
 
   const containerStyle: ViewStyle[] = [
-    styles.base,
-    size === 'sm' ? styles.sm : styles.md,
-    variant === 'primary' && styles.primary,
-    variant === 'success' && styles.success,
-    variant === 'outline' && styles.outline,
-    isDisabled && variant !== 'outline' && styles.disabled,
-    isDisabled && variant === 'outline' && styles.outlineDisabled,
+    s.base,
+    size === 'sm' ? s.sm : s.md,
+    variant === 'primary' && s.primary,
+    variant === 'success' && s.success,
+    variant === 'dark' && s.dark,
+    variant === 'outline' && s.outline,
+    isDisabled && s.disabled,
   ].filter(Boolean) as ViewStyle[]
 
   const labelColor =
-    variant === 'outline'
-      ? isDisabled
-        ? THEME.COLOR.textTertiary
-        : THEME.COLOR.primary
-      : '#fff'
+    variant === 'primary'
+      ? isDisabled ? '#9a9a9a' : '#141414'
+      : variant === 'outline'
+      ? isDisabled ? '#9a9a9a' : '#141414'
+      : '#FFFFFF'
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style]}>
@@ -85,21 +74,11 @@ const PrimaryButton = ({
         style={containerStyle}
       >
         {loading ? (
-          <ActivityIndicator
-            size="small"
-            color={variant === 'outline' ? THEME.COLOR.primary : '#fff'}
-          />
+          <ActivityIndicator size="small" color={variant === 'primary' ? '#141414' : '#fff'} />
         ) : (
           <>
             {leftIcon}
-            <Text
-              style={[
-                styles.label,
-                size === 'sm' && styles.labelSm,
-                { color: labelColor },
-                textStyle,
-              ]}
-            >
+            <Text style={[s.label, size === 'sm' && s.labelSm, { color: labelColor }, textStyle]}>
               {label}
             </Text>
           </>
@@ -109,47 +88,36 @@ const PrimaryButton = ({
   )
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   base: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: THEME.RADIUS.medium,
-    gap: THEME.SPACING.sm,
+    borderRadius: 14,
+    gap: 8,
   },
-  md: {
-    paddingVertical: 14,
-    paddingHorizontal: THEME.SPACING.xl,
-  },
-  sm: {
-    paddingVertical: 9,
-    paddingHorizontal: THEME.SPACING.lg,
-  },
-  primary: {
-    backgroundColor: THEME.COLOR.primary,
-  },
+  md: { paddingVertical: 15, paddingHorizontal: 24 },
+  sm: { paddingVertical: 10, paddingHorizontal: 16 },
+
+  primary: { backgroundColor: '#FFE000' },
   success: {
-    backgroundColor: THEME.COLOR.success,
+    backgroundColor: '#0C831F',
+    shadowColor: '#0C831F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
+  dark: { backgroundColor: '#141414' },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: THEME.COLOR.primary,
+    borderColor: '#141414',
   },
-  disabled: {
-    backgroundColor: THEME.COLOR.bgGrey,
-  },
-  outlineDisabled: {
-    borderColor: THEME.COLOR.border,
-  },
-  label: {
-    fontSize: 15,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    letterSpacing: 0.3,
-  },
-  labelSm: {
-    fontSize: 13,
-  },
+  disabled: { opacity: 0.45 },
+
+  label: { fontSize: 15, fontFamily: 'DMSans-Bold', letterSpacing: 0.3 },
+  labelSm: { fontSize: 13 },
 })
 
 export default PrimaryButton

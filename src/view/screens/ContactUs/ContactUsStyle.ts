@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   header: {
-    backgroundColor: '#2a2c40',
+    backgroundColor: '#141414',
     elevation: 0,
     shadowOpacity: 0,
     borderBottomWidth: 0,

@@ -8,14 +8,8 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native'
-import { useNavigation, DrawerActions } from '@react-navigation/native'
-import Svg, { Rect } from 'react-native-svg'
-import { THEME } from '../assets/styles/theme'
-import { ChevronLeftIcon } from '../assets/images/svg/Svg2/ChevronLeftIcon'
+import { useNavigation } from '@react-navigation/native'
 
-const HEADER_BG = '#2a2c40'
-
-// ── Reusable round icon button with optional count badge ──────────────────────
 interface HeaderIconButtonProps {
   onPress: () => void
   badge?: number
@@ -29,26 +23,14 @@ export const HeaderIconButton = ({
   children,
   style,
 }: HeaderIconButtonProps) => (
-  <TouchableOpacity
-    style={[styles.iconBtn, style]}
-    onPress={onPress}
-    activeOpacity={0.8}
-  >
+  <TouchableOpacity style={[s.iconBtn, style]} onPress={onPress} activeOpacity={0.8}>
     {children}
     {badge !== undefined && badge > 0 && (
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+      <View style={s.badge}>
+        <Text style={s.badgeText}>{badge > 99 ? '99+' : badge}</Text>
       </View>
     )}
   </TouchableOpacity>
-)
-
-const MenuIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24">
-    <Rect x="3" y="6" width="18" height="2" rx="1" fill="#fff" />
-    <Rect x="3" y="11" width="18" height="2" rx="1" fill="#fff" />
-    <Rect x="3" y="16" width="18" height="2" rx="1" fill="#fff" />
-  </Svg>
 )
 
 interface AppHeaderProps {
@@ -58,92 +40,71 @@ interface AppHeaderProps {
   right?: React.ReactNode
 }
 
-const AppHeader = ({
-  title,
-  leftIcon = 'back',
-  onLeftPress,
-  right,
-}: AppHeaderProps) => {
+const AppHeader = ({ title, leftIcon = 'back', onLeftPress, right }: AppHeaderProps) => {
   const navigation = useNavigation<any>()
 
   const handleLeft = () => {
     if (onLeftPress) return onLeftPress()
-    if (leftIcon === 'menu') {
-      navigation.dispatch(DrawerActions.openDrawer())
-    } else {
-      navigation.goBack()
-    }
+    navigation.goBack()
   }
 
   return (
     <>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={HEADER_BG}
-        translucent={false}
-      />
-      <View style={styles.header}>
-        <View style={styles.left}>
+      <StatusBar barStyle="dark-content" backgroundColor="rgba(255,255,255,0.55)" translucent={false} />
+      <View style={s.header}>
+        <View style={s.left}>
           <TouchableOpacity
-            style={styles.leftBtn}
+            style={s.leftBtn}
             onPress={handleLeft}
             activeOpacity={0.8}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            {leftIcon === 'menu' ? <MenuIcon /> : <ChevronLeftIcon color="#fff" />}
+            <Text style={s.leftIcon}>{leftIcon === 'menu' ? '☰' : '←'}</Text>
           </TouchableOpacity>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
+          <Text style={s.title} numberOfLines={1}>{title}</Text>
         </View>
-        {right ? <View style={styles.right}>{right}</View> : null}
+        {right ? <View style={s.right}>{right}</View> : null}
       </View>
     </>
   )
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   header: {
-    backgroundColor: HEADER_BG,
+    backgroundColor: 'rgba(255,255,255,0.55)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: THEME.SPACING.lg,
-    paddingVertical: THEME.SPACING.md,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ECECEA',
   },
-  left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
+  left: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   leftBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    marginRight: THEME.SPACING.md,
+    backgroundColor: 'rgba(255,255,255,0.34)',
+    marginRight: 12,
   },
+  leftIcon: { fontSize: 17, color: '#141414' },
   title: {
     flex: 1,
-    color: THEME.COLOR.textWhite,
+    color: '#141414',
     fontSize: 18,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    letterSpacing: 0.3,
+    fontFamily: 'DMSans-Bold',
   },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.SPACING.md,
-  },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.34)',
   },
   badge: {
     position: 'absolute',
@@ -153,17 +114,11 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 4,
-    backgroundColor: THEME.COLOR.primary,
+    backgroundColor: '#FFE000',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: HEADER_BG,
   },
-  badgeText: {
-    color: '#fff',
-    fontSize: 9,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-  },
+  badgeText: { color: '#141414', fontSize: 9, fontFamily: 'DMSans-Bold' },
 })
 
 export default AppHeader

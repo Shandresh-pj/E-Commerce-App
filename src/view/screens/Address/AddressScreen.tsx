@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react'
 import {
   View,
   Text,
@@ -14,114 +14,44 @@ import {
   ActivityIndicator,
   StatusBar,
   Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import Svg, { Path, Circle, Polyline, Line } from 'react-native-svg';
-import { getData, postData, putData, patchData, deleteData } from '../../../shared/services/main-service';
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import {
+  getData,
+  postData,
+  putData,
+  patchData,
+  deleteData,
+} from '../../../shared/services/main-service'
 
-// ─── Tokens ───────────────────────────────────────────────────────────────────
-const C = {
-  bg: '#F5F6FA',
-  surface: '#FFFFFF',
-  header: '#1a1b2e',
-  accent: '#7C6EF5',
-  accentLight: 'rgba(124,110,245,0.1)',
-  accentBorder: 'rgba(124,110,245,0.3)',
-  text: '#1C1C2E',
-  textMid: '#6B7280',
-  textLight: '#9CA3AF',
-  danger: '#EF4444',
-  dangerLight: 'rgba(239,68,68,0.09)',
-  border: '#E8EAED',
-  inputBg: '#F8F9FB',
-  shadow: '#1C1C2E',
-  green: '#22C55E',
-};
+const { width: W, height: H } = Dimensions.get('window')
 
-const { width, height } = Dimensions.get('window');
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-const BackIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-    <Path d="M19 12H5M12 19l-7-7 7-7" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-const PlusIcon = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-    <Path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" />
-  </Svg>
-);
-
-const EditIcon = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-    <Path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke={C.accent} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke={C.accent} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-const TrashIcon = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-    <Polyline points="3 6 5 6 21 6" stroke={C.danger} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" stroke={C.danger} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M10 11v6M14 11v6" stroke={C.danger} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke={C.danger} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-const MapPinIcon = ({ color = C.accent }: { color?: string }) => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-    <Path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    <Circle cx={12} cy={10} r={3} stroke={color} strokeWidth={1.8} />
-  </Svg>
-);
-
-const HomeIcon = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-    <Path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke={C.accent} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    <Polyline points="9 22 9 12 15 12 15 22" stroke={C.accent} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-const CloseIcon = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-    <Path d="M18 6L6 18M6 6l12 12" stroke={C.textMid} strokeWidth={2} strokeLinecap="round" />
-  </Svg>
-);
-
-const CheckIcon = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-    <Path d="M20 6L9 17l-5-5" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-type AddressType = 'Home' | 'Work' | 'Other';
+type AddressType = 'Home' | 'Work' | 'Other'
 
 interface Address {
-  id: string;
-  label: AddressType;
-  name: string;
-  phone: string;
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  pincode: string;
-  isDefault: boolean;
+  id: string
+  label: AddressType
+  name: string
+  phone: string
+  line1: string
+  line2: string
+  city: string
+  state: string
+  pincode: string
+  isDefault: boolean
 }
 
 interface FormState {
-  label: AddressType;
-  name: string;
-  phone: string;
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  pincode: string;
-  isDefault: boolean;
+  label: AddressType
+  name: string
+  phone: string
+  line1: string
+  line2: string
+  city: string
+  state: string
+  pincode: string
+  isDefault: boolean
 }
 
 const emptyForm = (): FormState => ({
@@ -134,166 +64,110 @@ const emptyForm = (): FormState => ({
   state: '',
   pincode: '',
   isDefault: false,
-});
+})
 
-// ─── Form field ───────────────────────────────────────────────────────────────
-interface FieldProps {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  keyboardType?: any;
-  maxLength?: number;
-}
+const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLength }: any) => (
+  <View style={f.fieldWrap}>
+    <Text style={f.fieldLabel}>{label}</Text>
+    <TextInput
+      style={f.input}
+      value={value}
+      onChangeText={onChange}
+      placeholder={placeholder ?? label}
+      placeholderTextColor="#9a9a9a"
+      keyboardType={keyboardType ?? 'default'}
+      maxLength={maxLength}
+    />
+  </View>
+)
 
-const Field: React.FC<FieldProps> = ({ label, value, onChange, placeholder, keyboardType, maxLength }) => {
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={fs.fieldWrap}>
-      <Text style={fs.fieldLabel}>{label}</Text>
-      <TextInput
-        style={[fs.input, focused && fs.inputFocused]}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder ?? label}
-        placeholderTextColor={C.textLight}
-        keyboardType={keyboardType ?? 'default'}
-        maxLength={maxLength}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-      />
-    </View>
-  );
-};
+const SavedAddressCard = ({
+  address,
+  onSelect,
+}: {
+  address: Address
+  onSelect: () => void
+}) => {
+  const typeEmoji: Record<AddressType, string> = {
+    Home: '🏠',
+    Work: '💼',
+    Other: '📍',
+  }
+  const typeBg: Record<AddressType, string> = {
+    Home: '#FFF4D6',
+    Work: '#EBE4FF',
+    Other: '#E0F0FF',
+  }
 
-// ─── Address card ─────────────────────────────────────────────────────────────
-interface CardProps {
-  address: Address;
-  onEdit: () => void;
-  onDelete: () => void;
-  onSetDefault: () => void;
-}
-
-const AddressCard: React.FC<CardProps> = ({ address, onEdit, onDelete, onSetDefault }) => {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn = () =>
-    Animated.spring(scale, { toValue: 0.985, useNativeDriver: true, tension: 300, friction: 10 }).start();
-  const pressOut = () =>
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 300, friction: 10 }).start();
-
-  const typeColors: Record<AddressType, string> = {
-    Home: '#7C6EF5',
-    Work: '#3B82F6',
-    Other: '#F59E0B',
-  };
+  const fullAddress = [address.line1, address.line2, address.city, address.pincode]
+    .filter(Boolean)
+    .join(', ')
 
   return (
-    <Animated.View style={[s.card, { transform: [{ scale }] }]}>
-      {/* Default badge top strip */}
-      {address.isDefault && <View style={s.defaultStrip} />}
-
-      <View style={s.cardTop}>
-        {/* Label chip */}
-        <View style={[s.labelChip, { backgroundColor: typeColors[address.label] + '1A', borderColor: typeColors[address.label] + '44' }]}>
-          <View style={[s.labelDot, { backgroundColor: typeColors[address.label] }]} />
-          <Text style={[s.labelText, { color: typeColors[address.label] }]}>{address.label}</Text>
-        </View>
-
-        {address.isDefault && (
-          <View style={s.defaultBadge}>
-            <CheckIcon />
-            <Text style={s.defaultBadgeText}>Default</Text>
-          </View>
-        )}
+    <TouchableOpacity style={s.savedCard} onPress={onSelect} activeOpacity={0.82}>
+      <View style={[s.savedIconBox, { backgroundColor: typeBg[address.label] }]}>
+        <Text style={s.savedEmoji}>{typeEmoji[address.label]}</Text>
       </View>
-
-      <View style={s.cardBody}>
-        <View style={s.pinIconWrap}>
-          <MapPinIcon />
-        </View>
-        <View style={s.cardText}>
-          <Text style={s.addressName}>{address.name}</Text>
-          <Text style={s.addressPhone}>{address.phone}</Text>
-          <Text style={s.addressLine} numberOfLines={2}>
-            {address.line1}
-            {address.line2 ? ', ' + address.line2 : ''}
-          </Text>
-          <Text style={s.addressLine}>
-            {address.city}, {address.state} — {address.pincode}
-          </Text>
-        </View>
+      <View style={s.savedInfo}>
+        <Text style={s.savedLabel}>{address.label}</Text>
+        <Text style={s.savedAddress} numberOfLines={2}>{fullAddress}</Text>
       </View>
-
-      <View style={s.cardActions}>
-        {!address.isDefault && (
-          <TouchableOpacity style={s.actionBtnGhost} onPress={onSetDefault} activeOpacity={0.7}>
-            <Text style={s.actionBtnGhostText}>Set as Default</Text>
-          </TouchableOpacity>
-        )}
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity
-          style={s.actionIcon}
-          onPress={onEdit}
-          activeOpacity={0.7}
-          onPressIn={pressIn}
-          onPressOut={pressOut}
-        >
-          <EditIcon />
-          <Text style={s.actionIconLabel}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.actionIcon, s.actionIconDanger]} onPress={onDelete} activeOpacity={0.7}>
-          <TrashIcon />
-          <Text style={s.actionIconLabelDanger}>Delete</Text>
-        </TouchableOpacity>
+      <View style={s.etaBadge}>
+        <Text style={s.etaText}>8 min</Text>
       </View>
-    </Animated.View>
-  );
-};
+    </TouchableOpacity>
+  )
+}
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
 const AddressScreen = () => {
-  const navigation = useNavigation<any>();
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm());
-  const [saving, setSaving] = useState(false);
+  const navigation = useNavigation<any>()
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [loading, setLoading] = useState(true)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState<FormState>(emptyForm())
+  const [saving, setSaving] = useState(false)
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
 
-  const slideAnim = useRef(new Animated.Value(height)).current;
+  const slideAnim = useRef(new Animated.Value(H)).current
+  const sheetSlide = useRef(new Animated.Value(0)).current
 
   const loadAddresses = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const res = await getData('/address');
-      const data: any[] = res?.data?.data || [];
-      setAddresses(
-        data.map(a => ({
-          id: String(a.id),
-          label: a.label as AddressType,
-          name: a.name,
-          phone: a.phone,
-          line1: a.line1,
-          line2: a.line2 || '',
-          city: a.city,
-          state: a.state,
-          pincode: a.pincode,
-          isDefault: !!a.isDefault,
-        }))
-      );
+      const res = await getData('/address')
+      const data: any[] = res?.data?.data || []
+      const mapped = data.map(a => ({
+        id: String(a.id),
+        label: a.label as AddressType,
+        name: a.name,
+        phone: a.phone,
+        line1: a.line1,
+        line2: a.line2 || '',
+        city: a.city,
+        state: a.state,
+        pincode: a.pincode,
+        isDefault: !!a.isDefault,
+      }))
+      setAddresses(mapped)
+      const defaultAddr = mapped.find(a => a.isDefault) || mapped[0] || null
+      if (defaultAddr && !selectedAddress) setSelectedAddress(defaultAddr)
     } catch (e) {
-      console.log('Address fetch error:', e);
+      console.log('Address fetch error:', e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
-  useFocusEffect(useCallback(() => { loadAddresses(); }, [loadAddresses]));
+  useFocusEffect(
+    useCallback(() => {
+      loadAddresses()
+    }, [loadAddresses]),
+  )
 
   const openModal = (address?: Address) => {
     if (address) {
-      setEditingId(address.id);
+      setEditingId(address.id)
       setForm({
         label: address.label,
         name: address.name,
@@ -304,37 +178,44 @@ const AddressScreen = () => {
         state: address.state,
         pincode: address.pincode,
         isDefault: address.isDefault,
-      });
+      })
     } else {
-      setEditingId(null);
-      setForm(emptyForm());
+      setEditingId(null)
+      setForm(emptyForm())
     }
-    setModalVisible(true);
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
-  };
+    setModalVisible(true)
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start()
+  }
 
   const closeModal = () => {
-    Animated.timing(slideAnim, { toValue: height, duration: 260, useNativeDriver: true }).start(() =>
-      setModalVisible(false)
-    );
-  };
+    Animated.timing(slideAnim, {
+      toValue: H,
+      duration: 260,
+      useNativeDriver: true,
+    }).start(() => setModalVisible(false))
+  }
 
   const setF = (key: keyof FormState) => (value: any) =>
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value }))
 
   const validate = () => {
-    if (!form.name.trim()) { Alert.alert('Error', 'Full name is required.'); return false; }
-    if (!form.phone.trim() || form.phone.length !== 10) { Alert.alert('Error', 'Enter a valid 10-digit phone number.'); return false; }
-    if (!form.line1.trim()) { Alert.alert('Error', 'Address line 1 is required.'); return false; }
-    if (!form.city.trim()) { Alert.alert('Error', 'City is required.'); return false; }
-    if (!form.state.trim()) { Alert.alert('Error', 'State is required.'); return false; }
-    if (!form.pincode.trim() || form.pincode.length < 6) { Alert.alert('Error', 'Enter a valid 6-digit pincode.'); return false; }
-    return true;
-  };
+    if (!form.name.trim()) { Alert.alert('Error', 'Full name is required.'); return false }
+    if (!form.phone.trim() || form.phone.length !== 10) { Alert.alert('Error', 'Enter a valid 10-digit phone.'); return false }
+    if (!form.line1.trim()) { Alert.alert('Error', 'Address line 1 is required.'); return false }
+    if (!form.city.trim()) { Alert.alert('Error', 'City is required.'); return false }
+    if (!form.state.trim()) { Alert.alert('Error', 'State is required.'); return false }
+    if (!form.pincode.trim() || form.pincode.length < 6) { Alert.alert('Error', 'Enter a valid 6-digit pincode.'); return false }
+    return true
+  }
 
   const handleSave = async () => {
-    if (!validate()) return;
-    setSaving(true);
+    if (!validate()) return
+    setSaving(true)
     try {
       const payload = {
         label: form.label,
@@ -346,178 +227,206 @@ const AddressScreen = () => {
         state: form.state.trim(),
         pincode: form.pincode.trim(),
         isDefault: form.isDefault,
-      };
+      }
 
-      let res: any;
+      let res: any
       if (editingId) {
-        res = await putData(`/address/${editingId}`, payload);
+        res = await putData(`/address/${editingId}`, payload)
       } else {
-        res = await postData('/address', payload);
+        res = await postData('/address', payload)
       }
 
       if (res?.data?.success) {
-        await loadAddresses();
-        closeModal();
+        await loadAddresses()
+        closeModal()
       } else {
-        Alert.alert('Error', res?.data?.message || 'Failed to save address.');
+        Alert.alert('Error', res?.data?.message || 'Failed to save address.')
       }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } catch {
+      Alert.alert('Error', 'Something went wrong.')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  const handleDelete = (id: string) => {
-    Alert.alert('Delete Address', 'Are you sure you want to remove this address?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const res: any = await deleteData(`/address/${id}`, {});
-          if (res?.data?.success) {
-            setAddresses(prev => prev.filter(a => a.id !== id));
-          } else {
-            Alert.alert('Error', res?.data?.message || 'Failed to delete address.');
-          }
-        },
-      },
-    ]);
-  };
+  const handleConfirm = () => {
+    navigation.goBack()
+  }
 
-  const handleSetDefault = async (id: string) => {
-    const res: any = await patchData(`/address/${id}/default`, {});
-    if (res?.data?.success) {
-      setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
-    } else {
-      Alert.alert('Error', res?.data?.message || 'Failed to update default address.');
-    }
-  };
+  const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other']
 
-  const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other'];
+  const displayAddress = selectedAddress
+    ? [selectedAddress.line1, selectedAddress.line2, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
+    : 'Select a delivery address'
 
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor={C.header} />
-      <SafeAreaView edges={['top']} style={{ backgroundColor: C.header }} />
-      <SafeAreaView edges={['left', 'right', 'bottom']} style={s.root}>
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ECEEE8" />
 
-        {/* Header */}
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <BackIcon />
+      {/* Map Background */}
+      <View style={s.mapBg}>
+        <SafeAreaView edges={['top']} style={s.searchOverlay}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={s.backArrow}>←</Text>
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Saved Addresses</Text>
-          <TouchableOpacity style={s.addBtn} onPress={() => openModal()} activeOpacity={0.8}>
-            <PlusIcon />
-          </TouchableOpacity>
+          <View style={s.searchBar}>
+            <Text style={s.searchIcon}>🔎</Text>
+            <Text style={s.searchPlaceholder}>Search area, street, landmark...</Text>
+          </View>
+        </SafeAreaView>
+
+        {/* Map grid */}
+        <View style={s.gridContainer}>
+          <View style={[s.gridLineH, { top: '25%' }]} />
+          <View style={[s.gridLineH, { top: '50%' }]} />
+          <View style={[s.gridLineH, { top: '75%' }]} />
+          <View style={[s.gridLineV, { left: '25%' }]} />
+          <View style={[s.gridLineV, { left: '50%' }]} />
+          <View style={[s.gridLineV, { left: '75%' }]} />
+          <View style={s.greenPatch1} />
+          <View style={s.roadH} />
+          <View style={s.roadV} />
         </View>
 
-        {/* List */}
-        <ScrollView
-          contentContainerStyle={s.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {loading ? (
-            <View style={s.emptyState}>
-              <ActivityIndicator size="large" color={C.accent} />
-            </View>
-          ) : addresses.length === 0 ? (
-            <View style={s.emptyState}>
-              <MapPinIcon color={C.textLight} />
-              <Text style={s.emptyTitle}>No addresses saved</Text>
-              <Text style={s.emptySub}>Add a delivery address to get started</Text>
-              <TouchableOpacity style={s.emptyBtn} onPress={() => openModal()} activeOpacity={0.8}>
-                <Text style={s.emptyBtnText}>+ Add Address</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            addresses.map(addr => (
-              <AddressCard
-                key={addr.id}
-                address={addr}
-                onEdit={() => openModal(addr)}
-                onDelete={() => handleDelete(addr.id)}
-                onSetDefault={() => handleSetDefault(addr.id)}
-              />
-            ))
-          )}
-        </ScrollView>
-
-        {/* Bottom CTA */}
-        {addresses.length > 0 && (
-          <View style={s.bottomBar}>
-            <TouchableOpacity style={s.bottomBtn} onPress={() => openModal()} activeOpacity={0.85}>
-              <Text style={s.bottomBtnText}>+ Add New Address</Text>
-            </TouchableOpacity>
+        {/* Pin marker */}
+        <View style={s.pinContainer}>
+          <View style={s.pinLabel}>
+            <Text style={s.pinLabelText}>Your order arrives here</Text>
           </View>
-        )}
-      </SafeAreaView>
+          <Text style={s.pinMarker}>📍</Text>
+        </View>
+      </View>
 
-      {/* ── Add / Edit Modal ──────────────────────────────────────── */}
+      {/* Bottom Sheet */}
+      <View style={s.bottomSheet}>
+        <View style={s.sheetHandle} />
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.sheetScroll}>
+          {/* Selected Address */}
+          <View style={s.selectedCard}>
+            <View style={s.selectedLeft}>
+              <Text style={s.selectedPin}>📍</Text>
+              <View style={s.selectedInfo}>
+                <Text style={s.selectedTitle}>Set delivery to this pin</Text>
+                <Text style={s.selectedAddress} numberOfLines={2}>{displayAddress}</Text>
+              </View>
+            </View>
+            <View style={s.etaBadge}>
+              <Text style={s.etaText}>8 MIN</Text>
+            </View>
+          </View>
+
+          {/* Confirm Button */}
+          <TouchableOpacity
+            style={s.confirmBtn}
+            onPress={handleConfirm}
+            activeOpacity={0.85}
+          >
+            <Text style={s.confirmBtnText}>Confirm & continue →</Text>
+          </TouchableOpacity>
+
+          {/* Saved Addresses */}
+          {addresses.length > 0 && (
+            <>
+              <Text style={s.sectionTitle}>SAVED ADDRESSES</Text>
+              {addresses.map(addr => (
+                <SavedAddressCard
+                  key={addr.id}
+                  address={addr}
+                  onSelect={() => setSelectedAddress(addr)}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Add New Address */}
+          <TouchableOpacity
+            style={s.addNewBtn}
+            onPress={() => openModal()}
+            activeOpacity={0.82}
+          >
+            <View style={s.addNewIcon}>
+              <Text style={s.addNewPlus}>+</Text>
+            </View>
+            <Text style={s.addNewText}>Add a new address</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* Add/Edit Address Modal */}
       <Modal transparent visible={modalVisible} animationType="none" onRequestClose={closeModal}>
         <View style={s.overlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeModal} activeOpacity={1} />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={closeModal}
+            activeOpacity={1}
+          />
           <Animated.View style={[s.sheet, { transform: [{ translateY: slideAnim }] }]}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-              {/* Handle */}
-              <View style={s.sheetHandle} />
-
-              {/* Title row */}
-              <View style={s.sheetHeader}>
-                <Text style={s.sheetTitle}>{editingId ? 'Edit Address' : 'Add New Address'}</Text>
-                <TouchableOpacity onPress={closeModal} style={s.closeBtn} activeOpacity={0.7}>
-                  <CloseIcon />
+              <View style={s.modalHandle} />
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>
+                  {editingId ? 'Edit Address' : 'Add New Address'}
+                </Text>
+                <TouchableOpacity onPress={closeModal} style={s.closeBtn}>
+                  <Text style={s.closeBtnText}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                {/* Address type selector */}
-                <View style={fs.fieldWrap}>
-                  <Text style={fs.fieldLabel}>Address Type</Text>
+                <View style={f.fieldWrap}>
+                  <Text style={f.fieldLabel}>Address Type</Text>
                   <View style={s.typeRow}>
                     {ADDRESS_TYPES.map(t => (
                       <TouchableOpacity
                         key={t}
                         style={[s.typeChip, form.label === t && s.typeChipActive]}
                         onPress={() => setF('label')(t)}
-                        activeOpacity={0.7}
                       >
-                        {t === 'Home' && <HomeIcon />}
-                        {t === 'Work' && <MapPinIcon color={form.label === t ? '#fff' : C.textMid} />}
-                        {t === 'Other' && <MapPinIcon color={form.label === t ? '#fff' : C.textMid} />}
-                        <Text style={[s.typeChipText, form.label === t && s.typeChipTextActive]}>{t}</Text>
+                        <Text style={{ fontSize: 14 }}>
+                          {t === 'Home' ? '🏠' : t === 'Work' ? '💼' : '📍'}
+                        </Text>
+                        <Text
+                          style={[s.typeChipText, form.label === t && s.typeChipTextActive]}
+                        >
+                          {t}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 </View>
 
-                <Field label="Full Name *" value={form.name} onChange={setF('name')} placeholder="Your full name" />
-                <Field label="Phone Number *" value={form.phone} onChange={v => setF('phone')(v.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" keyboardType="phone-pad" maxLength={10} />
-                <Field label="Address Line 1 *" value={form.line1} onChange={setF('line1')} placeholder="House / Flat / Block No." />
-                <Field label="Address Line 2" value={form.line2} onChange={setF('line2')} placeholder="Area, Colony, Street (optional)" />
-
+                <GlassField label="Full Name *" value={form.name} onChange={setF('name')} placeholder="Your full name" />
+                <GlassField
+                  label="Phone Number *"
+                  value={form.phone}
+                  onChange={(v: string) => setF('phone')(v.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10-digit mobile"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+                <GlassField label="Address Line 1 *" value={form.line1} onChange={setF('line1')} placeholder="House / Flat / Block" />
+                <GlassField label="Address Line 2" value={form.line2} onChange={setF('line2')} placeholder="Area, Colony (optional)" />
                 <View style={s.rowFields}>
                   <View style={{ flex: 1, marginRight: 8 }}>
-                    <Field label="City *" value={form.city} onChange={setF('city')} placeholder="City" />
+                    <GlassField label="City *" value={form.city} onChange={setF('city')} placeholder="City" />
                   </View>
                   <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Field label="Pincode *" value={form.pincode} onChange={setF('pincode')} placeholder="6-digit" keyboardType="numeric" maxLength={6} />
+                    <GlassField label="Pincode *" value={form.pincode} onChange={setF('pincode')} placeholder="6-digit" keyboardType="numeric" maxLength={6} />
                   </View>
                 </View>
+                <GlassField label="State *" value={form.state} onChange={setF('state')} placeholder="State" />
 
-                <Field label="State *" value={form.state} onChange={setF('state')} placeholder="State" />
-
-                {/* Default toggle */}
-                <TouchableOpacity style={s.defaultToggle} onPress={() => setF('isDefault')(!form.isDefault)} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={s.defaultToggle}
+                  onPress={() => setF('isDefault')(!form.isDefault)}
+                >
                   <View style={[s.checkbox, form.isDefault && s.checkboxChecked]}>
-                    {form.isDefault && <CheckIcon />}
+                    {form.isDefault && <Text style={s.checkIcon}>✓</Text>}
                   </View>
                   <Text style={s.defaultToggleText}>Set as default delivery address</Text>
                 </TouchableOpacity>
 
-                {/* Save button */}
                 <TouchableOpacity
                   style={[s.saveBtn, saving && s.saveBtnDisabled]}
                   onPress={handleSave}
@@ -527,401 +436,340 @@ const AddressScreen = () => {
                   {saving ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={s.saveBtnText}>{editingId ? 'Update Address' : 'Save Address'}</Text>
+                    <Text style={s.saveBtnText}>
+                      {editingId ? 'Update Address' : 'Save Address'}
+                    </Text>
                   )}
                 </TouchableOpacity>
-
                 <View style={{ height: 24 }} />
               </ScrollView>
             </KeyboardAvoidingView>
           </Animated.View>
         </View>
       </Modal>
-    </>
-  );
-};
+    </View>
+  )
+}
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
+  root: { flex: 1, backgroundColor: '#ECEEE8' },
 
-  /* Header */
-  header: {
-    backgroundColor: C.header,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
+  mapBg: {
     flex: 1,
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  addBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: C.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#ECEEE8',
   },
 
-  /* List */
-  scroll: { padding: 16, paddingBottom: 100 },
-
-  /* Card */
-  card: {
-    backgroundColor: C.surface,
-    borderRadius: 18,
-    marginBottom: 14,
-    overflow: 'hidden',
-    shadowColor: C.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  defaultStrip: {
-    height: 3,
-    backgroundColor: C.accent,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    marginBottom: 10,
-    gap: 8,
-  },
-  labelChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  labelDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  labelText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  defaultBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: C.accent,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  defaultBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cardBody: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    gap: 12,
-  },
-  pinIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: C.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  cardText: { flex: 1 },
-  addressName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: C.text,
-    marginBottom: 2,
-  },
-  addressPhone: {
-    fontSize: 12,
-    color: C.textMid,
-    marginBottom: 4,
-  },
-  addressLine: {
-    fontSize: 13,
-    color: C.textMid,
-    lineHeight: 20,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  actionBtnGhost: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: C.accentBorder,
-  },
-  actionBtnGhostText: {
-    color: C.accent,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: C.accentLight,
-  },
-  actionIconDanger: {
-    backgroundColor: C.dangerLight,
-  },
-  actionIconLabel: {
-    color: C.accent,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionIconLabelDanger: {
-    color: C.danger,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  /* Empty state */
-  emptyState: {
-    alignItems: 'center',
-    marginTop: 80,
-    gap: 10,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: C.text,
-    marginTop: 12,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: C.textMid,
-    textAlign: 'center',
-  },
-  emptyBtn: {
-    marginTop: 16,
-    backgroundColor: C.accent,
-    paddingHorizontal: 24,
-    paddingVertical: 13,
-    borderRadius: 14,
-  },
-  emptyBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  /* Bottom bar */
-  bottomBar: {
+  searchOverlay: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: C.surface,
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-    shadowColor: C.shadow,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  bottomBtn: {
-    backgroundColor: C.accent,
-    borderRadius: 14,
-    paddingVertical: 15,
+    zIndex: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 10,
   },
-  bottomBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  backBtn: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  backArrow: { fontSize: 18, color: '#141414' },
+  searchBar: {
+    flex: 1,
+    height: 44,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchIcon: { fontSize: 14 },
+  searchPlaceholder: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 14,
+    color: '#9a9a9a',
   },
 
-  /* Modal */
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
+  gridContainer: { ...StyleSheet.absoluteFillObject },
+  gridLineH: {
+    position: 'absolute', left: 0, right: 0, height: 1,
+    backgroundColor: 'rgba(200,200,195,0.4)',
   },
+  gridLineV: {
+    position: 'absolute', top: 0, bottom: 0, width: 1,
+    backgroundColor: 'rgba(200,200,195,0.4)',
+  },
+  greenPatch1: {
+    position: 'absolute', top: '20%', left: '30%', width: 90, height: 70,
+    backgroundColor: 'rgba(200,220,190,0.5)', borderRadius: 4,
+    transform: [{ rotate: '-5deg' }],
+  },
+  roadH: {
+    position: 'absolute', top: '45%', left: 0, right: 0, height: 8,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  roadV: {
+    position: 'absolute', left: '50%', top: 0, bottom: 0, width: 8,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+
+  pinContainer: {
+    position: 'absolute',
+    top: '35%',
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  pinLabel: {
+    backgroundColor: '#141414',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 6,
+  },
+  pinLabelText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  pinMarker: {
+    fontSize: 32,
+  },
+
+  bottomSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: H * 0.55,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 16,
+  },
+  sheetHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: '#E4E4E2', alignSelf: 'center',
+    marginTop: 12, marginBottom: 8,
+  },
+  sheetScroll: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+
+  selectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFCE8',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#FFE000',
+    borderStyle: 'dashed',
+    padding: 14,
+    marginBottom: 14,
+  },
+  selectedLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  selectedPin: { fontSize: 18, marginTop: 2 },
+  selectedInfo: { flex: 1 },
+  selectedTitle: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14,
+    color: '#141414',
+    marginBottom: 4,
+  },
+  selectedAddress: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 12,
+    color: '#8a8a8a',
+    lineHeight: 17,
+  },
+  etaBadge: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#0C831F',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  etaText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 11,
+    color: '#0C831F',
+  },
+
+  confirmBtn: {
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  confirmBtnText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+
+  sectionTitle: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 11,
+    color: '#9a9a9a',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+
+  savedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FB',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    gap: 12,
+  },
+  savedIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  savedEmoji: { fontSize: 20 },
+  savedInfo: { flex: 1 },
+  savedLabel: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14,
+    color: '#141414',
+    marginBottom: 3,
+  },
+  savedAddress: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 12,
+    color: '#8a8a8a',
+    lineHeight: 17,
+  },
+
+  addNewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E4E4E2',
+    borderStyle: 'dashed',
+    padding: 14,
+    marginTop: 4,
+    gap: 12,
+  },
+  addNewIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFE000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addNewPlus: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 20,
+    color: '#141414',
+  },
+  addNewText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14,
+    color: '#141414',
+  },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: C.surface,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    maxHeight: height * 0.92,
+    maxHeight: H * 0.92,
   },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: C.border,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 4,
+  modalHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: '#E4E4E2', alignSelf: 'center',
+    marginTop: 12, marginBottom: 4,
   },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  sheetTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: C.text,
-  },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  modalTitle: { flex: 1, fontSize: 18, fontFamily: 'DMSans-Bold', color: '#141414' },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: C.inputBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: '#F4F5F0', alignItems: 'center', justifyContent: 'center',
   },
+  closeBtnText: { fontSize: 16, color: '#9a9a9a' },
 
-  /* Type selector */
-  typeRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  typeRow: { flexDirection: 'row', gap: 10 },
   typeChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    backgroundColor: C.inputBg,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, borderRadius: 12,
+    borderWidth: 1.5, borderColor: '#E4E4E2', backgroundColor: '#F8F9FB',
   },
-  typeChipActive: {
-    backgroundColor: C.accent,
-    borderColor: C.accent,
-  },
-  typeChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: C.textMid,
-  },
-  typeChipTextActive: {
-    color: '#fff',
-  },
+  typeChipActive: { backgroundColor: '#141414', borderColor: '#141414' },
+  typeChipText: { fontSize: 13, fontFamily: 'DMSans-Bold', color: '#9a9a9a' },
+  typeChipTextActive: { color: '#fff' },
 
-  /* Row fields */
-  rowFields: {
-    flexDirection: 'row',
-  },
+  rowFields: { flexDirection: 'row' },
 
-  /* Default toggle */
   defaultToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 4,
-    marginBottom: 20,
-    paddingHorizontal: 2,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginTop: 4, marginBottom: 20, paddingHorizontal: 2,
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: C.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 22, height: 22, borderRadius: 6,
+    borderWidth: 2, borderColor: '#E4E4E2',
+    alignItems: 'center', justifyContent: 'center',
   },
-  checkboxChecked: {
-    backgroundColor: C.accent,
-    borderColor: C.accent,
-  },
-  defaultToggleText: {
-    fontSize: 13.5,
-    color: C.text,
-    fontWeight: '500',
-  },
+  checkboxChecked: { backgroundColor: '#0C831F', borderColor: '#0C831F' },
+  checkIcon: { fontSize: 12, color: '#fff', fontFamily: 'DMSans-Bold' },
+  defaultToggleText: { fontSize: 13.5, fontFamily: 'DMSans-Medium', color: '#141414' },
 
-  /* Save button */
   saveBtn: {
-    backgroundColor: C.accent,
-    borderRadius: 14,
-    paddingVertical: 16,
+    backgroundColor: '#0C831F', borderRadius: 14, paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: '#0C831F', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },
   saveBtnDisabled: { opacity: 0.65 },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-});
+  saveBtnText: { color: '#fff', fontSize: 15, fontFamily: 'DMSans-Bold' },
+})
 
-// ─── Form field styles ────────────────────────────────────────────────────────
-const fs = StyleSheet.create({
+const f = StyleSheet.create({
   fieldWrap: { marginBottom: 14 },
   fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: C.textMid,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    marginBottom: 6,
+    fontSize: 12, fontFamily: 'DMSans-Bold', color: '#9a9a9a',
+    letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 6,
   },
   input: {
-    backgroundColor: C.inputBg,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: C.text,
-    fontWeight: '500',
+    backgroundColor: '#F8F9FB', borderWidth: 1.5, borderColor: '#E4E4E2',
+    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 14, fontFamily: 'DMSans-Regular', color: '#141414',
   },
-  inputFocused: {
-    borderColor: C.accent,
-    backgroundColor: C.surface,
-  },
-});
+})
 
-export default AddressScreen;
+export default AddressScreen

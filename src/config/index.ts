@@ -1,6 +1,6 @@
 const base = '/api';
-const domain = __DEV__ ? '10.47.206.245:3000' : '10.47.206.245:3000';
-// const domain = (__DEV__)?'192.168.29.243:5005':'192.168.29.243:5005';
+//const domain = __DEV__ ? '10.47.206.245:3000' : '10.47.206.245:3000';
+const domain = (__DEV__)? 'new-e-commerce-backend-xt4w.onrender.com': 'new-e-commerce-backend-xt4w.onrender.com';
 import { name as appName } from '../../app.json';
 const Defaults = {
   appName: appName,
@@ -14,7 +14,7 @@ const Defaults = {
   },      
   apis: {
     api_key: 264895216548969,
-    baseUrl: `http${(__DEV__) ? '' : ''}://${domain}`,
+    baseUrl: `http${(__DEV__) ? 's' : 's'}://${domain}`,
     public: {
       base: `${base}`,
       backend: `${base}`

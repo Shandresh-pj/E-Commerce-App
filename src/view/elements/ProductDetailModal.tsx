@@ -12,12 +12,10 @@ import {
   StyleSheet,
 } from 'react-native'
 import Defaults from '../../config/index'
-import { THEME } from '../assets/styles/theme'
 import PrimaryButton from './PrimaryButton'
 
 const { width: screenWidth } = Dimensions.get('window')
 
-// ─── Helper Functions ─────────────────────────────────────────────────────────
 const stripHtml = (html: string): string => {
   if (!html) return ''
   return html
@@ -40,7 +38,6 @@ const buildImageUrl = (imageName: string): string => {
     : `${Defaults.apis.baseUrl}/api/${cleaned}`
 }
 
-// ─── Product Detail Modal ─────────────────────────────────────────────────────
 interface ProductDetailModalProps {
   visible: boolean
   onClose: () => void
@@ -60,9 +57,7 @@ const ProductDetailModal = ({
   cartIds = new Set(),
   navigation,
 }: ProductDetailModalProps) => {
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
-    null,
-  )
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   useEffect(() => {
@@ -74,7 +69,6 @@ const ProductDetailModal = ({
       )
       setActiveImageIndex(0)
     }
-    // Re-init only when a different product loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productDetail?.Id])
 
@@ -94,7 +88,6 @@ const ProductDetailModal = ({
     productDetail?.ProductTranslations?.[0]?.Description ?? '',
   )
 
-  // ── ProductType: "Single" | "Variant" ──────────────────────────────────────
   const productType: string = productDetail?.ProductType ?? 'Single'
   const isVariantType = productType === 'Variant'
 
@@ -104,7 +97,6 @@ const ProductDetailModal = ({
 
   const isInCart = productDetail ? cartIds.has(productDetail.Id) : false
 
-  // Cart payload includes variant details only when applicable
   const cartProduct = {
     id: productDetail?.Id,
     name: productName,
@@ -138,17 +130,15 @@ const ProductDetailModal = ({
       <View style={s.overlay}>
         <Pressable style={s.backdrop} onPress={onClose} />
         <View style={s.sheet}>
-          {/* Drag handle */}
           <View style={s.handle} />
 
-          {/* Close button */}
           <TouchableOpacity style={s.closeBtn} onPress={onClose}>
             <Text style={s.closeBtnText}>✕</Text>
           </TouchableOpacity>
 
           {loading ? (
             <View style={s.loaderBox}>
-              <ActivityIndicator size="large" color={THEME.COLOR.primary} />
+              <ActivityIndicator size="large" color="#0C831F" />
               <Text style={s.loaderText}>Loading details...</Text>
             </View>
           ) : !productDetail ? (
@@ -160,7 +150,7 @@ const ProductDetailModal = ({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={s.scrollContent}
             >
-              {/* ── Image Carousel ── */}
+              {/* Image Carousel */}
               {images.length > 0 ? (
                 <View style={s.imageSection}>
                   <ScrollView
@@ -184,16 +174,12 @@ const ProductDetailModal = ({
                     ))}
                   </ScrollView>
 
-                  {/* Dot indicators */}
                   {images.length > 1 && (
                     <View style={s.dotsRow}>
                       {images.map((_, idx) => (
                         <View
                           key={idx}
-                          style={[
-                            s.dot,
-                            idx === activeImageIndex && s.dotActive,
-                          ]}
+                          style={[s.dot, idx === activeImageIndex && s.dotActive]}
                         />
                       ))}
                     </View>
@@ -201,38 +187,32 @@ const ProductDetailModal = ({
                 </View>
               ) : (
                 <View style={s.noImageBox}>
+                  <Text style={s.noImageEmoji}>📦</Text>
                   <Text style={s.noImageText}>No Image</Text>
                 </View>
               )}
 
-              {/* ── Product Info ── */}
+              {/* Product Info */}
               <View style={s.infoSection}>
                 <Text style={s.productTitle}>{productName}</Text>
 
-                {/* Score / Price based on ProductType */}
                 <View style={s.scoreRow}>
                   <Text style={s.scoreValue}>{scoreValue}</Text>
                   <Text style={s.scoreUnit}>Scores</Text>
                 </View>
 
-                {/* ── Stock Badge ── */}
+                {/* Stock Badge */}
                 <View style={s.stockRow}>
                   <View
                     style={[
                       s.stockDot,
-                      {
-                        backgroundColor:
-                          stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger,
-                      },
+                      { backgroundColor: stock > 0 ? '#0C831F' : '#EF4444' },
                     ]}
                   />
                   <Text
                     style={[
                       s.stockText,
-                      {
-                        color:
-                          stock > 0 ? THEME.COLOR.success : THEME.COLOR.danger,
-                      },
+                      { color: stock > 0 ? '#0C831F' : '#EF4444' },
                     ]}
                   >
                     {stock > 0
@@ -241,7 +221,7 @@ const ProductDetailModal = ({
                   </Text>
                 </View>
 
-                {/* ── Variants — only shown when ProductType === "Variant" ── */}
+                {/* Variants */}
                 {isVariantType && productDetail.ProductVariant?.length > 0 && (
                   <View style={s.variantSection}>
                     <Text style={s.sectionLabel}>Select Variant</Text>
@@ -275,9 +255,7 @@ const ProductDetailModal = ({
                                 <View
                                   style={[
                                     s.colorDot,
-                                    {
-                                      backgroundColor: variantLabel.toLowerCase(),
-                                    },
+                                    { backgroundColor: variantLabel.toLowerCase() },
                                   ]}
                                 />
                               )}
@@ -298,19 +276,12 @@ const ProductDetailModal = ({
                               >
                                 {variantPriceVal.toFixed(0)} Scores
                               </Text>
-                              {/* Per-variant stock indicator */}
                               <Text
                                 style={[
                                   s.variantStockBadge,
                                   {
-                                    color:
-                                      variantStock > 0
-                                        ? THEME.COLOR.success
-                                        : THEME.COLOR.danger,
-                                    borderColor:
-                                      variantStock > 0
-                                        ? THEME.COLOR.success
-                                        : THEME.COLOR.danger,
+                                    color: variantStock > 0 ? '#0C831F' : '#EF4444',
+                                    borderColor: variantStock > 0 ? '#0C831F' : '#EF4444',
                                   },
                                 ]}
                               >
@@ -324,7 +295,7 @@ const ProductDetailModal = ({
                   </View>
                 )}
 
-                {/* ── Description ── */}
+                {/* Description */}
                 {description ? (
                   <View style={s.descSection}>
                     <Text style={s.sectionLabel}>Description</Text>
@@ -335,12 +306,12 @@ const ProductDetailModal = ({
             </ScrollView>
           )}
 
-          {/* ── Bottom Actions ── */}
+          {/* Bottom Actions */}
           {!loading && productDetail && stock > 0 && onAddToCart && (
             <View style={s.actionBar}>
               <PrimaryButton
                 label={isInCart ? 'Go to Cart' : 'Add to Cart'}
-                variant={isInCart ? 'success' : 'primary'}
+                variant={isInCart ? 'success' : 'success'}
                 style={s.actionBtn}
                 onPress={() => {
                   if (isInCart) {
@@ -363,19 +334,22 @@ const s = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: THEME.COLOR.overlay,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
-    backgroundColor: THEME.COLOR.surface,
-    borderTopLeftRadius: THEME.RADIUS.xlarge,
-    borderTopRightRadius: THEME.RADIUS.xlarge,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '90%',
     paddingBottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.65)',
+    borderBottomWidth: 0,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: THEME.COLOR.border,
+    backgroundColor: '#ECECEA',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -386,17 +360,19 @@ const s = StyleSheet.create({
     top: 14,
     right: 16,
     zIndex: 10,
-    backgroundColor: THEME.COLOR.surfaceAlt,
+    backgroundColor: 'rgba(255,255,255,0.5)',
     borderRadius: 20,
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.65)',
   },
   closeBtnText: {
     fontSize: 14,
-    color: THEME.COLOR.textSecondary,
-    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: '#8a8a8a',
+    fontFamily: 'DMSans-Bold',
   },
 
   loaderBox: {
@@ -405,19 +381,21 @@ const s = StyleSheet.create({
     paddingVertical: 60,
     gap: 12,
   },
-  loaderText: { fontSize: 14, color: THEME.COLOR.textSecondary },
+  loaderText: { fontSize: 14, color: '#8a8a8a', fontFamily: 'DMSans-Regular' },
 
   scrollContent: { paddingBottom: 20 },
 
-  imageSection: { backgroundColor: THEME.COLOR.surfaceAlt },
+  imageSection: { backgroundColor: 'rgba(255,255,255,0.4)' },
   productImage: { height: 280 },
   noImageBox: {
     height: 220,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.COLOR.surfaceAlt,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    gap: 8,
   },
-  noImageText: { color: THEME.COLOR.textTertiary, fontSize: 16 },
+  noImageEmoji: { fontSize: 44 },
+  noImageText: { color: '#9a9a9a', fontSize: 14, fontFamily: 'DMSans-Medium' },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -428,33 +406,33 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: THEME.COLOR.bgGrey,
+    backgroundColor: '#ECECEA',
   },
-  dotActive: { backgroundColor: THEME.COLOR.primary, width: 18 },
+  dotActive: { backgroundColor: '#0C831F', width: 18 },
 
-  infoSection: { paddingHorizontal: THEME.SPACING.lg, paddingTop: 14 },
+  infoSection: { paddingHorizontal: 20, paddingTop: 14 },
 
   productTitle: {
     fontSize: 19,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.textPrimary,
+    fontFamily: 'DMSans-Bold',
+    color: '#141414',
     lineHeight: 26,
   },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 6,
-    marginTop: THEME.SPACING.sm,
+    marginTop: 8,
   },
   scoreValue: {
     fontSize: 26,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.primaryDark,
+    fontFamily: 'DMSans-Bold',
+    color: '#0C831F',
   },
   scoreUnit: {
     fontSize: 14,
-    fontFamily: THEME.FONTWEIGHT.Medium,
-    color: THEME.COLOR.textSecondary,
+    fontFamily: 'DMSans-Medium',
+    color: '#8a8a8a',
   },
 
   stockRow: {
@@ -465,12 +443,12 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
   stockDot: { width: 8, height: 8, borderRadius: 4 },
-  stockText: { fontSize: 13, fontFamily: THEME.FONTWEIGHT.Bold },
+  stockText: { fontSize: 13, fontFamily: 'DMSans-Bold' },
 
   sectionLabel: {
     fontSize: 12,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.textSecondary,
+    fontFamily: 'DMSans-Bold',
+    color: '#8a8a8a',
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -483,46 +461,46 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1.5,
-    borderColor: THEME.COLOR.border,
-    borderRadius: THEME.RADIUS.medium,
+    borderColor: 'rgba(255,255,255,0.65)',
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.COLOR.surface,
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   variantChipSelected: {
-    borderColor: THEME.COLOR.primary,
-    backgroundColor: THEME.COLOR.primarySoft,
+    borderColor: '#0C831F',
+    backgroundColor: 'rgba(12,131,31,0.08)',
   },
   colorDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
     borderWidth: 1,
-    borderColor: THEME.COLOR.border,
+    borderColor: 'rgba(255,255,255,0.65)',
   },
   variantChipText: {
     fontSize: 13,
-    color: THEME.COLOR.textPrimary,
-    fontFamily: THEME.FONTWEIGHT.Medium,
+    color: '#141414',
+    fontFamily: 'DMSans-Medium',
   },
   variantChipTextSelected: {
-    color: THEME.COLOR.primary,
-    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: '#141414',
+    fontFamily: 'DMSans-Bold',
   },
-  variantPrice: { fontSize: 12, color: THEME.COLOR.textTertiary },
+  variantPrice: { fontSize: 12, color: '#9a9a9a' },
   variantPriceSelected: {
-    color: THEME.COLOR.primary,
-    fontFamily: THEME.FONTWEIGHT.Bold,
+    color: '#141414',
+    fontFamily: 'DMSans-Bold',
   },
   variantChipDisabled: {
-    borderColor: THEME.COLOR.border,
-    backgroundColor: THEME.COLOR.surfaceAlt,
+    borderColor: '#ECECEA',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     opacity: 0.5,
   },
-  variantChipTextDisabled: { color: THEME.COLOR.textTertiary },
+  variantChipTextDisabled: { color: '#9a9a9a' },
   variantStockBadge: {
     fontSize: 10,
-    fontFamily: THEME.FONTWEIGHT.Bold,
+    fontFamily: 'DMSans-Bold',
     borderWidth: 1,
     borderRadius: 4,
     paddingHorizontal: 4,
@@ -532,16 +510,17 @@ const s = StyleSheet.create({
   descSection: { marginBottom: 16 },
   descText: {
     fontSize: 14,
-    color: THEME.COLOR.textSecondary,
+    color: '#8a8a8a',
     lineHeight: 22,
+    fontFamily: 'DMSans-Regular',
   },
 
   actionBar: {
-    paddingHorizontal: THEME.SPACING.lg,
+    paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: THEME.COLOR.border,
-    backgroundColor: THEME.COLOR.surface,
+    borderTopColor: '#ECECEA',
+    backgroundColor: 'rgba(255,255,255,0.7)',
   },
   actionBtn: { width: '100%' },
 })

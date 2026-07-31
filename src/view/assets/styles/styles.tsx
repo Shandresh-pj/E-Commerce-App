@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     elevation: 0,
     flexDirection: "row",
     justifyContent: 'space-between',
-    backgroundColor: '#2a2c40',
+    backgroundColor: '#141414',
     paddingHorizontal: 15
   },
   btnPrimary: {
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     //borderRadius: THEME.RADIUS.large,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2c40',
+    borderBottomColor: '#141414',
     overflow: "hidden"
   },
   profileNameBox: {

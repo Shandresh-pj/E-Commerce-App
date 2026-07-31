@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { LOGIN_SUCCESS } from '../shared/redux/constants/types';
 import { connect } from 'react-redux';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
-  ImageBackground,
   StatusBar,
   View,
+  StyleSheet,
+  Text,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAsyncData } from '../shared/utils/storage';
@@ -15,14 +15,11 @@ import {
   TransitionSpecs,
   CardStyleInterpolators,
 } from '@react-navigation/stack';
-import styles from '../view/assets/styles/styles';
 import splashContainer from '../view/screens/splash';
 import loginContainer from '../view/screens/login';
 import LocationPermissionContainer from '../view/screens/LocationPermission';
-import ProductListContainer from '../view/screens/ProductLIst';
 import ProfileContainer from '../view/screens/Account';
 import HomeBottomTabNavigator from './HomeTabNavigator';
-import inviteContainer from '../view/screens/Invite';
 import myordersContainer from '../view/screens/Myorders';
 import ViewOrderScreen from '../view/screens/Myorders/Vieworders';
 import EditProfileScreen from '../view/screens/Account/EditProfile';
@@ -32,7 +29,14 @@ import PlaceOrderScreen from '../view/screens/PlaceOrder/PlaceOrder';
 import ContactUsContainer from '../view/screens/ContactUs';
 import AddressScreen from '../view/screens/Address/AddressScreen';
 import CategoryScreen from '../view/screens/Categories/CategoryScreen';
-import CategoryProductScreen from '../view/screens/Categories/CategoryProductScreen';
+import SearchScreen from '../view/screens/Search/SearchScreen';
+import OrderTrackingScreen from '../view/screens/OrderTracking/OrderTracking';
+import PaymentMethodsScreen from '../view/screens/Payment/PaymentMethods';
+import CouponsScreen from '../view/screens/Coupons/Coupons';
+import NotificationsScreen from '../view/screens/Notifications/Notifications';
+import LanguageScreen from '../view/screens/Language/Language';
+import PartnerNavigator from '../view/screens/DeliveryPartner/PartnerNavigator';
+import RoleSelection from '../view/screens/RoleSelection/RoleSelection';
 
 
 const Stack = createStackNavigator();
@@ -40,13 +44,12 @@ const Stack = createStackNavigator();
 
 const MainStackNavigator = (props: any) => {
   const { dispatch, isLoggedIn } = props;
-  const [initialRouteName, setInitialRouteName] = useState('Splash');
+  const [initialRouteName, setInitialRouteName] = useState('RoleSelection');
   const [isLoading, setIsLoading] = useState(true);
 
 
   useEffect(() => {
     getInitialRouteName();
-    setIsLoading(false);
   }, []);
   const getInitialRouteName = async () => {
     const intropage = await AsyncStorage.getItem('intropage');
@@ -79,7 +82,7 @@ const MainStackNavigator = (props: any) => {
       }, 2000);
     } else {
 
-      await setInitialRouteName('Splash');
+      await setInitialRouteName('RoleSelection');
       console.log(
         '*********************************************************logout================',
         parsedUser,
@@ -93,39 +96,32 @@ const MainStackNavigator = (props: any) => {
   if (isLoading) {
     return (
       <>
-        <StatusBar
-          barStyle="light-content"
-          hidden={false}
-          backgroundColor="transparent"
-          translucent
-        />
-        <SafeAreaView edges={['left', 'right']} style={styles.container}>
-          <ImageBackground
-            source={require("../view/assets/images/login-bg.jpg")}
-            imageStyle={{ resizeMode: "cover", alignSelf: "flex-end" }}
-            style={styles.bakcgroundImage}
-          >
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <ActivityIndicator size="large" color='#fff' />
-            </View>
-          </ImageBackground>
-        </SafeAreaView>
+        <StatusBar barStyle="light-content" backgroundColor="#141414" translucent={false} />
+        <View style={loadingStyles.container}>
+          <Text style={loadingStyles.logo}>⚡</Text>
+          <ActivityIndicator size="large" color="#FFE000" style={{ marginTop: 24 }} />
+        </View>
       </>
     );
   }
   return (
     <Stack.Navigator
       //screenOptions={screenOptionStyle}
-      //initialRouteName={initialRouteName}
-      initialRouteName={'Splash'}
+      initialRouteName={initialRouteName}
     >
       <>
+        <Stack.Screen
+          name="RoleSelection"
+          component={RoleSelection}
+          options={{
+            headerShown: false,
+            transitionSpec: {
+              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+            },
+            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+          }}
+        />
         <Stack.Screen
           name="Splash"
           component={splashContainer}
@@ -180,34 +176,6 @@ const MainStackNavigator = (props: any) => {
         <Stack.Screen
           name="Profile"
           component={ProfileContainer}
-          options={({ navigation }) => ({
-            headerShown: false,
-            transitionSpec: {
-              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-            },
-            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          })}
-        />
-
-        <Stack.Screen
-          name="ProductList"
-          component={ProductListContainer}
-          options={({ navigation }) => ({
-            headerShown: false,
-            transitionSpec: {
-              open: TransitionSpecs.FadeInFromBottomAndroidSpec,
-              close: TransitionSpecs.FadeOutToBottomAndroidSpec,
-            },
-            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          })}
-        />
-
-
-
-        <Stack.Screen
-          name="Invite"
-          component={inviteContainer}
           options={({ navigation }) => ({
             headerShown: false,
             transitionSpec: {
@@ -337,9 +305,88 @@ const MainStackNavigator = (props: any) => {
         }}
       />
 
+
       <Stack.Screen
-        name="CategoryProducts"
-        component={CategoryProductScreen}
+        name="OrderTracking"
+        component={OrderTrackingScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="PaymentMethods"
+        component={PaymentMethodsScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="Coupons"
+        component={CouponsScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="Language"
+        component={LanguageScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="PartnerApp"
+        component={PartnerNavigator}
         options={{
           headerShown: false,
           transitionSpec: {
@@ -371,6 +418,11 @@ const mapDispatchToProps = (dispatch: any) => ({
   dispatch,
 });
 export default connect(mapStateToProps, mapDispatchToProps)(MainStackNavigator);
+
+const loadingStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#141414', justifyContent: 'center', alignItems: 'center' },
+  logo: { fontSize: 52 },
+})
 
 export const UnAuthrizedStack = (props: any) => {
   return (

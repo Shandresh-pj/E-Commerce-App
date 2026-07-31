@@ -1,529 +1,389 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
   ScrollView,
-  Animated,
   StatusBar,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   Image,
-} from 'react-native';
-import styles from './OrdersStyle';
-import { getData } from '../../../shared/services/main-service';
-import Defaults from '../../../config/index';
-import { ChevronLeftIcon } from '../../assets/images/svg/Svg2/ChevronLeftIcon';
-import { THEME } from '../../assets/styles/theme';
+  StyleSheet,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { getData } from '../../../shared/services/main-service'
+import { setAsyncData } from '../../../shared/utils/storage'
+import Toast from 'react-native-root-toast'
+import Defaults from '../../../config/index'
+import LinearGradient from 'react-native-linear-gradient'
 
-// ── Status config keyed by StatusId ──────────────────────────────────────────
-const STATUS_CONFIG: Record<
-  number,
-  { label: string; color: string; bg: string; dot: string }
-> = {
-  27: {
-    label: 'Processing',
-    color: THEME.COLOR.bgPurple,
-    bg: 'rgba(97,44,126,0.1)',
-    dot: THEME.COLOR.bgPurple,
-  },
-  28: {
-    label: 'Delivered',
-    color: THEME.COLOR.textSuccess,
-    bg: 'rgba(97,176,87,0.1)',
-    dot: THEME.COLOR.textSuccess,
-  },
-  29: {
-    label: 'Cancelled',
-    color: '#dd4f4f',
-    bg: 'rgba(221,79,79,0.1)',
-    dot: '#dd4f4f',
-  },
-};
-const DEFAULT_STATUS = {
-  label: 'Pending',
-  color: '#888',
-  bg: 'rgba(136,136,136,0.1)',
-  dot: '#888',
-};
+const AVATAR_COLORS = ['#FFE0E0', '#E9ECFB', '#FFF0D6', '#E4F6E6', '#EBE4FF', '#FFE9E0']
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const formatDateTime = (isoString: string) => {
-  if (!isoString) return '—';
-  const d = new Date(isoString);
-  const date = d.toLocaleDateString('en-IN', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-  const time = d
-    .toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    })
-    .toUpperCase();
-  return `${date}  ${time}`;
-};
+const STATUS_CONFIG: Record<number, { label: string; icon: string; tile: string }> = {
+  27: { label: 'Order processing', icon: '⏳', tile: '#FFC400' },
+  28: { label: 'Delivered on time', icon: '✅', tile: '#FFE000' },
+  29: { label: 'Order cancelled', icon: '✖', tile: '#dd4f4f' },
+}
+const DEFAULT_STATUS = { label: 'Order placed', icon: '📦', tile: '#FFE000' }
 
-const formatCurrency = (amount: string | number) => {
-  const num = parseFloat(String(amount ?? '0'));
-  return `₹ ${num.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-};
-
-// ── Section Block ─────────────────────────────────────────────────────────────
-interface SectionProps {
-  title: string;
-  children: React.ReactNode;
-  delay: number;
+const formatDateTime = (iso: string) => {
+  if (!iso) return 'Just now'
+  const d = new Date(iso)
+  const date = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  return `${date} · ${time}`
 }
 
-const Section = ({ title, children, delay }: SectionProps) => {
-  const anim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: 380,
-      delay,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-  return (
-    <Animated.View
-      style={[
-        styles.section,
-        {
-          opacity: anim,
-          transform: [
-            {
-              translateY: anim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [16, 0],
-              }),
-            },
-          ],
-        },
-      ]}
-    >
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionAccent} />
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
-      <View style={styles.sectionBody}>{children}</View>
-    </Animated.View>
-  );
-};
+const formatCurrency = (amount: string | number) =>
+  `₹${parseFloat(String(amount ?? '0')).toLocaleString('en-IN')}`
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+const buildImageUrl = (img: string) => {
+  if (!img) return ''
+  const cleaned = img.replace(/\\/g, '/').replace(/^\/+/, '')
+  return cleaned.startsWith('http') ? cleaned : `${Defaults.apis.baseUrl}/api/${cleaned}`
+}
+
+const itemName = (oi: any) =>
+  oi.ProductTranslations?.[0]?.Name ||
+  oi.Products?.ProductTranslation?.Name ||
+  oi.Products?.Name ||
+  oi.ProductName ||
+  oi.Name ||
+  `Product #${oi.ProductId}`
+
 const ViewOrderScreen = ({ navigation, route }: any) => {
-  const headerAnim = useRef(new Animated.Value(0)).current;
+  const paramOrder = route?.params?.order ?? null
+  const orderId = route?.params?.orderId ?? paramOrder?.Id ?? null
 
-  // Accept either a full order object or just the ID from navigation params
-  const paramOrder = route?.params?.order ?? null;
-  const orderId = route?.params?.orderId ?? paramOrder?.Id ?? null;
+  const [order, setOrder] = useState<any>(paramOrder)
+  const [loading, setLoading] = useState(!paramOrder)
+  const [error, setError] = useState<string | null>(null)
 
-  const [order, setOrder] = useState<any>(paramOrder);
-  const [loading, setLoading] = useState(!paramOrder);
-  const [error, setError] = useState<string | null>(null);
-
-  // ── Fetch by ID ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (orderId) {
-      fetchOrderDetail(orderId);
-    }
-  }, [orderId]);
+    if (orderId) fetchOrderDetail(orderId)
+  }, [orderId])
 
   const fetchOrderDetail = async (id: number | string) => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await getData(`/Orders/MyOrders/View/${id}`);
+      setLoading(true)
+      setError(null)
+      const response = await getData(`/Orders/MyOrders/View/${id}`)
       if (response && response.status) {
-        const data = response.data?.data ?? response.data ?? null;
-        if (data) setOrder(data);
-        else setError('Order not found.');
+        const data = response.data?.data ?? response.data ?? null
+        if (data) setOrder(data)
+        else setError('Order not found.')
       } else {
-        setError('Failed to load order details.');
+        setError('Failed to load order details.')
       }
     } catch (err) {
-      console.log('ViewOrderScreen Error', err);
-      setError('Something went wrong. Please try again.');
+      console.log('ViewOrderScreen Error', err)
+      setError('Something went wrong. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  useEffect(() => {
-    Animated.timing(headerAnim, {
-      toValue: 1,
-      duration: 450,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  // ── Derived values (safe-guarded with fallbacks) ─────────────────────────
-  const cfg = order
-    ? STATUS_CONFIG[order.StatusId] ?? DEFAULT_STATUS
-    : DEFAULT_STATUS;
-
-  const address = order?.Address
-    ? order.Address
-    : order?.Users?.Address ?? null;
-
-  const customerName = order
-    ? `${order.Users?.FirstName ?? ''} ${order.Users?.LastName ?? ''}`.trim()
-    : '—';
-
-  // ── Calculate totals from OrderItems ────────────────────────────────────
-  const calculatedGrandTotal = (order?.OrderItems ?? []).reduce(
-    (sum: number, oi: any) => {
-      const qty = parseFloat(String(oi.Qty ?? '0'));
-      const unitPrice = parseFloat(String(oi.UnitPrice ?? '0'));
-      return sum + qty * unitPrice;
-    },
-    0,
-  );
-
-  const taxAmount = parseFloat(String(order?.TaxAmount ?? '0'));
-  const discAmount = parseFloat(String(order?.DiscAmount ?? '0'));
-  const paidAmount = parseFloat(String(order?.PaidAmount ?? '0'));
-  const balanceAmount = parseFloat(String(order?.BalanceAmount ?? '0'));
-  // Use calculated total; fall back to API TotalAmount if items have no price
-  const grandTotal =
-    calculatedGrandTotal > 0
-      ? calculatedGrandTotal
-      : parseFloat(String(order?.TotalAmount ?? '0'));
-
-  // ── Loading ──────────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={THEME.COLOR.bgPurple}
-        />
-        <Animated.View style={[styles.header, { opacity: headerAnim }]}>
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => navigation?.goBack()}
-              activeOpacity={0.7}
-            >
-              <ChevronLeftIcon />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Order Details</Text>
-          </View>
-        </Animated.View>
-        <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        >
-          <ActivityIndicator size="large" color='#fff' />
-          <Text style={{ marginTop: 12, color: '#888' }}>
-            Loading order details...
-          </Text>
-        </View>
-      </>
-    );
   }
 
-  // ── Main UI ──────────────────────────────────────────────────────────────
-  return (
-    <>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={THEME.COLOR.bgPurple}
-        translucent={false}
-      />
-      <>
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: headerAnim,
-              transform: [
-                {
-                  translateY: headerAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-14, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => navigation?.goBack()}
-              activeOpacity={0.7}
-            >
-              <ChevronLeftIcon />
+  const cfg = order ? STATUS_CONFIG[order.StatusId] ?? DEFAULT_STATUS : DEFAULT_STATUS
+  const address = order?.Address ?? order?.Users?.Address ?? null
+  const items: any[] = order?.OrderItems ?? []
+  const itemCount = items.reduce((sum, oi) => sum + parseFloat(String(oi.Qty ?? '0')), 0)
+
+  const calculatedTotal = items.reduce(
+    (sum, oi) => sum + parseFloat(String(oi.Qty ?? '0')) * parseFloat(String(oi.UnitPrice ?? '0')),
+    0,
+  )
+  const taxAmount = parseFloat(String(order?.TaxAmount ?? '0'))
+  const discAmount = parseFloat(String(order?.DiscAmount ?? '0'))
+  const grandTotal =
+    calculatedTotal > 0 ? calculatedTotal + taxAmount - discAmount : parseFloat(String(order?.TotalAmount ?? '0'))
+  const paymentMethod = order?.PaymentMethod || 'Online'
+
+  const reorder = async () => {
+    const cart = items.map((oi: any) => ({
+      id: oi.ProductId,
+      name: itemName(oi),
+      points: parseFloat(String(oi.UnitPrice ?? '0')),
+      quantity: parseFloat(String(oi.Qty ?? '1')) || 1,
+      image: oi.ProductImage?.ImageName || oi.Products?.ProductImages?.[0]?.ImagePath || '',
+    }))
+    await setAsyncData('cart_items', cart as any)
+    Toast.show('Items added to cart', { duration: Toast.durations.SHORT })
+    navigation.navigate('Cart')
+  }
+
+  if (loading) {
+    return (
+      <LinearGradient colors={['#FFF4C2', '#FFFCE8', '#EDEFEA']} style={s.root}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFF4C2" />
+        <View style={s.center}>
+          <ActivityIndicator size="large" color="#0C831F" />
+        </View>
+      </LinearGradient>
+    )
+  }
+
+  if (error || !order) {
+    return (
+      <LinearGradient colors={['#FFF4C2', '#FFFCE8', '#EDEFEA']} style={s.root}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFF4C2" />
+        <SafeAreaView style={s.safe} edges={[]}>
+          <View style={s.header}>
+            <TouchableOpacity style={s.backBtn} onPress={() => navigation?.goBack()}>
+              <Text style={s.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Order Details</Text>
           </View>
-        </Animated.View>
-
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* ── Order Summary Card ── */}
-            <Animated.View
-              style={[styles.summaryCard, { opacity: headerAnim }]}
-            >
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Order ID</Text>
-                <Text style={styles.summaryValue}>{order.OrderNumber}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Ordered On</Text>
-                <Text style={styles.summaryValue}>
-                  {formatDateTime(order.CreatedAt)}
-                </Text>
-              </View>
-              <View style={styles.summaryDivider} />
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Payment Method</Text>
-                <Text style={styles.summaryValue}>{'Score'}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Status</Text>
-                <Text style={styles.summaryValue}>{'Processing'}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Delivery Type</Text>
-                <Text style={styles.summaryValue}>{'Standard'}</Text>
-              </View>
-              {order.OrderType && (
-                <>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Order Type</Text>
-                    <Text style={styles.summaryValue}>{order.OrderType}</Text>
-                  </View>
-                </>
-              )}
-            </Animated.View>
-
-            {/* ── Delivery Address ── */}
-            {address && (
-              <Section title="Delivery Address" delay={120}>
-                <View style={styles.addressCard}>
-                  <View style={styles.addressIconCol}>
-                    <View style={styles.addressIconOuter}>
-                      <View style={styles.addressIconInner} />
-                    </View>
-                    <View style={styles.addressLine} />
-                  </View>
-                  <View style={styles.addressText}>
-                    <Text style={styles.addressName}>{customerName}</Text>
-                    {address.Street && (
-                      <Text style={styles.addressDetail}>
-                        {address.Street},
-                      </Text>
-                    )}
-                    {address.City && (
-                      <Text style={styles.addressDetail}>
-                        {address.City}, {address.State} – {address.Pincode}.
-                      </Text>
-                    )}
-                    {address.Country && (
-                      <Text style={styles.addressDetail}>
-                        {address.Country}
-                      </Text>
-                    )}
-                    {order.Users?.MobileNumber && (
-                      <TouchableOpacity activeOpacity={0.7}>
-                        <Text style={styles.addressPhone}>
-                          +91 {order.Users.MobileNumber}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </Section>
-            )}
-
-            {/* ── Product Details ── */}
-            <Section title="Product Details" delay={200}>
-              {(order.OrderItems ?? []).length > 0 ? (
-                order.OrderItems.map((oi: any, i: number) => {
-                  const productName =
-                    oi.ProductTranslations?.[0]?.Name ||
-                    oi.Products?.ProductTranslation?.Name ||
-                    oi.Products?.Name ||
-                    oi.ProductName ||
-                    oi.Name ||
-                    `Product #${oi.ProductId}`;
-
-                  let imageUrl = null;
-                  const img =
-                    oi.ProductImage?.ImageName ||
-                    oi.Products?.ProductImages?.[0]?.ImagePath;
-                  if (img) {
-                    let imgPath = img.replace(/\\/g, '/');
-                    imageUrl = imgPath.startsWith('http')
-                      ? imgPath
-                      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(
-                        /^\/+/,
-                        '',
-                      )}`;
-                  }
-
-                  return (
-                    <View key={oi.Id ?? i}>
-                      {i > 0 && <View style={styles.productDivider} />}
-                      <View style={styles.productRow}>
-                        <View style={styles.productLeft}>
-                          <View style={styles.productIconBox}>
-                            {imageUrl ? (
-                              <Image
-                                source={{ uri: imageUrl }}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  borderRadius: 8,
-                                  resizeMode: 'contain',
-                                }}
-                              />
-                            ) : (
-                              <View style={styles.productIconDot} />
-                            )}
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.productName}>
-                              {productName}
-                            </Text>
-                            <Text style={styles.productQty}>Qty: {oi.Qty}</Text>
-                            {(oi.Products?.Code || oi.ProductCode) && (
-                              <Text
-                                style={[styles.productQty, { color: '#aaa' }]}
-                              >
-                                Code: {oi.Products?.Code || oi.ProductCode}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                        <Text style={styles.productPrice}>
-                          {parseFloat(oi.UnitPrice ?? '0') > 0
-                            ? formatCurrency(oi.UnitPrice)
-                            : '₹ 0.00'}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })
-              ) : (
-                <Text
-                  style={{
-                    color: '#aaa',
-                    textAlign: 'center',
-                    paddingVertical: 12,
-                  }}
-                >
-                  No items found
-                </Text>
-              )}
-            </Section>
-
-            {/* ── Bill Summary ── */}
-            <Section title="Bill Summary" delay={280}>
-              {/* Per-item subtotals */}
-              {(order.OrderItems ?? []).map((oi: any, i: number) => {
-                const qty = parseFloat(String(oi.Qty ?? '0'));
-                const unitPrice = parseFloat(String(oi.UnitPrice ?? '0'));
-                const lineTotal = qty * unitPrice;
-                const name =
-                  oi.ProductTranslations?.[0]?.Name ||
-                  oi.Products?.ProductTranslation?.Name ||
-                  oi.Products?.Name ||
-                  oi.ProductName ||
-                  oi.Name ||
-                  `Product #${oi.ProductId}`;
-                return (
-                  <View key={oi.Id ?? i} style={styles.billRow}>
-                    <Text style={styles.billLabel} numberOfLines={1}>
-                      {name} × {qty}
-                    </Text>
-                    <Text style={styles.billValue}>
-                      {formatCurrency(lineTotal)}
-                    </Text>
-                  </View>
-                );
-              })}
-
-              {discAmount > 0 && (
-                <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>Discount</Text>
-                  <Text
-                    style={[
-                      styles.billValue,
-                      { color: THEME.COLOR.textSuccess },
-                    ]}
-                  >
-                    - {formatCurrency(discAmount)}
-                  </Text>
-                </View>
-              )}
-              {taxAmount > 0 && (
-                <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>Tax ({order.TaxPer}%)</Text>
-                  <Text style={styles.billValue}>
-                    {formatCurrency(taxAmount)}
-                  </Text>
-                </View>
-              )}
-              {paidAmount > 0 && (
-                <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>Paid Amount</Text>
-                  <Text
-                    style={[
-                      styles.billValue,
-                      { color: THEME.COLOR.textSuccess },
-                    ]}
-                  >
-                    {formatCurrency(paidAmount)}
-                  </Text>
-                </View>
-              )}
-              {balanceAmount > 0 && (
-                <View style={styles.billRow}>
-                  <Text style={styles.billLabel}>Balance Due</Text>
-                  <Text style={[styles.billValue, { color: '#dd4f4f' }]}>
-                    {formatCurrency(balanceAmount)}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.billTotalDivider} />
-              <View style={styles.billRow}>
-                <Text style={styles.billTotalLabel}>Grand Total</Text>
-                <Text style={styles.billTotalValue}>
-                  {formatCurrency(grandTotal)}
-                </Text>
-              </View>
-            </Section>
-
-            {/* ── Additional Notes ── */}
-            {order.AdditionalNotes && (
-              <Section title="Additional Notes" delay={340}>
-                <Text style={{ color: '#555', fontSize: 14, lineHeight: 20 }}>
-                  {order.AdditionalNotes}
-                </Text>
-              </Section>
-            )}
-          </ScrollView>
+          <View style={s.center}>
+            <Text style={{ fontSize: 42 }}>⚠️</Text>
+            <Text style={s.errorTitle}>{error || 'Order not found'}</Text>
+            <TouchableOpacity style={s.errorBtn} onPress={() => navigation?.goBack()}>
+              <Text style={s.errorBtnText}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
-      </>
-    </>
-  );
-};
+      </LinearGradient>
+    )
+  }
 
-export default ViewOrderScreen;
+  return (
+    <LinearGradient colors={['#FFF4C2', '#FFFCE8', '#EDEFEA']} locations={[0, 0.24, 1]} style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF4C2" />
+      <SafeAreaView style={s.safe} edges={[]}>
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation?.goBack()}>
+            <Text style={s.backArrow}>←</Text>
+          </TouchableOpacity>
+          <View>
+            <Text style={s.headerTitle}>Order #{order.OrderNumber ?? orderId}</Text>
+            <Text style={s.headerSub}>{formatDateTime(order.CreatedAt)}</Text>
+          </View>
+        </View>
+
+        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          {/* Status banner */}
+          <View style={s.banner}>
+            <View style={[s.bannerTile, { backgroundColor: cfg.tile }]}>
+              <Text style={{ fontSize: 24 }}>{cfg.icon}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.bannerTitle}>{cfg.label}</Text>
+              <Text style={s.bannerSub}>
+                {itemCount} item{itemCount > 1 ? 's' : ''} · paid via {paymentMethod}
+              </Text>
+            </View>
+          </View>
+
+          {/* Items */}
+          <Text style={s.sectionLabel}>ITEMS IN THIS ORDER</Text>
+          <View style={s.card}>
+            {items.map((oi: any, i: number) => {
+              const name = itemName(oi)
+              const img = buildImageUrl(oi.ProductImage?.ImageName || oi.Products?.ProductImages?.[0]?.ImagePath || '')
+              const bg = AVATAR_COLORS[i % AVATAR_COLORS.length]
+              return (
+                <View key={oi.Id ?? i} style={[s.itemRow, i < items.length - 1 && s.itemBorder]}>
+                  <View style={[s.itemThumb, { backgroundColor: bg }]}>
+                    {img ? (
+                      <Image source={{ uri: img }} style={s.itemImg} resizeMode="contain" />
+                    ) : (
+                      <Text style={s.itemLetter}>{name[0]?.toUpperCase() || '📦'}</Text>
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.itemName} numberOfLines={2}>{name}</Text>
+                    <Text style={s.itemQty}>{oi.Qty} × unit</Text>
+                  </View>
+                  <Text style={s.itemPrice}>
+                    {formatCurrency(parseFloat(String(oi.Qty ?? '1')) * parseFloat(String(oi.UnitPrice ?? '0')))}
+                  </Text>
+                </View>
+              )
+            })}
+          </View>
+
+          {/* Bill summary */}
+          <Text style={s.sectionLabel}>BILL SUMMARY</Text>
+          <View style={s.card}>
+            <View style={s.billRow}>
+              <Text style={s.billLabel}>Item total</Text>
+              <Text style={s.billValue}>{formatCurrency(calculatedTotal)}</Text>
+            </View>
+            <View style={s.billRow}>
+              <Text style={s.billLabel}>Delivery fee</Text>
+              <Text style={[s.billValue, s.free]}>FREE</Text>
+            </View>
+            {discAmount > 0 && (
+              <View style={s.billRow}>
+                <Text style={s.billLabel}>Discount</Text>
+                <Text style={[s.billValue, s.free]}>− {formatCurrency(discAmount)}</Text>
+              </View>
+            )}
+            {taxAmount > 0 && (
+              <View style={s.billRow}>
+                <Text style={s.billLabel}>Tax{order.TaxPer ? ` (${order.TaxPer}%)` : ''}</Text>
+                <Text style={s.billValue}>{formatCurrency(taxAmount)}</Text>
+              </View>
+            )}
+            <View style={s.billDivider} />
+            <View style={s.billRow}>
+              <Text style={s.billTotalLabel}>Total paid</Text>
+              <Text style={s.billTotalValue}>{formatCurrency(grandTotal)}</Text>
+            </View>
+          </View>
+
+          {/* Delivered to */}
+          {address && (
+            <View style={[s.card, s.addressCard]}>
+              <Text style={{ fontSize: 22 }}>🏠</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.addressLabel}>Delivered to {address.Label || 'Home'}</Text>
+                <Text style={s.addressText}>
+                  {[address.Street, address.City, address.State, address.Pincode].filter(Boolean).join(', ')}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={s.actionRow}>
+            <TouchableOpacity
+              style={s.secondaryBtn}
+              activeOpacity={0.85}
+              onPress={() => Toast.show('Invoice download coming soon', { duration: Toast.durations.SHORT })}
+            >
+              <Text style={s.secondaryText}>⭳ Invoice</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.secondaryBtn}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('ContactUs')}
+            >
+              <Text style={s.secondaryText}>Need help?</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={s.reorderBtn} activeOpacity={0.9} onPress={reorder}>
+            <Text style={s.reorderText}>↻ Reorder these items</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
+  )
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  safe: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 14 },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  backBtn: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  backArrow: { fontSize: 18, color: '#141414' },
+  headerTitle: { fontFamily: 'DMSans-Bold', fontSize: 20, color: '#141414', letterSpacing: -0.3 },
+  headerSub: { fontFamily: 'DMSans-Medium', fontSize: 12.5, color: '#8a8a8a', marginTop: 1 },
+
+  scroll: { paddingHorizontal: 16, paddingTop: 4 },
+
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: '#141414',
+    borderRadius: 18,
+    padding: 16,
+  },
+  bannerTile: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  bannerTitle: { fontFamily: 'DMSans-Bold', fontSize: 18, color: '#fff', letterSpacing: -0.2 },
+  bannerSub: { fontFamily: 'DMSans-Medium', fontSize: 12.5, color: '#b4b4b4', marginTop: 3 },
+
+  sectionLabel: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 12,
+    letterSpacing: 0.7,
+    color: '#8a8a8a',
+    marginTop: 22,
+    marginBottom: 10,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#F0F0EC',
+  },
+
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
+  itemBorder: { borderBottomWidth: 1, borderBottomColor: '#F4F4F2' },
+  itemThumb: { width: 48, height: 48, borderRadius: 13, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  itemImg: { width: 48, height: 48 },
+  itemLetter: { fontFamily: 'DMSans-Bold', fontSize: 22, color: 'rgba(0,0,0,0.22)' },
+  itemName: { fontFamily: 'DMSans-Bold', fontSize: 14, color: '#141414', lineHeight: 18 },
+  itemQty: { fontFamily: 'DMSans-Medium', fontSize: 12, color: '#8a8a8a', marginTop: 2 },
+  itemPrice: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#141414' },
+
+  billRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  billLabel: { fontFamily: 'DMSans-Medium', fontSize: 14, color: '#555' },
+  billValue: { fontFamily: 'DMSans-Medium', fontSize: 14, color: '#333' },
+  free: { color: '#0C831F', fontFamily: 'DMSans-Bold' },
+  billDivider: { borderTopWidth: 1.5, borderStyle: 'dashed', borderTopColor: '#E4E4E2', marginVertical: 8 },
+  billTotalLabel: { fontFamily: 'DMSans-Bold', fontSize: 16, color: '#141414' },
+  billTotalValue: { fontFamily: 'DMSans-Bold', fontSize: 19, color: '#141414' },
+
+  addressCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14 },
+  addressLabel: { fontFamily: 'DMSans-Bold', fontSize: 14.5, color: '#141414' },
+  addressText: { fontFamily: 'DMSans-Medium', fontSize: 13, color: '#8a8a8a', marginTop: 3, lineHeight: 18 },
+
+  actionRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
+  secondaryBtn: {
+    flex: 1,
+    height: 52,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderWidth: 1.5,
+    borderColor: '#ECECE8',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryText: { fontFamily: 'DMSans-Bold', fontSize: 14.5, color: '#141414' },
+
+  reorderBtn: {
+    marginTop: 12,
+    height: 56,
+    backgroundColor: '#0C831F',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0C831F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  reorderText: { fontFamily: 'DMSans-Bold', fontSize: 16, color: '#fff' },
+
+  errorTitle: { fontFamily: 'DMSans-Bold', fontSize: 17, color: '#141414' },
+  errorBtn: { backgroundColor: '#141414', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 13 },
+  errorBtnText: { fontFamily: 'DMSans-Bold', fontSize: 14, color: '#fff' },
+})
+
+export default ViewOrderScreen

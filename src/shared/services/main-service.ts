@@ -486,7 +486,7 @@ export const updateMyProfile = async (formData: FormData): Promise<{ status: num
  */
 export const fetchMyWishlist = async (): Promise<any[]> => {
   try {
-    const response: any = await getData('/Product/GetMyWishlist');
+    const response: any = await getData('/wishlist');
     if (response && response.status) {
       return response.data?.data?.data || response.data?.data || [];
     }
@@ -503,12 +503,59 @@ export const fetchMyWishlist = async (): Promise<any[]> => {
 export const toggleWishlist = async (productId: number, isLiked: boolean): Promise<boolean> => {
   try {
     const response: any = isLiked
-      ? await deleteData(`/Product/Wishlist/${productId}`, {})
-      : await postData(`/Product/Wishlist/${productId}`, {});
+      ? await deleteData(`/wishlist/${productId}`, {})
+      : await postData(`/wishlist`, { product_id: productId });
 
     return !!(response && response.status);
   } catch (error) {
     console.log('toggleWishlist error:', error);
+    return false;
+  }
+};
+
+/**
+ * Fetches the current user's cart from GET /cart.
+ * Returns an array of cart items mapped to a standard shape.
+ */
+export const fetchApiCart = async (): Promise<any[]> => {
+  try {
+    const response: any = await getData('/cart');
+    if (response && (response.status === 200 || response.data?.success)) {
+      const raw = response.data?.data ?? response.data ?? [];
+      return Array.isArray(raw) ? raw : [];
+    }
+    return [];
+  } catch (error) {
+    console.log('fetchApiCart error:', error);
+    return [];
+  }
+};
+
+/**
+ * Adds a product to the cart via POST /cart/add.
+ * @param productId - The product id to add.
+ * @param quantity  - Number of units (default 1).
+ */
+export const addToApiCart = async (productId: number, quantity: number = 1): Promise<boolean> => {
+  try {
+    const response: any = await postData('/cart/add', { product_id: productId, quantity });
+    return !!(response && (response.status === 200 || response.status === 201 || response.data?.success));
+  } catch (error) {
+    console.log('addToApiCart error:', error);
+    return false;
+  }
+};
+
+/**
+ * Removes a cart item via DELETE /cart/{id}.
+ * @param cartItemId - The cart row id returned by GET /cart.
+ */
+export const removeFromApiCart = async (cartItemId: number): Promise<boolean> => {
+  try {
+    const response: any = await deleteData(`/cart/${cartItemId}`, {});
+    return !!(response && (response.status === 200 || response.status === 204 || response.data?.success));
+  } catch (error) {
+    console.log('removeFromApiCart error:', error);
     return false;
   }
 };

@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
 
   // ── Header ────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: '#2a2c40',
+    backgroundColor: '#141414',
     elevation: 0,
     shadowOpacity: 0,
     borderBottomWidth: 0,
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
-    backgroundColor: '#3D1A52',
+    backgroundColor: '#1A1A1A',
   },
 
   filterPill: {
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
 
   filterTextActive: {
-    color: THEME.COLOR.bgPurple,
+    color: '#FFE000',
   },
 
   // ── List ──────────────────────────────────────────────────────────────────
@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: THEME.COLOR.bgPurple,
-    opacity: 0.5,
+    backgroundColor: '#FFE000',
+    opacity: 0.7,
   },
 
   cardDate: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   infoValueScore: {
     fontSize: 15,
     fontWeight: '800',
-    color: THEME.COLOR.bgPurple,
+    color: '#141414',
     letterSpacing: 0.2,
   },
 
@@ -232,10 +232,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 42,
     borderRadius: 12,
-    backgroundColor: THEME.COLOR.bgPurple,
+    backgroundColor: '#141414',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.COLOR.bgPurple,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: THEME.COLOR.bgHalfWhite,
     borderWidth: 1.5,
-    borderColor: THEME.COLOR.bgPurple,
+    borderColor: '#141414',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   btnReorderText: {
     fontSize: 13,
     fontWeight: '700',
-    color: THEME.COLOR.bgPurple,
+    color: '#141414',
     letterSpacing: 0.3,
   },
 
@@ -348,13 +348,13 @@ const styles = StyleSheet.create({
     width: 4,
     height: 16,
     borderRadius: 2,
-    backgroundColor: THEME.COLOR.bgPurple,
+    backgroundColor: '#FFE000',
   },
 
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: THEME.COLOR.bgPurple,
+    color: '#141414',
     letterSpacing: 0.2,
   },
 
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: THEME.COLOR.bgPurple,
+    borderColor: '#0C831F',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: THEME.COLOR.bgPurple,
+    backgroundColor: '#0C831F',
   },
 
   addressLine: {
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
 
   addressPhone: {
     fontSize: 13,
-    color: THEME.COLOR.bgPurple,
+    color: '#0C831F',
     fontWeight: '600',
     marginTop: 4,
   },
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(97,44,126,0.1)',
+    backgroundColor: 'rgba(12,131,31,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: THEME.COLOR.bgPurple,
+    backgroundColor: '#0C831F',
     opacity: 0.6,
   },
 
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 15,
     fontWeight: '800',
-    color: THEME.COLOR.bgPurple,
+    color: '#141414',
     letterSpacing: 0.1,
   },
 
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   billTotalValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: THEME.COLOR.bgPurple,
+    color: '#141414',
     letterSpacing: 0.2,
   },
 
@@ -524,12 +524,12 @@ const styles = StyleSheet.create({
   },
 
   ctaBtn: {
-    backgroundColor: THEME.COLOR.bgPurple,
+    backgroundColor: '#0C831F',
     borderRadius: 16,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.COLOR.bgPurple,
+    shadowColor: '#0C831F',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,

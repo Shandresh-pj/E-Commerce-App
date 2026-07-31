@@ -18,8 +18,9 @@ export async function authHeaderNew() {
 const user =await getAsyncData('user');
 console.log('useruseruser',user)
   if (user && user.token) {
+    const formattedToken = user.token.startsWith('Bearer ') ? user.token : 'Bearer ' + user.token;
     return {
-      Authorization: user.token,
+      Authorization: formattedToken,
     };
   } else {
     return { Authorization: ''};

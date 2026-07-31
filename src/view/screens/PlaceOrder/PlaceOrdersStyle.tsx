@@ -66,20 +66,22 @@ const styles = StyleSheet.create({
   orderItemPoints: {
     minWidth: 56,
     borderRadius: THEME.RADIUS.medium,
-    backgroundColor: THEME.COLOR.primaryLight,
+    backgroundColor: '#FFF8D6',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#FFE85C',
   },
   orderItemScore: {
     fontSize: 15,
     fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.primaryDark,
+    color: '#141414',
   },
   orderItemScoreLabel: {
     fontSize: 10,
-    color: THEME.COLOR.primaryDark,
+    color: '#6B6B6B',
     fontFamily: THEME.FONTWEIGHT.Medium,
   },
 
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.FONTWEIGHT.Bold,
     color: THEME.COLOR.textPrimary,
   },
-  totalPointsText: { color: THEME.COLOR.primaryDark },
+  totalPointsText: { color: '#141414' },
 
   // ── Inputs ────────────────────────────────────────────────────────────────
   inputGroup: { marginBottom: THEME.SPACING.md },
@@ -165,7 +167,7 @@ const styles = StyleSheet.create({
   footerPoints: {
     fontSize: 20,
     fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.primaryDark,
+    color: '#141414',
   },
   footerItemCount: {
     fontSize: 12,
@@ -211,14 +213,14 @@ const styles = StyleSheet.create({
     marginBottom: THEME.SPACING.xxl,
   },
   orderIdBadge: {
-    backgroundColor: THEME.COLOR.primarySoft,
+    backgroundColor: '#FFF8D6',
     borderRadius: THEME.RADIUS.medium,
     paddingHorizontal: THEME.SPACING.xl,
     paddingVertical: 10,
     alignItems: 'center',
     marginBottom: THEME.SPACING.xxl,
     borderWidth: 1,
-    borderColor: THEME.COLOR.primaryLight,
+    borderColor: '#FFE85C',
   },
   orderIdLabel: {
     fontSize: 11,
@@ -229,7 +231,7 @@ const styles = StyleSheet.create({
   orderIdValue: {
     fontSize: 18,
     fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.primaryDark,
+    color: '#141414',
     marginTop: 2,
   },
   successBtn: { width: '100%', marginBottom: THEME.SPACING.md },

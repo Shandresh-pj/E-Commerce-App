@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Text,
@@ -10,419 +10,455 @@ import {
   PermissionsAndroid,
   Platform,
   ActivityIndicator,
-  Dimensions,
-  Alert,
-  Linking,
   AppState,
   AppStateStatus,
   NativeModules,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
-import * as Animatable from 'react-native-animatable';
-import DeviceInfo from 'react-native-device-info';
+  Dimensions,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import DeviceInfo from 'react-native-device-info'
 
-const { width } = Dimensions.get('window');
-
-// ─── Design Tokens (Matching Login Screen) ───────────────────────────────────
-const BG = '#0F0E1A';
-const SURFACE = '#1A1830';
-const BORDER = '#2E2B50';
-const ACCENT = '#6C63FF';
-const ACCENT_DARK = '#4B44CC';
-const TEXT_PRIMARY = '#FFFFFF';
-const TEXT_SECONDARY = '#9B99B8';
+const { width: W, height: H } = Dimensions.get('window')
 
 interface LocationPermissionProps {
-  navigation: any;
+  navigation: any
 }
 
 export default function LocationPermission({ navigation }: LocationPermissionProps) {
-  const [loading, setLoading] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const [loading, setLoading] = useState(false)
+  const sheetSlide = useRef(new Animated.Value(300)).current
+  const sheetFade = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
+      Animated.spring(sheetSlide, {
         toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.quad),
+        tension: 50,
+        friction: 12,
         useNativeDriver: true,
       }),
-    ]).start();
+      Animated.timing(sheetFade, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start()
 
-    // Subscribe to AppState changes to automatically transition when returning from system settings
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    checkExistingPermission();
+    const subscription = AppState.addEventListener('change', handleAppStateChange)
+    checkExistingPermission()
     return () => {
-      subscription.remove();
-    };
-  }, []);
+      subscription.remove()
+    }
+  }, [])
 
   const checkExistingPermission = async () => {
     try {
-      let permissionGranted = false;
+      let permissionGranted = false
       if (Platform.OS === 'android') {
         permissionGranted = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        )
       } else {
-        permissionGranted = true;
+        permissionGranted = true
       }
 
       if (permissionGranted) {
-        const locationEnabled = await DeviceInfo.isLocationEnabled();
+        const locationEnabled = await DeviceInfo.isLocationEnabled()
         if (locationEnabled) {
-          navigateToHome();
+          navigateToHome()
         }
       }
     } catch (err) {
-      console.warn('Initial permission check error:', err);
+      console.warn('Initial permission check error:', err)
     }
-  };
+  }
 
   const navigateToHome = () => {
     navigation.reset({
       index: 0,
       routes: [{ name: 'Home' }],
-    });
-  };
+    })
+  }
 
   const handleAppStateChange = async (nextAppState: AppStateStatus) => {
     if (nextAppState === 'active') {
       try {
-        let permissionGranted = false;
+        let permissionGranted = false
         if (Platform.OS === 'android') {
           permissionGranted = await PermissionsAndroid.check(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-          );
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          )
         } else {
-          permissionGranted = true;
+          permissionGranted = true
         }
 
         if (permissionGranted) {
-          const locationEnabled = await DeviceInfo.isLocationEnabled();
+          const locationEnabled = await DeviceInfo.isLocationEnabled()
           if (locationEnabled) {
-            navigateToHome();
+            navigateToHome()
           }
         }
       } catch (err) {
-        console.warn('AppState verify error:', err);
+        console.warn('AppState verify error:', err)
       }
     }
-  };
+  }
 
   const handleRequestPermission = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      let permissionGranted = false;
+      let permissionGranted = false
       if (Platform.OS === 'android') {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
             title: 'Location Permission Required',
-            message: 'This app needs access to your location to find nearby stores, show accurate delivery times, and customize your feed.',
+            message:
+              'This app needs access to your location to find nearby stores, show accurate delivery times, and customize your feed.',
             buttonNeutral: 'Ask Me Later',
             buttonNegative: 'Cancel',
             buttonPositive: 'OK',
-          }
-        );
-        permissionGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
+          },
+        )
+        permissionGranted = granted === PermissionsAndroid.RESULTS.GRANTED
       } else {
-        permissionGranted = true;
+        permissionGranted = true
       }
 
       if (permissionGranted) {
         if (Platform.OS === 'android') {
           try {
-            // Trigger native in-screen Google GPS enablement dialog using our custom New-Arch-compatible native module
-            const { LocationEnabler } = NativeModules;
+            const { LocationEnabler } = NativeModules
             if (LocationEnabler) {
-              await LocationEnabler.showLocationSettings();
-              console.log('Location enabled inside screen successfully via custom native module');
-            } else {
-              console.warn('LocationEnabler native module not found');
+              await LocationEnabler.showLocationSettings()
             }
-            navigateToHome();
+            navigateToHome()
           } catch (err: any) {
-            console.warn('In-screen GPS enable cancelled or failed:', err.message);
-            // Even if cancelled/failed, redirect to Home as a fallback
-            navigateToHome();
+            console.warn('In-screen GPS enable cancelled or failed:', err.message)
+            navigateToHome()
           }
         } else {
-          // iOS implementation
-          const locationEnabled = await DeviceInfo.isLocationEnabled();
-          if (locationEnabled) {
-            navigateToHome();
-          } else {
-            navigateToHome();
-          }
+          navigateToHome()
         }
       } else {
-        // User denied the permission dialog
-        navigateToHome();
+        navigateToHome()
       }
     } catch (err) {
-      console.warn('Permission request error:', err);
-      navigateToHome();
+      console.warn('Permission request error:', err)
+      navigateToHome()
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  const handleEnterManually = () => {
+    navigateToHome()
+  }
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={BG} translucent={false} />
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ECEEE8" translucent={false} />
 
-      {/* Decorative background blobs */}
-      <View style={[styles.blob, styles.blob1]} />
-      <View style={[styles.blob, styles.blob2]} />
+      {/* Map-like Background */}
+      <View style={s.mapBg}>
+        {/* Search bar overlay */}
+        <SafeAreaView edges={['top']} style={s.searchOverlay}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={s.backArrow}>←</Text>
+          </TouchableOpacity>
+          <View style={s.searchBar}>
+            <Text style={s.searchIcon}>🔎</Text>
+            <Text style={s.searchPlaceholder}>Search area, street, landmark...</Text>
+          </View>
+        </SafeAreaView>
 
-      <SafeAreaView style={styles.safeArea}>
-        <Animated.View
-          style={[
-            styles.container,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          {/* Radar animation wrapper */}
-          <View style={styles.radarWrapper}>
-            <Animatable.View
-              animation="pulse"
-              iterationCount="infinite"
-              duration={2500}
-              style={[styles.radarRing, styles.ring1]}
-            />
-            <Animatable.View
-              animation="pulse"
-              iterationCount="infinite"
-              duration={2500}
-              delay={600}
-              style={[styles.radarRing, styles.ring2]}
-            />
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconEmoji}>📍</Text>
+        {/* Faux map grid lines */}
+        <View style={s.gridContainer}>
+          <View style={[s.gridLineH, { top: '25%' }]} />
+          <View style={[s.gridLineH, { top: '50%' }]} />
+          <View style={[s.gridLineH, { top: '75%' }]} />
+          <View style={[s.gridLineV, { left: '20%' }]} />
+          <View style={[s.gridLineV, { left: '45%' }]} />
+          <View style={[s.gridLineV, { left: '70%' }]} />
+          {/* Park-like green patches */}
+          <View style={s.greenPatch1} />
+          <View style={s.greenPatch2} />
+          <View style={s.bluePatch} />
+          {/* Road-like wider lines */}
+          <View style={s.roadH} />
+          <View style={s.roadV} />
+        </View>
+      </View>
+
+      {/* Bottom Sheet */}
+      <Animated.View
+        style={[
+          s.bottomSheet,
+          {
+            opacity: sheetFade,
+            transform: [{ translateY: sheetSlide }],
+          },
+        ]}
+      >
+        <View style={s.sheetHandle} />
+
+        <View style={s.sheetContent}>
+          <View style={s.locationHeader}>
+            <View style={s.pinIconBox}>
+              <Text style={s.pinIcon}>📍</Text>
+            </View>
+            <View style={s.locationTextWrap}>
+              <Text style={s.locationTitle}>Where do we deliver?</Text>
+              <Text style={s.locationSub}>
+                We need your location to show stock & ETA near you.
+              </Text>
             </View>
           </View>
 
-          {/* Texts */}
-          <Text style={styles.title}>Enable Location Services</Text>
-          <Text style={styles.subtitle}>
-            To display products available in your area, estimate shipping times, and enjoy local delivery options, allow the app to access your device's location.
-          </Text>
+          <TouchableOpacity
+            style={s.primaryBtn}
+            onPress={handleRequestPermission}
+            activeOpacity={0.85}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Text style={s.primaryBtnIcon}>⚡</Text>
+                <Text style={s.primaryBtnText}>Use my current location</Text>
+              </>
+            )}
+          </TouchableOpacity>
 
-          {/* Action Card */}
-          <View style={styles.card}>
-            <View style={styles.featureRow}>
-              <Text style={styles.featureIcon}>🛍️</Text>
-              <View style={styles.featureTextWrap}>
-                <Text style={styles.featureTitle}>Nearby Deals</Text>
-                <Text style={styles.featureDesc}>Find exclusive offers around your location.</Text>
-              </View>
-            </View>
-            <View style={styles.featureRow}>
-              <Text style={styles.featureIcon}>🚚</Text>
-              <View style={styles.featureTextWrap}>
-                <Text style={styles.featureTitle}>Fast Delivery</Text>
-                <Text style={styles.featureDesc}>Get products shipped to your exact address quickly.</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={handleRequestPermission}
-              style={styles.primaryBtn}
-              activeOpacity={0.8}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.primaryBtnText}>Allow Location Access</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={navigateToHome}
-              style={styles.secondaryBtn}
-              activeOpacity={0.7}
-              disabled={loading}
-            >
-              <Text style={styles.secondaryBtnText}>Maybe Later</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </SafeAreaView>
+          <TouchableOpacity
+            style={s.secondaryBtn}
+            onPress={handleEnterManually}
+            activeOpacity={0.7}
+            disabled={loading}
+          >
+            <Text style={s.secondaryBtnText}>Enter location manually</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
     </View>
-  );
+  )
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: '#ECEEE8',
   },
-  safeArea: {
+
+  mapBg: {
     flex: 1,
+    backgroundColor: '#ECEEE8',
   },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-  },
-  // Background blobs
-  blob: {
+
+  searchOverlay: {
     position: 'absolute',
-    borderRadius: 999,
-    opacity: 0.15,
-  },
-  blob1: {
-    width: 320,
-    height: 320,
-    backgroundColor: ACCENT,
-    top: -120,
-    right: -80,
-  },
-  blob2: {
-    width: 250,
-    height: 250,
-    backgroundColor: '#FF6B9D',
-    bottom: 40,
-    left: -80,
-  },
-  // Radar visual
-  radarWrapper: {
-    width: 180,
-    height: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  radarRing: {
-    position: 'absolute',
-    borderRadius: 999,
-    borderWidth: 1.5,
-  },
-  ring1: {
-    width: 180,
-    height: 180,
-    borderColor: `${ACCENT}30`,
-  },
-  ring2: {
-    width: 140,
-    height: 140,
-    borderColor: `${ACCENT}60`,
-  },
-  iconCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: SURFACE,
-    borderWidth: 2,
-    borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: ACCENT,
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  iconEmoji: {
-    fontSize: 40,
-  },
-  // Typography
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: TEXT_PRIMARY,
-    textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: TEXT_SECONDARY,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-    paddingHorizontal: 10,
-  },
-  // Feature card
-  card: {
-    width: '100%',
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 20,
-    marginBottom: 36,
-  },
-  featureRow: {
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 10,
   },
-  featureIcon: {
-    fontSize: 24,
-    marginRight: 16,
+  backBtn: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  featureTextWrap: {
+  backArrow: {
+    fontSize: 18,
+    color: '#141414',
+  },
+  searchBar: {
     flex: 1,
+    height: 44,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  featureTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-    marginBottom: 2,
+  searchIcon: { fontSize: 14 },
+  searchPlaceholder: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 14,
+    color: '#9a9a9a',
   },
-  featureDesc: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    lineHeight: 18,
+
+  gridContainer: {
+    ...StyleSheet.absoluteFillObject,
   },
-  // Buttons
-  buttonContainer: {
-    width: '100%',
-    gap: 12,
+  gridLineH: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(200,200,195,0.4)',
   },
-  primaryBtn: {
-    width: '100%',
+  gridLineV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: 'rgba(200,200,195,0.4)',
+  },
+  greenPatch1: {
+    position: 'absolute',
+    top: '22%',
+    left: '35%',
+    width: 80,
+    height: 60,
+    backgroundColor: 'rgba(200,220,190,0.5)',
+    borderRadius: 4,
+    transform: [{ rotate: '-5deg' }],
+  },
+  greenPatch2: {
+    position: 'absolute',
+    bottom: '25%',
+    right: '5%',
+    width: 70,
+    height: 50,
+    backgroundColor: 'rgba(200,220,190,0.4)',
+    borderRadius: 4,
+  },
+  bluePatch: {
+    position: 'absolute',
+    bottom: '30%',
+    left: '10%',
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(190,210,230,0.35)',
+    borderRadius: 4,
+  },
+  roadH: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  roadV: {
+    position: 'absolute',
+    left: '55%',
+    top: 0,
+    bottom: 0,
+    width: 8,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+
+  bottomSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 16,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E4E4E2',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  sheetContent: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+  },
+
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    marginBottom: 28,
+  },
+  pinIconBox: {
+    width: 56,
     height: 56,
-    backgroundColor: ACCENT,
-    borderRadius: 14,
+    backgroundColor: '#FFE000',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pinIcon: {
+    fontSize: 28,
+  },
+  locationTextWrap: {
+    flex: 1,
+    paddingTop: 2,
+  },
+  locationTitle: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 22,
+    color: '#141414',
+    letterSpacing: -0.3,
+    marginBottom: 6,
+  },
+  locationSub: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 14,
+    color: '#8a8a8a',
+    lineHeight: 20,
+  },
+
+  primaryBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: ACCENT,
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    gap: 8,
+    marginBottom: 12,
+  },
+  primaryBtnIcon: {
+    fontSize: 16,
   },
   primaryBtnText: {
-    color: '#FFFFFF',
+    fontFamily: 'DMSans-Bold',
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#FFFFFF',
   },
+
   secondaryBtn: {
-    width: '100%',
+    borderRadius: 16,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E4E4E2',
   },
   secondaryBtnText: {
-    color: TEXT_SECONDARY,
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'DMSans-Bold',
+    fontSize: 16,
+    color: '#141414',
   },
-});
+})

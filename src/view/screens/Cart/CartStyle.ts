@@ -62,20 +62,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 3,
-    backgroundColor: THEME.COLOR.primaryLight,
+    backgroundColor: '#FFF8D6',
     borderRadius: THEME.RADIUS.pill,
     paddingHorizontal: 10,
     paddingVertical: 3,
     marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#FFE85C',
   },
   scoreValue: {
     fontSize: 14,
-    color: THEME.COLOR.primaryDark,
+    color: '#141414',
     fontFamily: THEME.FONTWEIGHT.Bold,
   },
   scoreLabel: {
     fontSize: 10,
-    color: THEME.COLOR.primaryDark,
+    color: '#6B6B6B',
     fontFamily: THEME.FONTWEIGHT.Medium,
   },
   variantChip: {
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   },
   totalScore: {
     fontSize: 22,
-    color: THEME.COLOR.primaryDark,
+    color: '#141414',
     fontFamily: THEME.FONTWEIGHT.Bold,
   },
   totalUnit: {

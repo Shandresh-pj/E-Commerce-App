@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -12,448 +12,455 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { sendOtpAction, verifyOtpAction } from '../../../shared/redux/actions/auth.action';
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import {
+  sendOtpAction,
+  verifyOtpAction,
+} from '../../../shared/redux/actions/auth.action'
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get('window')
+const OTP_BOX_SIZE = Math.min(56, (width - 80) / 6 - 8)
 
-// ─── Design tokens ───────────────────────────────────────────────────────────
-const ACCENT = '#6C63FF';
-const ACCENT_DARK = '#4B44CC';
-const BG = '#0F0E1A';
-const SURFACE = '#1A1830';
-const BORDER = '#2E2B50';
-const TEXT_PRIMARY = '#FFFFFF';
-const TEXT_SECONDARY = '#9B99B8';
-const SUCCESS = '#43D98C';
-const OTP_BOX_SIZE = Math.min(52, (width - 80) / 6 - 8);
+type AuthStep = 'email' | 'otp' | 'success'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type AuthStep = 'email' | 'otp' | 'success';
-
-// ─── Reusable animated button ─────────────────────────────────────────────────
-const PrimaryButton = ({
+const CTA = ({
   label,
   onPress,
   loading = false,
   disabled = false,
+  green = false,
 }: {
-  label: string;
-  onPress: () => void;
-  loading?: boolean;
-  disabled?: boolean;
+  label: string
+  onPress: () => void
+  loading?: boolean
+  disabled?: boolean
+  green?: boolean
 }) => {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn = () =>
-    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
-  const pressOut = () =>
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-
+  const scale = useRef(new Animated.Value(1)).current
   return (
     <TouchableWithoutFeedback
-      onPressIn={pressIn}
-      onPressOut={pressOut}
+      onPressIn={() =>
+        Animated.spring(scale, {
+          toValue: 0.98,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 10,
+        }).start()
+      }
+      onPressOut={() =>
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 10,
+        }).start()
+      }
       onPress={!disabled && !loading ? onPress : undefined}
     >
       <Animated.View
         style={[
-          authStyles.btn,
-          disabled && authStyles.btnDisabled,
+          st.btn,
+          green && st.btnGreen,
+          disabled && st.btnDisabled,
           { transform: [{ scale }] },
         ]}
       >
         {loading ? (
-          <ActivityIndicator color="#fff" size="small" />
+          <ActivityIndicator color={green ? '#fff' : '#141414'} size="small" />
         ) : (
-          <Text style={authStyles.btnText}>{label}</Text>
+          <Text style={[st.btnText, green && st.btnTextGreen]}>{label}</Text>
         )}
       </Animated.View>
     </TouchableWithoutFeedback>
-  );
-};
+  )
+}
 
-// ─── Email screen ─────────────────────────────────────────────────────────────
 const EmailScreen = ({
   onContinue,
 }: {
-  onContinue: (email: string) => Promise<void>;
+  onContinue: (email: string) => Promise<void>
 }) => {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const slideAnim = useRef(new Animated.Value(40)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(30)).current
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 420,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 500,
+        duration: 420,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-    ]).start();
-  }, []);
+    ]).start()
+  }, [])
 
-  const validate = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  const validate = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 
   const handleContinue = async () => {
-    Keyboard.dismiss();
+    Keyboard.dismiss()
     if (!validate(email)) {
-      setError('Please enter a valid email address');
-      return;
+      setError('Please enter a valid email address')
+      return
     }
-    setError('');
-    setLoading(true);
+    setError('')
+    setLoading(true)
     try {
-      await onContinue(email.trim().toLowerCase());
+      await onContinue(email.trim().toLowerCase())
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Failed to send OTP';
-      setError(msg);
+      setError(
+        err.response?.data?.message || err.message || 'Failed to send OTP',
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Animated.View
       style={[
-        authStyles.stepContainer,
+        st.step,
         { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
       ]}
     >
-      {/* Icon */}
-      <View style={authStyles.iconCircle}>
-        <Text style={authStyles.iconEmoji}>🛍️</Text>
-      </View>
-
-      <Text style={authStyles.stepTitle}>Welcome back</Text>
-      <Text style={authStyles.stepSubtitle}>
-        Enter your email to receive a one-time passcode
+      <Text style={st.stepTitle}>Log in or sign up</Text>
+      <Text style={st.stepSub}>
+        Groceries & rewards, delivered fast. Enter your email to get started.
       </Text>
 
-      {/* Input */}
-      <View style={[authStyles.inputWrap, error ? authStyles.inputWrapError : null]}>
-        <Text style={authStyles.inputIcon}>✉️</Text>
+      <View style={[st.inputWrap, error ? st.inputWrapErr : null]}>
+        <Text style={st.inputIcon}>✉️</Text>
         <TextInput
-          style={authStyles.input}
+          style={st.input}
           placeholder="you@example.com"
-          placeholderTextColor={TEXT_SECONDARY}
+          placeholderTextColor="#9a9a9a"
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
           value={email}
           onChangeText={v => {
-            setEmail(v);
-            if (error) setError('');
+            setEmail(v)
+            if (error) setError('')
           }}
           onSubmitEditing={handleContinue}
           returnKeyType="done"
         />
       </View>
 
-      {error ? <Text style={authStyles.errorText}>{error}</Text> : null}
+      {error ? <Text style={st.errorText}>{error}</Text> : null}
 
-      <PrimaryButton
-        label="Continue"
+      <CTA
+        label="Continue →"
         onPress={handleContinue}
         loading={loading}
         disabled={email.length === 0}
       />
 
-      <Text style={authStyles.legalText}>
-        By continuing, you agree to our{' '}
-        <Text style={authStyles.legalLink}>Terms</Text> &{' '}
-        <Text style={authStyles.legalLink}>Privacy Policy</Text>
+      <Text style={st.legal}>
+        By continuing you agree to our{' '}
+        <Text style={st.legalLink}>Terms</Text> &{' '}
+        <Text style={st.legalLink}>Privacy Policy</Text>.
       </Text>
     </Animated.View>
-  );
-};
+  )
+}
 
-// ─── OTP screen ───────────────────────────────────────────────────────────────
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 6
 
 const OtpScreen = ({
   email,
   onVerify,
   onResend,
 }: {
-  email: string;
-  onVerify: (otp: string) => Promise<void>;
-  onResend: () => Promise<void>;
+  email: string
+  onVerify: (otp: string) => Promise<void>
+  onResend: () => Promise<void>
 }) => {
-  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(30);
-  const inputs = useRef<TextInput[]>([]);
-  const slideAnim = useRef(new Animated.Value(40)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''))
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(30)
+  const inputs = useRef<TextInput[]>([])
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(30)).current
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-    ]).start();
-    inputs.current[0]?.focus();
-  }, []);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 420,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start()
+    inputs.current[0]?.focus()
+  }, [])
 
-  // Countdown timer for resend
   useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
 
   const handleChange = (val: string, idx: number) => {
-    const digit = val.replace(/[^0-9]/g, '').slice(-1);
-    const next = [...otp];
-    next[idx] = digit;
-    setOtp(next);
-    if (error) setError('');
-    if (digit && idx < OTP_LENGTH - 1) {
-      inputs.current[idx + 1]?.focus();
-    }
-  };
+    const digit = val.replace(/[^0-9]/g, '').slice(-1)
+    const next = [...otp]
+    next[idx] = digit
+    setOtp(next)
+    if (error) setError('')
+    if (digit && idx < OTP_LENGTH - 1) inputs.current[idx + 1]?.focus()
+  }
 
   const handleKeyPress = (key: string, idx: number) => {
     if (key === 'Backspace' && !otp[idx] && idx > 0) {
-      inputs.current[idx - 1]?.focus();
-      const next = [...otp];
-      next[idx - 1] = '';
-      setOtp(next);
+      inputs.current[idx - 1]?.focus()
+      const next = [...otp]
+      next[idx - 1] = ''
+      setOtp(next)
     }
-  };
+  }
 
   const handleVerify = async () => {
-    Keyboard.dismiss();
-    const code = otp.join('');
+    Keyboard.dismiss()
+    const code = otp.join('')
     if (code.length < OTP_LENGTH) {
-      setError('Please enter all 6 digits');
-      return;
+      setError('Please enter all 6 digits')
+      return
     }
-    setError('');
-    setLoading(true);
+    setError('')
+    setLoading(true)
     try {
-      await onVerify(code);
+      await onVerify(code)
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Verification failed';
-      setError(msg);
+      setError(
+        err.response?.data?.message || err.message || 'Verification failed',
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleResend = async () => {
-    if (resendCooldown > 0) return;
-    setOtp(Array(OTP_LENGTH).fill(''));
-    setError('');
-    setResendCooldown(30);
-    inputs.current[0]?.focus();
+    if (cooldown > 0) return
+    setOtp(Array(OTP_LENGTH).fill(''))
+    setError('')
+    setCooldown(30)
+    inputs.current[0]?.focus()
     try {
-      await onResend();
+      await onResend()
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Failed to resend OTP';
-      setError(msg);
+      setError(
+        err.response?.data?.message || err.message || 'Failed to resend OTP',
+      )
     }
-  };
-
-  const filled = otp.join('').length;
+  }
 
   return (
     <Animated.View
       style={[
-        authStyles.stepContainer,
+        st.step,
         { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
       ]}
     >
-      <View style={authStyles.iconCircle}>
-        <Text style={authStyles.iconEmoji}>🔐</Text>
-      </View>
-
-      <Text style={authStyles.stepTitle}>Verify your email</Text>
-      <Text style={authStyles.stepSubtitle}>
-        We sent a 6-digit code to{'\n'}
-        <Text style={{ color: ACCENT, fontWeight: '700' }}>{email}</Text>
+      <Text style={st.stepTitle}>Verify your email</Text>
+      <Text style={st.stepSub}>
+        Enter the 6-digit code sent to{'\n'}
+        <Text style={{ color: '#FFE000', fontFamily: 'DMSans-Bold' }}>
+          {email}
+        </Text>
       </Text>
 
-      {/* OTP boxes */}
-      <View style={authStyles.otpRow}>
+      <View style={st.otpRow}>
         {Array(OTP_LENGTH)
           .fill(0)
           .map((_, i) => (
             <TextInput
               key={i}
               ref={el => {
-                if (el) inputs.current[i] = el;
+                if (el) inputs.current[i] = el
               }}
               style={[
-                authStyles.otpBox,
-                otp[i] ? authStyles.otpBoxFilled : null,
-                error ? authStyles.otpBoxError : null,
+                st.otpBox,
+                otp[i] ? st.otpBoxFilled : null,
+                error ? st.otpBoxErr : null,
               ]}
               keyboardType="number-pad"
               maxLength={1}
               value={otp[i]}
               onChangeText={v => handleChange(v, i)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
+              onKeyPress={({ nativeEvent }) =>
+                handleKeyPress(nativeEvent.key, i)
+              }
               caretHidden
               selectTextOnFocus
             />
           ))}
       </View>
 
-      {error ? <Text style={authStyles.errorText}>{error}</Text> : null}
+      {error ? <Text style={st.errorText}>{error}</Text> : null}
 
-      <PrimaryButton
-        label="Verify"
+      <CTA
+        label="Verify & continue ⚡"
         onPress={handleVerify}
         loading={loading}
-        disabled={filled < OTP_LENGTH}
+        disabled={otp.join('').length < OTP_LENGTH}
+        green
       />
 
-      {/* Resend */}
       <TouchableOpacity
         onPress={handleResend}
-        disabled={resendCooldown > 0}
-        style={authStyles.resendWrap}
+        disabled={cooldown > 0}
+        style={st.resendWrap}
       >
-        <Text style={authStyles.resendText}>
-          {resendCooldown > 0
-            ? `Resend OTP in ${resendCooldown}s`
-            : "Didn't receive it? "}
-          {resendCooldown === 0 && (
-            <Text style={authStyles.resendLink}>Resend OTP</Text>
+        <Text style={st.resendText}>
+          {cooldown > 0 ? 'Resend code in ' : "Didn't receive it? "}
+          {cooldown > 0 ? (
+            <Text style={{ color: '#FFE000' }}>
+              00:{cooldown.toString().padStart(2, '0')}
+            </Text>
+          ) : (
+            <Text style={st.resendLink}>Resend OTP</Text>
           )}
         </Text>
       </TouchableOpacity>
     </Animated.View>
-  );
-};
+  )
+}
 
-// ─── Success screen ───────────────────────────────────────────────────────────
 const SuccessScreen = ({ onGoHome }: { onGoHome: () => void }) => {
-  const scaleAnim = useRef(new Animated.Value(0.5)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const checkScale = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const checkScale = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     Animated.sequence([
       Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 7, useNativeDriver: true }),
-        Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 60,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
       ]),
-      Animated.spring(checkScale, { toValue: 1, tension: 80, friction: 6, useNativeDriver: true }),
-    ]).start();
-
-    const timer = setTimeout(onGoHome, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+      Animated.spring(checkScale, {
+        toValue: 1,
+        tension: 80,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+    ]).start()
+    const timer = setTimeout(onGoHome, 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <Animated.View
       style={[
-        authStyles.stepContainer,
-        authStyles.successContainer,
+        st.step,
+        st.successWrap,
         { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
       ]}
     >
       <Animated.View
-        style={[authStyles.successCircle, { transform: [{ scale: checkScale }] }]}
+        style={[st.successCircle, { transform: [{ scale: checkScale }] }]}
       >
-        <Text style={authStyles.successCheck}>✓</Text>
+        <Text style={st.successCheck}>✓</Text>
       </Animated.View>
-
-      <Text style={authStyles.successTitle}>Login Successful!</Text>
-      <Text style={authStyles.successSubtitle}>
-        You're all set. Redirecting to your home screen…
-      </Text>
-
-      <ActivityIndicator color={ACCENT} style={{ marginTop: 24 }} />
+      <Text style={st.stepTitle}>Login Successful!</Text>
+      <Text style={st.stepSub}>You're all set. Redirecting…</Text>
+      <ActivityIndicator color="#FFE000" style={{ marginTop: 24 }} />
     </Animated.View>
-  );
-};
+  )
+}
 
-// ─── Root Login component ─────────────────────────────────────────────────────
 function Login(props: any) {
-  const { navigation, dispatch } = props;
-  const [step, setStep] = useState<AuthStep>('email');
-  const [email, setEmail] = useState('');
+  const { navigation, dispatch } = props
+  const [step, setStep] = useState<AuthStep>('email')
+  const [email, setEmail] = useState('')
 
   const goHome = useCallback(() => {
-    navigation.reset({ index: 0, routes: [{ name: 'LocationPermission' }] });
-  }, [navigation]);
+    navigation.reset({ index: 0, routes: [{ name: 'LocationPermission' }] })
+  }, [navigation])
 
   const handleEmailContinue = async (val: string) => {
-    if (dispatch) {
-      await dispatch(sendOtpAction(val));
-    }
-    setEmail(val);
-    setStep('otp');
-  };
+    if (dispatch) await dispatch(sendOtpAction(val))
+    setEmail(val)
+    setStep('otp')
+  }
 
   const handleOtpVerify = async (otp: string) => {
-    if (dispatch) {
-      await dispatch(verifyOtpAction(email, otp));
-    }
-    setStep('success');
-  };
+    if (dispatch) await dispatch(verifyOtpAction(email, otp))
+    setStep('success')
+  }
 
   const handleResend = async () => {
-    if (dispatch) {
-      await dispatch(sendOtpAction(email));
-    }
-  };
+    if (dispatch) await dispatch(sendOtpAction(email))
+  }
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={authStyles.root}>
-        <StatusBar barStyle="light-content" backgroundColor={BG} translucent={false} />
+      <View style={st.root}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="#FFE000"
+          translucent={false}
+        />
 
-        {/* Decorative blobs */}
-        <View style={[authStyles.blob, authStyles.blob1]} />
-        <View style={[authStyles.blob, authStyles.blob2]} />
+        {/* Yellow hero */}
+        <View style={st.hero}>
+          <View style={st.heroBubble} />
+          <View style={st.logoBox}>
+            <Text style={st.logoEmoji}>⚡</Text>
+          </View>
+          <Text style={st.logoName}>FUTURE BELIEVE</Text>
+        </View>
 
-        <SafeAreaView edges={['top', 'bottom']} style={authStyles.safeArea}>
-
-          {/* Step indicator + back button */}
+        {/* Dark card */}
+        <SafeAreaView edges={['bottom']} style={st.card}>
           {step !== 'success' && (
-            <View style={authStyles.topBar}>
-              {step === 'otp' && (
+            <View style={st.topRow}>
+              {step === 'otp' ? (
                 <TouchableOpacity
-                  style={authStyles.backBtn}
                   onPress={() => setStep('email')}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={st.backBtn}
                 >
-                  <Text style={authStyles.backBtnText}>← Back</Text>
+                  <Text style={st.backBtnText}>← Change email</Text>
                 </TouchableOpacity>
+              ) : (
+                <View style={{ flex: 1 }} />
               )}
-              <View style={authStyles.stepDots}>
+              <View style={st.dots}>
                 {(['email', 'otp'] as AuthStep[]).map(s => (
                   <View
                     key={s}
-                    style={[
-                      authStyles.dot,
-                      step === s
-                        ? authStyles.dotActive
-                        : null,
-                    ]}
+                    style={[st.dot, step === s && st.dotActive]}
                   />
                 ))}
               </View>
             </View>
           )}
 
-          {/* Step content */}
-          <View style={authStyles.content}>
+          <View style={st.cardContent}>
             {step === 'email' && (
               <EmailScreen onContinue={handleEmailContinue} />
             )}
@@ -464,196 +471,171 @@ function Login(props: any) {
                 onResend={handleResend}
               />
             )}
-            {step === 'success' && (
-              <SuccessScreen onGoHome={goHome} />
-            )}
+            {step === 'success' && <SuccessScreen onGoHome={goHome} />}
           </View>
-
         </SafeAreaView>
       </View>
     </TouchableWithoutFeedback>
-  );
+  )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const authStyles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: BG,
+const st = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#FFE000' },
+
+  hero: {
+    height: 230,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  safeArea: {
-    flex: 1,
-  },
-  // Decorative blobs
-  blob: {
+  heroBubble: {
     position: 'absolute',
-    borderRadius: 999,
-    opacity: 0.18,
+    top: -50,
+    right: -40,
+    width: 200,
+    height: 200,
+    backgroundColor: '#FFD500',
+    borderRadius: 100,
   },
-  blob1: {
-    width: 300,
-    height: 300,
-    backgroundColor: ACCENT,
-    top: -100,
-    right: -80,
+  logoBox: {
+    width: 78,
+    height: 78,
+    backgroundColor: '#141414',
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.4,
+    shadowRadius: 30,
+    elevation: 14,
   },
-  blob2: {
-    width: 220,
-    height: 220,
-    backgroundColor: '#FF6B9D',
-    bottom: 60,
-    left: -70,
+  logoEmoji: { fontSize: 42, lineHeight: 52 },
+  logoName: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 28,
+    letterSpacing: -1.5,
+    color: '#141414',
+    marginTop: 14,
   },
-  // Top bar
-  topBar: {
+
+  card: {
+    flex: 1,
+    backgroundColor: '#141414',
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingTop: 22,
     paddingBottom: 8,
     minHeight: 52,
   },
-  backBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
+  backBtn: { flex: 1, paddingVertical: 4 },
   backBtnText: {
-    color: TEXT_SECONDARY,
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#9a9a9a',
+    fontSize: 13,
+    fontFamily: 'DMSans-Medium',
   },
-  stepDots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginLeft: 'auto',
-  },
+  dots: { flexDirection: 'row', gap: 8 },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: BORDER,
+    backgroundColor: '#3a3a3a',
   },
-  dotActive: {
-    backgroundColor: ACCENT,
-    width: 22,
-  },
-  // Main content
-  content: {
+  dotActive: { backgroundColor: '#FFE000', width: 22 },
+
+  cardContent: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
     paddingBottom: 40,
   },
-  stepContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  // Icon
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: SURFACE,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 28,
-  },
-  iconEmoji: {
-    fontSize: 36,
-  },
-  // Typography
+
+  step: { width: '100%', alignItems: 'center' },
   stepTitle: {
     fontSize: 26,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
+    fontFamily: 'DMSans-Bold',
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 10,
-    letterSpacing: -0.4,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+    lineHeight: 30,
   },
-  stepSubtitle: {
+  stepSub: {
     fontSize: 14,
-    color: TEXT_SECONDARY,
+    fontFamily: 'DMSans-Regular',
+    color: '#9a9a9a',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 24,
     paddingHorizontal: 8,
   },
-  // Email input
+
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: SURFACE,
-    borderRadius: 14,
+    backgroundColor: '#262626',
+    borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: BORDER,
-    marginBottom: 14,
+    borderColor: '#3a3a3a',
+    marginBottom: 16,
     paddingHorizontal: 14,
-    height: 56,
+    height: 58,
   },
-  inputWrapError: {
-    borderColor: '#FF5C7D',
-  },
-  inputIcon: {
-    fontSize: 18,
-    marginRight: 10,
-  },
+  inputWrapErr: { borderColor: '#C0392B' },
+  inputIcon: { fontSize: 18, marginRight: 10 },
   input: {
     flex: 1,
-    color: TEXT_PRIMARY,
-    fontSize: 15,
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'DMSans-Medium',
     height: '100%',
+    letterSpacing: 0.5,
   },
   errorText: {
-    color: '#FF5C7D',
+    color: '#FF7F7F',
     fontSize: 12,
+    fontFamily: 'DMSans-Regular',
     marginBottom: 14,
     alignSelf: 'flex-start',
     marginLeft: 4,
   },
-  // Button
+
   btn: {
     width: '100%',
     height: 56,
-    backgroundColor: ACCENT,
-    borderRadius: 14,
+    backgroundColor: '#FFE000',
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
-    shadowColor: ACCENT,
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
   },
-  btnDisabled: {
-    opacity: 0.45,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
+  btnGreen: { backgroundColor: '#0C831F' },
+  btnDisabled: { opacity: 0.5 },
   btnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#141414',
+    fontSize: 17,
+    fontFamily: 'DMSans-Bold',
+    letterSpacing: 0.3,
   },
-  // Legal text
-  legalText: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
+  btnTextGreen: { color: '#FFFFFF' },
+
+  legal: {
+    color: '#666',
+    fontSize: 11,
+    fontFamily: 'DMSans-Regular',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 14,
     lineHeight: 18,
   },
-  legalLink: {
-    color: ACCENT,
-    fontWeight: '600',
-  },
-  // OTP
+  legalLink: { color: '#FFE000', fontFamily: 'DMSans-Bold' },
+
   otpRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -663,70 +645,47 @@ const authStyles = StyleSheet.create({
   },
   otpBox: {
     width: OTP_BOX_SIZE,
-    height: OTP_BOX_SIZE + 6,
+    height: OTP_BOX_SIZE + 8,
     borderRadius: 12,
-    backgroundColor: SURFACE,
+    backgroundColor: '#262626',
     borderWidth: 1.5,
-    borderColor: BORDER,
+    borderColor: '#3a3a3a',
     textAlign: 'center',
     fontSize: 20,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
+    fontFamily: 'DMSans-Bold',
+    color: '#FFE000',
   },
   otpBoxFilled: {
-    borderColor: ACCENT,
-    backgroundColor: `${ACCENT}18`,
+    borderColor: '#FFE000',
+    backgroundColor: 'rgba(255,224,0,0.1)',
   },
-  otpBoxError: {
-    borderColor: '#FF5C7D',
-  },
-  resendWrap: {
-    marginTop: 20,
-    paddingVertical: 8,
-  },
+  otpBoxErr: { borderColor: '#C0392B' },
+  resendWrap: { marginTop: 18, paddingVertical: 8 },
   resendText: {
-    color: TEXT_SECONDARY,
+    color: '#9a9a9a',
     fontSize: 13,
+    fontFamily: 'DMSans-Regular',
     textAlign: 'center',
   },
-  resendLink: {
-    color: ACCENT,
-    fontWeight: '700',
-  },
-  // Success
-  successContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  resendLink: { color: '#FFE000', fontFamily: 'DMSans-Bold' },
+
+  successWrap: { alignItems: 'center', justifyContent: 'center' },
   successCircle: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: `${SUCCESS}22`,
+    backgroundColor: 'rgba(12,131,31,0.15)',
     borderWidth: 2,
-    borderColor: SUCCESS,
+    borderColor: '#0C831F',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 28,
   },
   successCheck: {
     fontSize: 42,
-    color: SUCCESS,
-    fontWeight: '700',
+    color: '#0C831F',
+    fontFamily: 'DMSans-Bold',
   },
-  successTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-    marginBottom: 10,
-    letterSpacing: -0.3,
-  },
-  successSubtitle: {
-    color: TEXT_SECONDARY,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
+})
 
-export default Login;
+export default Login

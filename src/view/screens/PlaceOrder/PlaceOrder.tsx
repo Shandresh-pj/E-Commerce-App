@@ -2,421 +2,460 @@ import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
-  Image,
   ScrollView,
-  TextInput,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
-import { useForm, Controller } from 'react-hook-form'
-import Defaults from '../../../config/index'
 import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
-import { postData } from '../../../shared/services/main-service'
+import { getData, postData } from '../../../shared/services/main-service'
 import Toast from 'react-native-root-toast'
-import styles from './PlaceOrdersStyle'
-import { THEME } from '../../assets/styles/theme'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import AppHeader from '../../elements/AppHeader'
-import PrimaryButton from '../../elements/PrimaryButton'
+import LinearGradient from 'react-native-linear-gradient'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface CartItem {
-  id: number
-  variantId?: number
-  name: string
-  variantCode: string
-  points: number
-  quantity: number
-  images?: string[]
-  emoji?: string
-}
+const DELIVERY_HANDLING = 6
 
-interface DeliveryAddressForm {
-  Street: string
-  City: string
-  State: string
-  Pincode: string
-  Country: string
-}
+const PAYMENT_METHODS = [
+  { key: 'upi', icon: '📱', title: 'UPI', sub: 'GPay, PhonePe, Paytm', recommended: true },
+  { key: 'card', icon: '💳', title: 'Credit / Debit card', sub: 'Visa, Mastercard, Rupay' },
+  { key: 'wallet', icon: '⚡', title: 'Wallet Cash', sub: 'Balance ₹240' },
+  { key: 'netbanking', icon: '🏦', title: 'Netbanking', sub: 'All major banks' },
+  { key: 'cod', icon: '💵', title: 'Cash on delivery', sub: 'Pay exactly at your door' },
+]
 
-interface OrderItem {
-  ProductId: number
-  ProductVariantId: number
-  Qty: number
-}
-
-interface OrderAddress {
-  Street: string
-  City: string
-  State: string
-  Pincode: string
-  Country: string
-}
-
-interface OrderPayload {
-  OrderItems: OrderItem[]
-  Address: OrderAddress
-}
-
-// ─── Order Item Row ───────────────────────────────────────────────────────────
-const OrderItemRow = ({ item }: { item: CartItem }) => {
-  let imageUrl: string | null = null
-  if (item.images && item.images.length > 0) {
-    let imgPath = item.images[0].replace(/\\/g, '/')
-    imageUrl = imgPath.startsWith('http')
-      ? imgPath
-      : `${Defaults.apis.baseUrl}/api/${imgPath.replace(/^\/+/, '')}`
-  }
-
-  return (
-    <View style={styles.orderItem}>
-      <View style={styles.orderItemImage}>
-        {imageUrl ? (
-          <Image
-            source={{ uri: imageUrl }}
-            style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-          />
-        ) : (
-          <Text style={styles.itemEmoji}>{item.emoji || '📦'}</Text>
-        )}
-      </View>
-      <View style={styles.orderItemInfo}>
-        <Text style={styles.orderItemName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.orderItemMeta}>Qty: {item.quantity}</Text>
-      </View>
-
-      <View style={styles.orderItemPoints}>
-        <Text style={styles.orderItemScore}>
-          {(item.points || 0) * (item.quantity || 1)}
-        </Text>
-        <Text style={styles.orderItemScoreLabel}>pts</Text>
-      </View>
-    </View>
-  )
-}
-
-// ─── Section Card ─────────────────────────────────────────────────────────────
-const SectionCard = ({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) => (
-  <View style={styles.sectionCard}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    {children}
-  </View>
-)
-
-// ─── Controlled Input Field ───────────────────────────────────────────────────
-const ControlledInput = ({
-  label,
-  name,
-  control,
-  rules,
-  placeholder,
-  keyboardType = 'default',
-  maxLength,
-}: {
-  label: string
-  name: keyof DeliveryAddressForm
-  control: any
-  rules?: object
-  placeholder?: string
-  keyboardType?: any
-  maxLength?: number
-}) => (
-  <Controller
-    control={control}
-    name={name}
-    rules={rules}
-    render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>{label}</Text>
-        <View style={[styles.inputContainer, error && styles.textInputError]}>
-          <TextInput
-            style={styles.textInput}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            placeholder={placeholder || label}
-            placeholderTextColor={THEME.COLOR.textTertiary}
-            keyboardType={keyboardType}
-            maxLength={maxLength}
-          />
-        </View>
-        {error && (
-          <Text style={styles.errorText}>
-            {error.message || `${label} is required`}
-          </Text>
-        )}
-      </View>
-    )}
-  />
-)
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PlaceOrderScreen() {
-  const navigation = useNavigation()
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const navigation = useNavigation<any>()
+  const [cartItems, setCartItems] = useState<any[]>([])
+  const [address, setAddress] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
-  const [orderPlaced, setOrderPlaced] = useState(false)
-  const [orderId, setOrderId] = useState<string | null>(null)
-
-  const {
-    control,
-    handleSubmit,
-  } = useForm<DeliveryAddressForm>({
-    defaultValues: {
-      Street: '',
-      City: '',
-      State: '',
-      Pincode: '',
-      Country: 'India',
-    },
-  })
+  const [slot, setSlot] = useState<'express' | 'schedule'>('express')
+  const [payment, setPayment] = useState('upi')
 
   useEffect(() => {
-    loadCart()
+    load()
   }, [])
 
-  const loadCart = async () => {
+  const load = async () => {
+    setLoading(true)
     try {
-      const storedCart = (await getAsyncData('cart_items')) || []
+      const [storedCart, addrRes] = await Promise.all([
+        getAsyncData('cart_items').catch(() => []),
+        getData('/address').catch(() => null),
+      ])
       setCartItems(Array.isArray(storedCart) ? storedCart : [])
-    } catch {
-      setCartItems([])
+      const list: any[] = addrRes?.data?.data || []
+      setAddress(list.find((a: any) => a.isDefault) || list[0] || null)
     } finally {
       setLoading(false)
     }
   }
 
-  const totalPoints = useMemo(
-    () =>
-      cartItems.reduce(
-        (acc, item) => acc + (item.points || 0) * (item.quantity || 1),
-        0,
-      ),
+  const itemTotal = useMemo(
+    () => cartItems.reduce((sum, i) => sum + (i.points || 0) * (i.quantity || 1), 0),
     [cartItems],
   )
-
-  const totalItems = useMemo(
-    () => cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0),
+  const itemCount = useMemo(
+    () => cartItems.reduce((sum, i) => sum + (i.quantity || 1), 0),
     [cartItems],
   )
+  const toPay = itemTotal + (itemTotal > 0 ? DELIVERY_HANDLING : 0)
 
-  // ─── Submit Handler ─────────────────────────────────────────────────────────
-  const onSubmit = (formData: DeliveryAddressForm) => {
+  const activeMethod = PAYMENT_METHODS.find(m => m.key === payment)
+
+  const addressLine = address
+    ? [address.line1, address.line2, address.city, address.state, address.pincode]
+        .filter(Boolean)
+        .join(', ')
+    : ''
+
+  const onPay = () => {
     if (cartItems.length === 0) {
       Toast.show('Your cart is empty', { duration: Toast.durations.SHORT })
       return
     }
+    if (!address) {
+      Alert.alert('Add an address', 'Please add a delivery address to continue.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Add address', onPress: () => navigation.navigate('Addresses') },
+      ])
+      return
+    }
 
-    Alert.alert('Confirm Order', `Place order for ${totalPoints} points?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Confirm',
-        onPress: async () => {
-          setPlacing(true)
-          try {
-            const payload: OrderPayload = {
-              OrderItems: cartItems.map(item => ({
-                ProductId: item.id,
-                ProductVariantId: item.variantId,
-                Qty: item.quantity,
-              })),
-              Address: {
-                Street: formData.Street.trim(),
-                City: formData.City.trim(),
-                State: formData.State.trim(),
-                Pincode: formData.Pincode.trim(),
-                Country: formData.Country.trim() || 'India',
-              },
-            }
-
-            const response: any = await postData('/Orders/PlaceOrder', payload)
-
-            if (response.status === 200) {
-              await setAsyncData('cart_items', [] as any)
-              const newOrderId = response?.data?.data?.OrderNumber
-              setOrderId(String(newOrderId))
-              setOrderPlaced(true)
-            } else {
-              const errorMsg =
-                response?.message ||
-                response?.data?.message ||
-                'Failed to place order. Please try again.'
-
-              Alert.alert('Order Failed', errorMsg, [
-                { text: 'OK', style: 'default' },
-              ])
-            }
-          } catch (error: any) {
-            console.log('PlaceOrder Error:', error)
-            Alert.alert(
-              'Something Went Wrong',
-              'Unable to place your order. Please try again.',
-              [{ text: 'OK', style: 'default' }],
-            )
-          } finally {
-            setPlacing(false)
-          }
-        },
-      },
-    ])
+    placeOrder()
   }
 
-  // ── Success Screen ──────────────────────────────────────────────────────────
-  if (orderPlaced) {
-    return (
-      <SafeAreaView style={styles.successContainer}>
-        <View style={styles.successContent}>
-          <View style={styles.successIconWrapper}>
-            <Text style={styles.successIconText}>✓</Text>
-          </View>
-          <Text style={styles.successTitle}>Order Placed!</Text>
-          <Text style={styles.successSubtitle}>
-            Your order has been placed successfully.
-          </Text>
-          {orderId && (
-            <View style={styles.orderIdBadge}>
-              <Text style={styles.orderIdLabel}>Order ID</Text>
-              <Text style={styles.orderIdValue}>#{orderId}</Text>
-            </View>
-          )}
-          <PrimaryButton
-            label="Continue Shopping"
-            style={styles.successBtn}
-            onPress={() => (navigation as any).navigate('ProductList')}
-          />
-          <PrimaryButton
-            label="View My Orders"
-            variant="outline"
-            style={styles.successBtn}
-            onPress={() => (navigation as any).navigate('MyOrders')}
-          />
-        </View>
-      </SafeAreaView>
-    )
+  const placeOrder = async () => {
+    setPlacing(true)
+    try {
+      const payload = {
+        OrderItems: cartItems.map(item => ({
+          ProductId: item.id,
+          ProductVariantId: item.variantId,
+          Qty: item.quantity,
+        })),
+        Address: {
+          Street: address.line1 || address.Street || 'N/A',
+          City: address.city || address.City || '',
+          State: address.state || address.State || '',
+          Pincode: String(address.pincode || address.Pincode || ''),
+          Country: 'India',
+        },
+        PaymentMethod: activeMethod?.title,
+      }
+
+      const response: any = await postData('/Orders/PlaceOrder', payload)
+      if (response.status === 200 || response.status === 201) {
+        await setAsyncData('cart_items', [] as any)
+        const orderNumber = response?.data?.data?.OrderNumber || 'JIF' + Date.now().toString().slice(-6)
+        navigation.replace('OrderTracking', { orderNumber: String(orderNumber), total: toPay, itemCount })
+      } else {
+        const msg = response?.message || response?.data?.message || 'Failed to place order.'
+        Alert.alert('Order Failed', msg)
+      }
+    } catch (error) {
+      console.log('PlaceOrder Error:', error)
+      Alert.alert('Error', 'Unable to place your order. Please try again.')
+    } finally {
+      setPlacing(false)
+    }
   }
 
   if (loading) {
     return (
-      <SafeAreaView edges={['left', 'right']} style={styles.container}>
-        <AppHeader title="Place Order" />
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={THEME.COLOR.primary} />
+      <LinearGradient colors={['#FFF4C2', '#FFFCE8', '#EDEFEA']} style={s.root}>
+        <StatusBar backgroundColor="#FFF4C2" barStyle="dark-content" />
+        <View style={s.center}>
+          <ActivityIndicator size="large" color="#0C831F" />
         </View>
-      </SafeAreaView>
+      </LinearGradient>
     )
   }
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={styles.container}>
-      <AppHeader title="Place Order" />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Order Summary */}
-        <SectionCard title="Order Summary">
-          {cartItems.map(item => (
-            <OrderItemRow key={item.id} item={item} />
-          ))}
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Items</Text>
-            <Text style={styles.summaryValue}>{totalItems}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Score</Text>
-            <Text style={[styles.summaryValue, styles.totalPointsText]}>
-              {totalPoints} pts
-            </Text>
-          </View>
-        </SectionCard>
-
-        {/* Delivery Address — all fields driven by Controller */}
-        <SectionCard title="Delivery Address">
-          <ControlledInput
-            label="Street / Address"
-            name="Street"
-            control={control}
-            placeholder="House No., Street, Area"
-            rules={{ required: 'Street address is required' }}
-          />
-          <View style={styles.rowInputs}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <ControlledInput
-                label="City"
-                name="City"
-                control={control}
-                placeholder="City"
-                rules={{ required: 'City is required' }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <ControlledInput
-                label="State"
-                name="State"
-                control={control}
-                placeholder="State"
-                rules={{ required: 'State is required' }}
-              />
-            </View>
-          </View>
-          <ControlledInput
-            label="Pincode"
-            name="Pincode"
-            control={control}
-            placeholder="6-digit pincode"
-            keyboardType="number-pad"
-            maxLength={6}
-            rules={{
-              required: 'Pincode is required',
-              pattern: {
-                value: /^\d{6}$/,
-                message: 'Enter a valid 6-digit pincode',
-              },
-            }}
-          />
-          <ControlledInput
-            label="Country"
-            name="Country"
-            control={control}
-            placeholder="Country"
-            rules={{ required: 'Country is required' }}
-          />
-        </SectionCard>
-
-        {/* Points Breakdown */}
-        <SectionCard title="Points Breakdown">
-          <View style={styles.pointsRow}>
-            <Text style={styles.pointsRowLabel}>Subtotal</Text>
-            <Text style={styles.pointsRowValue}>{totalPoints} pts</Text>
-          </View>
-        </SectionCard>
-      </ScrollView>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.footerInfo}>
-          <Text style={styles.footerPoints}>{totalPoints} pts</Text>
-          <Text style={styles.footerItemCount}>{totalItems} item(s)</Text>
+    <LinearGradient colors={['#FFF4C2', '#FFFCE8', '#EDEFEA']} locations={[0, 0.28, 1]} style={s.root}>
+      <StatusBar backgroundColor="#FFF4C2" barStyle="dark-content" />
+      <SafeAreaView style={s.safe} edges={[]}>
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={s.backArrow}>←</Text>
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Checkout</Text>
         </View>
-        <PrimaryButton
-          label="Place Order"
-          loading={placing}
-          style={styles.placeOrderBtn}
-          onPress={handleSubmit(onSubmit)}
-        />
-      </View>
-    </SafeAreaView>
+
+        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          {/* Delivering to */}
+          <Text style={s.sectionLabel}>DELIVERING TO</Text>
+          <View style={s.addressCard}>
+            <View style={s.addressTop}>
+              <View style={s.homeIcon}><Text style={{ fontSize: 18 }}>🏠</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.addressLabel}>{address?.label || 'Home'}</Text>
+                <Text style={s.addressText} numberOfLines={2}>
+                  {addressLine || 'No saved address — tap Change to add one'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('Addresses')}>
+                <Text style={s.changeLink}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Delivery slot */}
+          <Text style={s.sectionLabel}>DELIVERY SLOT</Text>
+          <View style={s.slotRow}>
+            <TouchableOpacity
+              style={[s.slotExpress, slot === 'express' && s.slotExpressActive]}
+              onPress={() => setSlot('express')}
+              activeOpacity={0.85}
+            >
+              <View style={s.slotTopRow}>
+                <Text style={{ fontSize: 20 }}>⚡</Text>
+                {slot === 'express' && <View style={s.slotCheck}><Text style={s.slotCheckTxt}>✓</Text></View>}
+              </View>
+              <Text style={s.slotExpressTitle}>Express</Text>
+              <Text style={s.slotExpressSub}>Arrives in 8 min</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.slotSchedule, slot === 'schedule' && s.slotScheduleActive]}
+              onPress={() => setSlot('schedule')}
+              activeOpacity={0.85}
+            >
+              <Text style={{ fontSize: 20 }}>📅</Text>
+              <Text style={s.slotScheduleTitle}>Schedule</Text>
+              <Text style={s.slotScheduleSub}>Pick a time</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Payment method */}
+          <Text style={s.sectionLabel}>PAYMENT METHOD</Text>
+          {PAYMENT_METHODS.map(m => {
+            const active = payment === m.key
+            return (
+              <TouchableOpacity
+                key={m.key}
+                style={[s.payCard, active && s.payCardActive]}
+                onPress={() => setPayment(m.key)}
+                activeOpacity={0.85}
+              >
+                <View style={s.payIcon}><Text style={{ fontSize: 19 }}>{m.icon}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.payTitleRow}>
+                    <Text style={s.payTitle}>{m.title}</Text>
+                    {m.recommended && (
+                      <View style={s.recBadge}><Text style={s.recBadgeText}>Recommended</Text></View>
+                    )}
+                  </View>
+                  <Text style={s.paySub}>{m.sub}</Text>
+                </View>
+                <View style={[s.radio, active && s.radioActive]}>
+                  {active && <Text style={s.radioTick}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+            )
+          })}
+
+          {/* Bill */}
+          <View style={s.billCard}>
+            <View style={s.billRow}>
+              <Text style={s.billLabel}>Item total</Text>
+              <Text style={s.billValue}>₹{itemTotal.toLocaleString('en-IN')}</Text>
+            </View>
+            <View style={s.billRow}>
+              <Text style={s.billLabel}>Delivery + handling</Text>
+              <Text style={s.billValue}>₹{itemTotal > 0 ? DELIVERY_HANDLING : 0}</Text>
+            </View>
+            <View style={s.billDivider} />
+            <View style={s.billRow}>
+              <Text style={s.billTotalLabel}>To pay</Text>
+              <Text style={s.billTotalValue}>₹{toPay.toLocaleString('en-IN')}</Text>
+            </View>
+          </View>
+
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        {/* Slide to pay */}
+        <View style={s.payBar}>
+          <TouchableOpacity
+            style={[s.payBtn, placing && { opacity: 0.85 }]}
+            onPress={onPay}
+            disabled={placing}
+            activeOpacity={0.92}
+          >
+            <View>
+              <Text style={s.payVia}>Pay via {activeMethod?.title}</Text>
+              <Text style={s.payAmount}>₹{toPay.toLocaleString('en-IN')}</Text>
+            </View>
+            <View style={s.slidePill}>
+              {placing ? (
+                <ActivityIndicator color="#0C831F" />
+              ) : (
+                <>
+                  <Text style={s.slideText}>Slide to pay</Text>
+                  <Text style={s.slideArrow}>→</Text>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   )
 }
+
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  safe: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  backBtn: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  backArrow: { fontSize: 18, color: '#141414' },
+  headerTitle: { fontFamily: 'DMSans-Bold', fontSize: 24, color: '#141414', letterSpacing: -0.4 },
+
+  scroll: { paddingHorizontal: 16, paddingTop: 6 },
+  sectionLabel: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 12,
+    letterSpacing: 0.7,
+    color: '#8a8a8a',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+  addressCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#F0F0EC',
+  },
+  addressTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  homeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: '#F4F5F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addressLabel: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#141414' },
+  addressText: { fontFamily: 'DMSans-Medium', fontSize: 13, color: '#8a8a8a', marginTop: 3, lineHeight: 18 },
+  changeLink: { fontFamily: 'DMSans-Bold', fontSize: 14, color: '#0C831F' },
+
+  slotRow: { flexDirection: 'row', gap: 12 },
+  slotExpress: {
+    flex: 1,
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    padding: 15,
+    minHeight: 116,
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: '#141414',
+  },
+  slotExpressActive: { borderColor: '#FFE000' },
+  slotTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  slotCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFE000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotCheckTxt: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#141414' },
+  slotExpressTitle: { fontFamily: 'DMSans-Bold', fontSize: 18, color: '#fff', marginTop: 10 },
+  slotExpressSub: { fontFamily: 'DMSans-Bold', fontSize: 12.5, color: '#FFE000', marginTop: 2 },
+  slotSchedule: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 15,
+    minHeight: 116,
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: '#F0F0EC',
+  },
+  slotScheduleActive: { borderColor: '#0C831F' },
+  slotScheduleTitle: { fontFamily: 'DMSans-Bold', fontSize: 18, color: '#141414', marginTop: 10 },
+  slotScheduleSub: { fontFamily: 'DMSans-Medium', fontSize: 12.5, color: '#8a8a8a', marginTop: 2 },
+
+  payCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  payCardActive: { borderColor: '#FFC400', backgroundColor: '#FFFBEB' },
+  payIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor: '#F4F5F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  payTitle: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#141414' },
+  recBadge: { backgroundColor: '#E4F6E6', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  recBadgeText: { fontFamily: 'DMSans-Bold', fontSize: 10.5, color: '#0C831F' },
+  paySub: { fontFamily: 'DMSans-Medium', fontSize: 12.5, color: '#8a8a8a', marginTop: 2 },
+  radio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#D9D9D5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioActive: { backgroundColor: '#0C831F', borderColor: '#0C831F' },
+  radioTick: { color: '#fff', fontFamily: 'DMSans-Bold', fontSize: 13 },
+
+  billCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 15,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0EC',
+  },
+  billRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  billLabel: { fontFamily: 'DMSans-Medium', fontSize: 14, color: '#555' },
+  billValue: { fontFamily: 'DMSans-Medium', fontSize: 14, color: '#333' },
+  billDivider: { borderTopWidth: 1.5, borderStyle: 'dashed', borderTopColor: '#E4E4E2', marginVertical: 8 },
+  billTotalLabel: { fontFamily: 'DMSans-Bold', fontSize: 16, color: '#141414' },
+  billTotalValue: { fontFamily: 'DMSans-Bold', fontSize: 19, color: '#141414' },
+
+  payBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(240,240,236,0.9)',
+    padding: 14,
+    paddingBottom: 22,
+  },
+  payBtn: {
+    height: 60,
+    backgroundColor: '#0C831F',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 20,
+    paddingRight: 6,
+    shadowColor: '#0C831F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  payVia: { fontFamily: 'DMSans-Medium', fontSize: 11.5, color: 'rgba(255,255,255,0.85)' },
+  payAmount: { fontFamily: 'DMSans-Bold', fontSize: 19, color: '#fff' },
+  slidePill: {
+    height: 48,
+    minWidth: 150,
+    backgroundColor: '#0A6F1A',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+  },
+  slideText: { fontFamily: 'DMSans-Bold', fontSize: 16, color: '#fff' },
+  slideArrow: { fontSize: 17, color: '#fff' },
+})

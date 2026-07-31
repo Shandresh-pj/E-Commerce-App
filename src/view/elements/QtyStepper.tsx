@@ -1,6 +1,5 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { THEME } from '../assets/styles/theme'
 
 type Size = 'sm' | 'md'
 
@@ -21,7 +20,7 @@ const QtyStepper = ({
   disabledDecrement = false,
   disabledIncrement = false,
 }: QtyStepperProps) => {
-  const dim = size === 'sm' ? 30 : 36
+  const dim = size === 'sm' ? 28 : 34
 
   return (
     <View style={styles.container}>
@@ -58,36 +57,34 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.COLOR.surfaceAlt,
-    borderRadius: THEME.RADIUS.pill,
-    borderWidth: 1,
-    borderColor: THEME.COLOR.border,
-    padding: 3,
+    backgroundColor: '#0C831F',
+    borderRadius: 11,
+    padding: 2,
   },
   btn: {
-    borderRadius: THEME.RADIUS.pill,
-    backgroundColor: THEME.COLOR.primary,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnDisabled: {
-    backgroundColor: THEME.COLOR.bgGrey,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   sign: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 18,
-    fontFamily: THEME.FONTWEIGHT.Bold,
+    fontFamily: 'DMSans-Bold',
     lineHeight: 22,
   },
   value: {
-    minWidth: 34,
+    minWidth: 32,
     textAlign: 'center',
     fontSize: 15,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.textPrimary,
+    fontFamily: 'DMSans-Bold',
+    color: '#FFFFFF',
   },
   valueSm: {
-    minWidth: 28,
+    minWidth: 26,
     fontSize: 14,
   },
 })
