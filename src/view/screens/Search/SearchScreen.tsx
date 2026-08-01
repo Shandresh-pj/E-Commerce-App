@@ -44,11 +44,7 @@ const CATEGORY_COLORS = [
 ]
 const CATEGORY_EMOJIS = ['🥦', '🥚', '🍿', '🥤', '🥐', '🍜', '🧴', '🍪']
 
-const buildImageUrl = (img: string): string => {
-  if (!img) return ''
-  const cleaned = img.replace(/\\/g, '/').replace(/^\/+/, '')
-  return cleaned.startsWith('http') ? cleaned : `${Defaults.apis.baseUrl}/${cleaned}`
-}
+import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper'
 
 const getPriceInfo = (item: any) => {
   if (item.product_type === 'variant' && item.variants?.length > 0) {
@@ -74,10 +70,15 @@ const ProductCard = React.memo(({
   onAdd: (id: number) => void; onIncrease: (id: number) => void
   onDecrease: (id: number) => void; onPress: (id: number) => void
 }) => {
-  const [imgError, setImgError] = useState(false)
+  const initialImg = buildImageUrl(item.image, item.name, 'product')
+  const [imgSrc, setImgSrc] = useState(initialImg)
+
+  useEffect(() => {
+    setImgSrc(buildImageUrl(item.image, item.name, 'product'))
+  }, [item.image, item.name])
+
   const inStock = (item.stock_in_hand ?? 1) > 0
   const { price } = getPriceInfo(item)
-  const imageUri = buildImageUrl(item.image)
   const discount = getDiscountPercent(item)
   const mrp = parseFloat(item.mrp || item.compare_at_price) || 0
   const bgColor = PRODUCT_BG_COLORS[index % 8]
@@ -91,16 +92,17 @@ const ProductCard = React.memo(({
               <Text style={card.discountText}>{discount}% OFF</Text>
             </View>
           )}
-          {imageUri && !imgError ? (
-            <Image
-              source={{ uri: imageUri }}
-              style={card.img}
-              resizeMode="contain"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <Text style={card.fallback}>{item.name ? item.name[0].toUpperCase() : '📦'}</Text>
-          )}
+          <Image
+            source={{ uri: imgSrc }}
+            style={card.img}
+            resizeMode="cover"
+            onError={() => {
+              const fallback = getFallbackImage(item.name, 'product')
+              if (imgSrc !== fallback) {
+                setImgSrc(fallback)
+              }
+            }}
+          />
           {!inStock && (
             <View style={card.oosOverlay}>
               <Text style={card.oosLabel}>Out of Stock</Text>

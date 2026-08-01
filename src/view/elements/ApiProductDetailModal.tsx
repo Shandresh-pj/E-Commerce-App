@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,12 +11,14 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  Share,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Video from 'react-native-video'
 import Defaults from '../../config/index'
 import { toggleWishlist } from '../../shared/services/main-service'
 import Toast from 'react-native-root-toast'
+import { buildImageUrl, getFallbackImage } from '../../shared/utils/imageHelper'
 
 const { width: W } = Dimensions.get('window')
 
@@ -32,11 +34,7 @@ const stripHtml = (html: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const buildImageUrl = (imagePath: string): string => {
-  if (!imagePath) return ''
-  const cleaned = imagePath.replace(/\\/g, '/').replace(/^\/+/, '')
-  return cleaned.startsWith('http') ? cleaned : `${Defaults.apis.baseUrl}/${cleaned}`
-}
+
 
 // Soft pastel backgrounds for image / related-product tiles
 const TILE_COLORS = ['#E9ECFB', '#FFE0E0', '#FFF4D6', '#E4F6E6', '#EBE4FF', '#FFE9E0']
@@ -152,12 +150,27 @@ const ApiProductDetailModal = ({
 }: ApiProductDetailModalProps) => {
   const insets = useSafeAreaInsets()
 
+  const mediaScrollRef = useRef<ScrollView>(null)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [videoPlaying, setVideoPlaying] = useState(false)
   const [videoLoading, setVideoLoading] = useState(true)
   const [wished, setWished] = useState(false)
   const [wishLoading, setWishLoading] = useState(false)
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({})
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+
+  const handleShare = async () => {
+    if (!productDetail) return
+    try {
+      await Share.share({
+        message: `Check out ${productDetail.name} for ₹${price} on our store!`,
+        title: productDetail.name,
+      })
+    } catch (error) {
+      console.log('Share error:', error)
+    }
+  }
 
   useEffect(() => {
     if (productDetail) {
@@ -170,18 +183,61 @@ const ApiProductDetailModal = ({
       setVideoPlaying(false)
       setVideoLoading(true)
       setWished(false)
+      setFailedImages({})
+      setFullscreenImage(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productDetail?.id])
 
   if (!visible) return null
 
-  const images: string[] = (productDetail?.images?.length
-    ? productDetail.images
-    : productDetail?.image
-      ? [productDetail.image]
-      : []
-  ).map(buildImageUrl)
+  const images: string[] = (() => {
+    if (!productDetail) return []
+    const rawList: string[] = []
+
+    // 1. Primary image FIRST
+    if (productDetail.image && typeof productDetail.image === 'string') {
+      rawList.push(productDetail.image)
+    }
+    if (productDetail.ImagePath && typeof productDetail.ImagePath === 'string') {
+      rawList.push(productDetail.ImagePath)
+    }
+
+    // 2. Secondary images array NEXT
+    if (Array.isArray(productDetail.images) && productDetail.images.length > 0) {
+      productDetail.images.forEach((img: any) => {
+        const u = typeof img === 'string' ? img : img?.ImagePath || img?.ImageName || img?.url
+        if (u) rawList.push(u)
+      })
+    }
+    if (Array.isArray(productDetail.ProductImages) && productDetail.ProductImages.length > 0) {
+      productDetail.ProductImages.forEach((img: any) => {
+        const u = img?.ImageName || img?.ImagePath
+        if (u) rawList.push(u)
+      })
+    }
+    if (Array.isArray(productDetail.product_images) && productDetail.product_images.length > 0) {
+      productDetail.product_images.forEach((img: any) => {
+        const u = typeof img === 'string' ? img : img?.ImagePath || img?.url
+        if (u) rawList.push(u)
+      })
+    }
+
+    const nameStr = productDetail.name || productDetail.Name || ''
+    const uniqueRaw = Array.from(new Set(rawList.filter(Boolean)))
+    const resolved = uniqueRaw.map(u => buildImageUrl(u, nameStr, 'product'))
+    const fallback = getFallbackImage(nameStr, 'product')
+
+    if (resolved.length === 0) {
+      return [fallback]
+    }
+
+    if (resolved.length === 1 && resolved[0] !== fallback) {
+      return [resolved[0], fallback]
+    }
+
+    return resolved
+  })()
 
   const videoUri = productDetail?.video ? buildImageUrl(productDetail.video) : null
   const mediaItems: { type: 'image' | 'video'; uri: string }[] = [
@@ -194,25 +250,31 @@ const ApiProductDetailModal = ({
   const description = stripHtml(productDetail?.description ?? '')
   const stock: number = isVariantType
     ? selectedVariant?.Stock ?? 0
-    : productDetail?.stock_in_hand ?? 0
+    : (productDetail?.stock_in_hand ?? productDetail?.stock ?? 0)
 
   // Pricing
   const price = selectedVariant ? num(selectedVariant.Price) : num(productDetail?.price)
   const mrp = num(
     (selectedVariant as any)?.Mrp ??
-      (selectedVariant as any)?.compare_at_price ??
-      productDetail?.mrp ??
-      productDetail?.compare_at_price,
+    (selectedVariant as any)?.compare_at_price ??
+    productDetail?.mrp ??
+    productDetail?.compare_at_price,
   )
   const discount = mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0
   const total = qty > 0 ? price * qty : price
 
-  const unit = productDetail?.unit || productDetail?.weight || ''
+  const unit = productDetail?.base_unit || productDetail?.unit || productDetail?.weight || ''
   const ratingRaw = productDetail?.rating ?? productDetail?.avg_rating
   const rating = ratingRaw != null && num(ratingRaw) > 0 ? num(ratingRaw).toFixed(1) : null
 
-  // Highlights: split description into short lines, else defaults
+  // Highlights: parse Attributes or description lines, else default
   const highlights: string[] = (() => {
+    if (Array.isArray(productDetail?.Attributes) && productDetail!.Attributes.length > 0) {
+      const attrLines = productDetail!.Attributes
+        .map((a: any) => a?.AttributeValue || a?.AttributeName)
+        .filter(Boolean)
+      if (attrLines.length > 0) return attrLines
+    }
     if (Array.isArray(productDetail?.highlights) && productDetail!.highlights.length) {
       return productDetail!.highlights.slice(0, 5)
     }
@@ -220,16 +282,15 @@ const ApiProductDetailModal = ({
       const parts = description
         .split(/[.\n•|]/)
         .map(p => p.trim())
-        // keep only clean prose — drop lines that look like leaked JSON/code
         .filter(
           p =>
-            p.length > 6 &&
+            p.length > 3 &&
             /[a-zA-Z]{3,}/.test(p) &&
             !/[{}\[\]"<>]|::|ProductAttribute|AttributeValue/i.test(p),
         )
       if (parts.length) return parts.slice(0, 5)
     }
-    return  DEFAULT_HIGHLIGHTS
+    return DEFAULT_HIGHLIGHTS
   })()
 
   const relatedList = (related || []).filter(r => r && r.id !== productDetail?.id).slice(0, 8)
@@ -251,13 +312,14 @@ const ApiProductDetailModal = ({
               <Text style={s.loaderText}>Failed to load product.</Text>
             </View>
           ) : (
-            <>
+            <React.Fragment>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
                 {/* ===== Media + floating action buttons ===== */}
                 <View style={[s.imageSection, { backgroundColor: TILE_COLORS[0] }]}>
                   {mediaItems.length > 0 ? (
                     <>
                       <ScrollView
+                        ref={mediaScrollRef}
                         horizontal
                         pagingEnabled
                         showsHorizontalScrollIndicator={false}
@@ -269,12 +331,31 @@ const ApiProductDetailModal = ({
                       >
                         {mediaItems.map((mediaItem, idx) =>
                           mediaItem.type === 'image' ? (
-                            <Image
+                            <TouchableOpacity
                               key={idx}
-                              source={{ uri: mediaItem.uri }}
-                              style={s.productImage}
-                              resizeMode="contain"
-                            />
+                              activeOpacity={0.9}
+                              onPress={() =>
+                                setFullscreenImage(
+                                  failedImages[idx]
+                                    ? getFallbackImage(productDetail?.name || productDetail?.Name, 'product')
+                                    : mediaItem.uri,
+                                )
+                              }
+                              style={{ width: W, height: 260, justifyContent: 'center', alignItems: 'center' }}
+                            >
+                              <Image
+                                source={{
+                                  uri: failedImages[idx]
+                                    ? getFallbackImage(productDetail?.name || productDetail?.Name, 'product')
+                                    : mediaItem.uri,
+                                }}
+                                style={{ width: W * 0.8, height: 240 }}
+                                resizeMode="contain"
+                                onError={() => {
+                                  setFailedImages(prev => ({ ...prev, [idx]: true }))
+                                }}
+                              />
+                            </TouchableOpacity>
                           ) : videoPlaying ? (
                             <View key={idx} style={s.videoPlayer}>
                               <Video
@@ -312,6 +393,42 @@ const ApiProductDetailModal = ({
                           ),
                         )}
                       </ScrollView>
+
+                      {/* Interactive Thumbnail Gallery Strip */}
+                      {mediaItems.length > 1 && (
+                        <View style={s.thumbBarWrapper}>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbScroll}>
+                            {mediaItems.map((item, idx) => (
+                              <TouchableOpacity
+                                key={idx}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                  setActiveImageIndex(idx)
+                                  mediaScrollRef.current?.scrollTo({ x: idx * W, animated: true })
+                                }}
+                                style={[
+                                  s.thumbBox,
+                                  idx === activeImageIndex && s.thumbBoxActive,
+                                ]}
+                              >
+                                <Image
+                                  source={{
+                                    uri: failedImages[idx]
+                                      ? getFallbackImage(productDetail?.name || productDetail?.Name, 'product')
+                                      : item.uri,
+                                  }}
+                                  style={s.thumbImg}
+                                  resizeMode="cover"
+                                  onError={() => {
+                                    setFailedImages(prev => ({ ...prev, [idx]: true }))
+                                  }}
+                                />
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+
                       {mediaItems.length > 1 && (
                         <View style={s.dotsRow}>
                           {mediaItems.map((_, idx) => (
@@ -361,7 +478,7 @@ const ApiProductDetailModal = ({
                           : <Text style={[s.roundBtnIcon, wished && { color: '#e91e63' }]}>{wished ? '♥' : '♡'}</Text>
                         }
                       </TouchableOpacity>
-                      <TouchableOpacity style={s.roundBtn} activeOpacity={0.85} accessibilityLabel="Share">
+                      <TouchableOpacity style={s.roundBtn} onPress={handleShare} activeOpacity={0.85} accessibilityLabel="Share">
                         <Text style={s.roundBtnIcon}>↗</Text>
                       </TouchableOpacity>
                     </View>
@@ -526,7 +643,7 @@ const ApiProductDetailModal = ({
                           <Text style={s.invValue}>{productDetail.barcode || 'N/A'}</Text>
                         </View>
                       </View>
-                      
+
                       <View style={s.invDivider} />
 
                       <View style={s.invRow}>
@@ -689,10 +806,35 @@ const ApiProductDetailModal = ({
                   </View>
                 )}
               </View>
-            </>
+            </React.Fragment>
           )}
         </View>
       </View>
+
+      {/* Fullscreen Image Zoom Preview Modal */}
+      {!!fullscreenImage && (
+        <Modal
+          visible={!!fullscreenImage}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFullscreenImage(null)}
+        >
+          <View style={s.fullscreenOverlay}>
+            <TouchableOpacity
+              style={s.fullscreenCloseBtn}
+              onPress={() => setFullscreenImage(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={s.fullscreenCloseText}>✕ Close</Text>
+            </TouchableOpacity>
+            <Image
+              source={{ uri: fullscreenImage }}
+              style={s.fullscreenImg}
+              resizeMode="contain"
+            />
+          </View>
+        </Modal>
+      )}
     </Modal>
   )
 }
@@ -706,6 +848,31 @@ const s = StyleSheet.create({
     borderTopRightRadius: 26,
     maxHeight: '94%',
     overflow: 'hidden',
+  },
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 8, 17, 0.96)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  fullscreenCloseText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  fullscreenImg: {
+    width: W * 0.95,
+    height: '80%',
   },
 
   loaderBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12 },
@@ -721,7 +888,7 @@ const s = StyleSheet.create({
   bigLetter: { fontSize: 150, fontFamily: 'DMSans-Bold', color: 'rgba(20,20,20,0.16)' },
   dotsRow: {
     position: 'absolute',
-    bottom: 54,
+    bottom: 60,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -730,6 +897,44 @@ const s = StyleSheet.create({
   },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(20,20,20,0.2)' },
   dotActive: { backgroundColor: '#141414', width: 20 },
+
+  thumbBarWrapper: {
+    position: 'absolute',
+    bottom: 8,
+    left: 0,
+    right: 0,
+  },
+  thumbScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'center',
+  },
+  thumbBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  thumbBoxActive: {
+    borderColor: '#0C831F',
+    borderWidth: 2.5,
+    shadowColor: '#0C831F',
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+  },
 
   videoThumb: { height: 320, width: W, overflow: 'hidden', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   videoThumbImg: { ...StyleSheet.absoluteFillObject },

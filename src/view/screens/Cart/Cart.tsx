@@ -185,15 +185,20 @@ export default function CartScreen() {
 
   return (
     <LinearGradient
-      colors={['#FFF4C2', '#FFFCE8', '#EDEFEA']}
+      colors={['#F4F5F0', '#FFFCE8', '#E9EDEE']}
       locations={[0, 0.28, 1]}
       style={s.root}
     >
-      <StatusBar backgroundColor="#FFF4C2" barStyle="dark-content" />
+      <StatusBar backgroundColor="#FFE500" barStyle="dark-content" />
       <SafeAreaView style={s.safe} edges={[]}>
-        {/* Header */}
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+        {/* Signature Vibrant Yellow Header */}
+        <LinearGradient
+          colors={['#FFE500', '#FFDD00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.header}
+        >
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
             <Text style={s.backArrow}>←</Text>
           </TouchableOpacity>
           <View style={s.headerInfo}>
@@ -205,7 +210,7 @@ export default function CartScreen() {
               <Text style={s.countBadgeText}>{cartItems.length}</Text>
             </View>
           )}
-        </View>
+        </LinearGradient>
 
         {cartItems.length === 0 ? (
           <View style={s.emptyWrap}>

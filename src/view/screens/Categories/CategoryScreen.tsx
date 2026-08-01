@@ -28,10 +28,10 @@ import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProdu
 import LinearGradient from 'react-native-linear-gradient'
 
 const { width: W } = Dimensions.get('window')
-const SIDEBAR_WIDTH = 0
+const SIDEBAR_WIDTH = 68
 const PRODUCT_AREA = W - SIDEBAR_WIDTH
-const GUTTER = 10
-const CARD_WIDTH = (PRODUCT_AREA - 24 - GUTTER) / 2
+const GUTTER = 8
+const CARD_WIDTH = (PRODUCT_AREA - 12 - GUTTER) / 2
 
 type ApiProduct = {
   id: number
@@ -68,11 +68,7 @@ const PRODUCT_BG_COLORS = [
   '#EBE4FF', '#FFE9E0', '#E0FFE8', '#F4E8FF',
 ]
 
-const buildImageUrl = (img: string): string => {
-  if (!img) return ''
-  const cleaned = img.replace(/\\/g, '/').replace(/^\/+/, '')
-  return cleaned.startsWith('http') ? cleaned : `${Defaults.apis.baseUrl}/${cleaned}`
-}
+import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper'
 
 const getPriceInfo = (item: ApiProduct) => {
   if (item.product_type === 'variant' && item.variants?.length > 0) {
@@ -98,10 +94,15 @@ const ProductCard = React.memo(({
   onAdd: (id: number) => void; onIncrease: (id: number) => void
   onDecrease: (id: number) => void; onPress: (id: number) => void
 }) => {
-  const [imgError, setImgError] = useState(false)
-  const inStock = item.stock_in_hand > 0
+  const initialImg = buildImageUrl(item.image, item.name, 'product')
+  const [imgSrc, setImgSrc] = useState(initialImg)
+
+  useEffect(() => {
+    setImgSrc(buildImageUrl(item.image, item.name, 'product'))
+  }, [item.image, item.name])
+
+  const inStock = (item.stock_in_hand ?? 1) > 0
   const { price } = getPriceInfo(item)
-  const imageUri = buildImageUrl(item.image)
   const discount = getDiscountPercent(item)
   const mrp = parseFloat(item.mrp || item.compare_at_price) || 0
   const bgColor = PRODUCT_BG_COLORS[index % 8]
@@ -115,13 +116,17 @@ const ProductCard = React.memo(({
               <Text style={card.discountText}>{discount}% OFF</Text>
             </View>
           )}
-          {imageUri && !imgError ? (
-            <Image source={{ uri: imageUri }} style={card.img} resizeMode="contain" onError={() => setImgError(true)} />
-          ) : (
-            <Text style={card.fallback}>
-              {item.name ? item.name[0].toUpperCase() : '📦'}
-            </Text>
-          )}
+          <Image
+            source={{ uri: imgSrc }}
+            style={card.img}
+            resizeMode="cover"
+            onError={() => {
+              const fallback = getFallbackImage(item.name, 'product')
+              if (imgSrc !== fallback) {
+                setImgSrc(fallback)
+              }
+            }}
+          />
           {!inStock && (
             <View style={card.oosOverlay}>
               <Text style={card.oosLabel}>Out of Stock</Text>
@@ -141,7 +146,7 @@ const ProductCard = React.memo(({
         {inStock ? (
           qty === 0 ? (
             <TouchableOpacity style={card.addBtn} onPress={() => onAdd(item.id)} activeOpacity={0.82}>
-              <Text style={card.addTxt}>ADD</Text>    
+              <Text style={card.addTxt}>ADD</Text>
             </TouchableOpacity>
           ) : (
             <View style={card.stepper}>
@@ -197,7 +202,7 @@ const CategoryScreen = () => {
       const filtered = cats.filter((c: any) => c.status !== false)
       setAllCategories(filtered)
       // Auto-select the first category as the active rail item
-      setActiveCategory(prev => prev ?? filtered[0] ?? null)
+      setActiveCategory((prev: any) => prev ?? filtered[0] ?? null)
     } catch {
       // ignore — empty state handles it
     }
@@ -359,7 +364,7 @@ const CategoryScreen = () => {
       locations={[0, 0.4, 1]}
       style={s.root}
     >
-      <StatusBar backgroundColor="rgba(255,255,255,0.55)" barStyle="dark-content" />
+      <StatusBar backgroundColor="#FFE500" barStyle="dark-content" />
       <SafeAreaView style={s.safe} edges={[]}>
         <ApiProductDetailModal
           visible={detailVisible}
@@ -375,12 +380,18 @@ const CategoryScreen = () => {
           onViewCart={() => navigation.navigate('Cart')}
         />
 
-        {/* Header */}
-        <View style={s.header}>
+        {/* Signature Vibrant Yellow Header */}
+        <LinearGradient
+          colors={['#FFE500', '#FFDD00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.header}
+        >
           <View style={s.headerTop}>
             <TouchableOpacity
               style={s.backBtn}
               onPress={() => navigation.canGoBack() && navigation.goBack()}
+              activeOpacity={0.8}
             >
               <Text style={s.backArrow}>←</Text>
             </TouchableOpacity>
@@ -390,12 +401,12 @@ const CategoryScreen = () => {
               </Text>
               <Text style={s.headerSub}>⚡ Delivery in 8 min</Text>
             </View>
-            <TouchableOpacity style={s.searchBtn} onPress={() => navigation.navigate('Search')}>
+            <TouchableOpacity style={s.searchBtn} onPress={() => navigation.navigate('Search')} activeOpacity={0.8}>
               <Text style={{ fontSize: 16 }}>🔎</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Filter chips */}
+          {/* Liquid Glass Filter Chips */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -412,7 +423,7 @@ const CategoryScreen = () => {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </LinearGradient>
 
         {/* Content: Sidebar + Products */}
         <View style={s.contentRow}>
@@ -587,44 +598,52 @@ const s = StyleSheet.create({
     position: 'relative',
   },
   sidebarItemActive: {
-    backgroundColor: 'rgba(255,224,0,0.16)',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sidebarIndicator: {
     position: 'absolute',
     left: 0,
-    top: 8,
-    bottom: 8,
-    width: 3,
-    backgroundColor: '#FFE000',
-    borderTopRightRadius: 3,
-    borderBottomRightRadius: 3,
+    top: 10,
+    bottom: 10,
+    width: 3.5,
+    backgroundColor: '#FFE500',
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
   },
   sidebarIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     marginBottom: 4,
   },
   sidebarImage: {
-    width: 50,
-    height: 50,
+    width: 44,
+    height: 44,
   },
   sidebarEmoji: {
-    fontSize: 24,
+    fontSize: 22,
   },
   sidebarLabel: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 10,
-    color: '#8a8a8a',
+    fontSize: 9.5,
+    color: '#64748B',
     textAlign: 'center',
-    lineHeight: 12,
-    maxWidth: 70,
+    lineHeight: 11.5,
+    maxWidth: 60,
   },
   sidebarLabelActive: {
-    color: '#141414',
+    color: '#0F172A',
+    fontWeight: '800',
   },
 
   productArea: {

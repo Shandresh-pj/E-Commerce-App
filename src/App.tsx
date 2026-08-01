@@ -9,7 +9,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { navigationRef } from './navigation/RootNavigation'
 import useInAppUpdate from './shared/services/useInAppUpdate'
-import { StatusBar } from 'react-native'
+import { StatusBar, View } from 'react-native'
+import { LIQUID_GLASS_THEME } from './constants/theme'
 
 export default function App() {
   useInAppUpdate()
@@ -20,10 +21,13 @@ export default function App() {
         <Provider store={store}>
           <StatusBar
             barStyle="dark-content"
-            backgroundColor="#F4F5F0"
+            backgroundColor="#FFE500"
             translucent={false}
           />
-          <SafeAreaView edges={['left', 'right', 'top']} style={{ flex: 1, backgroundColor: '#F4F5F0' }}>
+          <SafeAreaView
+            edges={['left', 'right']}
+            style={{ flex: 1, backgroundColor: LIQUID_GLASS_THEME.colors.background }}
+          >
             <NavigationContainer ref={navigationRef}>
               <Toast />
               <StackNavigator />
