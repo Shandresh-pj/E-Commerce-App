@@ -21,6 +21,9 @@ import {
   fetchAllProductsComplete,
   fetchCategories,
   fetchProductDetail,
+  fetchApiCart,
+  addToApiCart,
+  removeFromApiCart,
 } from '../../../shared/services/main-service'
 import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
 import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal'
@@ -64,11 +67,12 @@ const getDiscountPercent = (item: any) => {
 }
 
 const ProductCard = React.memo(({
-  item, qty, index, onAdd, onIncrease, onDecrease, onPress,
+  item, qty, index, onAdd, onIncrease, onDecrease, onPress, onBuy,
 }: {
   item: any; qty: number; index: number
   onAdd: (id: number) => void; onIncrease: (id: number) => void
   onDecrease: (id: number) => void; onPress: (id: number) => void
+  onBuy: (id: number) => void
 }) => {
   const initialImg = buildImageUrl(item.image, item.name, 'product')
   const [imgSrc, setImgSrc] = useState(initialImg)
@@ -118,21 +122,26 @@ const ProductCard = React.memo(({
           {mrp > price && <Text style={card.mrp}>₹{mrp.toLocaleString('en-IN')}</Text>}
         </View>
         {inStock ? (
-          qty === 0 ? (
-            <TouchableOpacity style={card.addBtn} onPress={() => onAdd(item.id)} activeOpacity={0.82}>
-              <Text style={card.addTxt}>ADD</Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {qty === 0 ? (
+              <TouchableOpacity style={card.addBtn} onPress={() => onAdd(item.id)} activeOpacity={0.82}>
+                <Text style={card.addTxt}>ADD</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={card.stepper}>
+                <TouchableOpacity style={card.stepBtn} onPress={() => onDecrease(item.id)}>
+                  <Text style={card.stepTxt}>−</Text>
+                </TouchableOpacity>
+                <Text style={card.stepQty}>{qty}</Text>
+                <TouchableOpacity style={card.stepBtn} onPress={() => onIncrease(item.id)}>
+                  <Text style={card.stepTxt}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <TouchableOpacity style={[card.addBtn, { backgroundColor: '#FFE500', borderColor: '#FFE500' }]} onPress={() => onBuy(item.id)} activeOpacity={0.82}>
+              <Text style={[card.addTxt, { color: '#141414' }]}>BUY</Text>
             </TouchableOpacity>
-          ) : (
-            <View style={card.stepper}>
-              <TouchableOpacity style={card.stepBtn} onPress={() => onDecrease(item.id)}>
-                <Text style={card.stepTxt}>−</Text>
-              </TouchableOpacity>
-              <Text style={card.stepQty}>{qty}</Text>
-              <TouchableOpacity style={card.stepBtn} onPress={() => onIncrease(item.id)}>
-                <Text style={card.stepTxt}>+</Text>
-              </TouchableOpacity>
-            </View>
-          )
+          </View>
         ) : (
           <View style={card.notifyBtn}>
             <Text style={card.notifyTxt}>NOTIFY</Text>
@@ -165,19 +174,44 @@ const SearchScreen = () => {
     return () => clearTimeout(t)
   }, [])
 
+  const loadCart = useCallback(async () => {
+    try {
+      const raw = await fetchApiCart().catch(() => [])
+      if (raw) {
+        const mapped = raw.map((rawItem: any) => {
+          const product = rawItem.product ?? rawItem.Product ?? rawItem
+          return {
+            cartItemId: rawItem.id ?? rawItem.Id,
+            id: product.id ?? product.Id ?? rawItem.product_id ?? rawItem.ProductId,
+            name: product.name ?? rawItem.name ?? 'Product',
+            image: product.image ?? rawItem.image ?? '',
+            images: product.images ?? rawItem.images ?? [],
+            unit: product.unit ?? product.weight ?? rawItem.unit ?? '',
+            points: parseFloat(product.price ?? rawItem.price ?? '0') || 0,
+            quantity: rawItem.quantity ?? rawItem.Quantity ?? 1,
+            variantId: rawItem.variant_id ?? rawItem.VariantId ?? product.variant_id ?? null,
+          }
+        })
+        setCartItems(mapped)
+        await setAsyncData('cart_items', mapped as any)
+      }
+    } catch (e) {
+      console.log('loadCart error:', e)
+    }
+  }, [])
+
   const load = async () => {
     setLoading(true)
     try {
-      const [prods, cats, storedRecent, storedCart] = await Promise.all([
+      const [prods, cats, storedRecent] = await Promise.all([
         fetchAllProductsComplete().catch(() => []),
         fetchCategories().catch(() => []),
         getAsyncData(RECENT_KEY).catch(() => []),
-        getAsyncData('cart_items').catch(() => []),
       ])
       setAllProducts(Array.isArray(prods) ? prods : [])
       setCategories(Array.isArray(cats) ? cats.filter((c: any) => c.status !== false) : [])
       setRecent(Array.isArray(storedRecent) ? storedRecent : [])
-      setCartItems(Array.isArray(storedCart) ? storedCart : [])
+      await loadCart()
     } finally {
       setLoading(false)
     }
@@ -226,30 +260,74 @@ const SearchScreen = () => {
   const addToCart = useCallback(async (id: number) => {
     const product = allProducts.find(p => p.id === id)
     if (!product) return
-    const existing = cartItems.find(i => i.id === id)
-    let updated
-    if (existing) {
-      updated = cartItems.map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
-    } else {
-      updated = [...cartItems, { ...product, quantity: 1, points: parseFloat(product.price) || 0 }]
-    }
+    const updated = [...cartItems, { ...product, quantity: 1, points: parseFloat(product.price) || 0 }]
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
-  }, [cartItems, allProducts])
+
+    const success = await addToApiCart(id, 1)
+    if (success) {
+      await loadCart()
+    } else {
+      const stored = (await getAsyncData('cart_items')) || []
+      setCartItems(Array.isArray(stored) ? stored : [])
+    }
+  }, [cartItems, allProducts, loadCart])
+
+  const handleBuy = useCallback(async (id: number) => {
+    const qty = getQty(id)
+    if (qty === 0) {
+      await addToCart(id)
+    }
+    navigation.navigate('PlaceOrder')
+  }, [cartItems, addToCart])
 
   const increase = useCallback(async (id: number) => {
     const updated = cartItems.map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
-  }, [cartItems])
+
+    const success = await addToApiCart(id, 1)
+    if (success) {
+      await loadCart()
+    } else {
+      const stored = (await getAsyncData('cart_items')) || []
+      setCartItems(Array.isArray(stored) ? stored : [])
+    }
+  }, [cartItems, loadCart])
 
   const decrease = useCallback(async (id: number) => {
+    const item = cartItems.find(i => i.id === id)
+    if (!item) return
+    const cartItemId = item.cartItemId
+
     const updated = cartItems
       .map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) - 1 } : i)
       .filter(i => (i.quantity || 0) > 0)
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
-  }, [cartItems])
+
+    let success = false
+    if ((item.quantity || 1) <= 1) {
+      if (cartItemId) {
+        success = await removeFromApiCart(cartItemId)
+      } else {
+        const raw = await fetchApiCart()
+        const match = raw?.find((r: any) => (r.product?.id ?? r.product_id) === id)
+        if (match?.id) {
+          success = await removeFromApiCart(match.id)
+        }
+      }
+    } else {
+      success = await addToApiCart(id, -1)
+    }
+
+    if (success) {
+      await loadCart()
+    } else {
+      const stored = (await getAsyncData('cart_items')) || []
+      setCartItems(Array.isArray(stored) ? stored : [])
+    }
+  }, [cartItems, loadCart])
 
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + (i.quantity || 1), 0), [cartItems])
   const cartTotal = useMemo(
@@ -276,10 +354,10 @@ const SearchScreen = () => {
         onIncrease={increase}
         onDecrease={decrease}
         onPress={openDetail}
+        onBuy={handleBuy}
       />
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cartItems, addToCart, increase, decrease, openDetail],
+    [cartItems, addToCart, increase, decrease, openDetail, handleBuy],
   )
 
   const renderIdle = () => (
@@ -710,8 +788,8 @@ const card = StyleSheet.create({
     borderColor: '#0C831F',
     backgroundColor: '#E8F7EA',
     borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   addTxt: { fontFamily: 'DMSans-Bold', fontSize: 12, color: '#0C831F' },
   stepper: {

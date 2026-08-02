@@ -43,12 +43,31 @@ const buildImageUrl = (img: string) => {
 }
 
 const itemName = (oi: any) =>
+  oi.product?.name ||
   oi.ProductTranslations?.[0]?.Name ||
   oi.Products?.ProductTranslation?.Name ||
   oi.Products?.Name ||
   oi.ProductName ||
   oi.Name ||
-  `Product #${oi.ProductId}`
+  `Product #${oi.ProductId || oi.product_id}`
+
+const getStatusConfig = (order: any) => {
+  if (!order) return DEFAULT_STATUS
+  if (order.StatusId !== undefined && STATUS_CONFIG[order.StatusId]) {
+    return STATUS_CONFIG[order.StatusId]
+  }
+  const statusStr = String(order.status || '').toUpperCase()
+  if (statusStr === 'DELIVERED' || statusStr === 'SUCCESS') {
+    return STATUS_CONFIG[28]
+  }
+  if (statusStr === 'CANCELLED' || statusStr === 'FAILED') {
+    return STATUS_CONFIG[29]
+  }
+  if (statusStr === 'PROCESSING' || statusStr === 'PENDING') {
+    return STATUS_CONFIG[27]
+  }
+  return DEFAULT_STATUS
+}
 
 const ViewOrderScreen = ({ navigation, route }: any) => {
   const paramOrder = route?.params?.order ?? null
@@ -66,7 +85,7 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await getData(`/Orders/MyOrders/View/${id}`)
+      const response = await getData(`/orders/${id}`)
       if (response && response.status) {
         const data = response.data?.data ?? response.data ?? null
         if (data) setOrder(data)
@@ -82,28 +101,28 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
     }
   }
 
-  const cfg = order ? STATUS_CONFIG[order.StatusId] ?? DEFAULT_STATUS : DEFAULT_STATUS
-  const address = order?.Address ?? order?.Users?.Address ?? null
-  const items: any[] = order?.OrderItems ?? []
-  const itemCount = items.reduce((sum, oi) => sum + parseFloat(String(oi.Qty ?? '0')), 0)
+  const cfg = getStatusConfig(order)
+  const address = order?.Address ?? order?.Users?.Address ?? order?.user?.Address ?? order?.user?.address ?? null
+  const items: any[] = order?.items ?? order?.OrderItems ?? []
+  const itemCount = items.reduce((sum, oi) => sum + parseFloat(String(oi.quantity ?? oi.Qty ?? '0')), 0)
 
   const calculatedTotal = items.reduce(
-    (sum, oi) => sum + parseFloat(String(oi.Qty ?? '0')) * parseFloat(String(oi.UnitPrice ?? '0')),
+    (sum, oi) => sum + parseFloat(String(oi.quantity ?? oi.Qty ?? '0')) * parseFloat(String(oi.price ?? oi.UnitPrice ?? '0')),
     0,
   )
   const taxAmount = parseFloat(String(order?.TaxAmount ?? '0'))
-  const discAmount = parseFloat(String(order?.DiscAmount ?? '0'))
+  const discAmount = parseFloat(String(order?.discount ?? order?.DiscAmount ?? '0'))
   const grandTotal =
-    calculatedTotal > 0 ? calculatedTotal + taxAmount - discAmount : parseFloat(String(order?.TotalAmount ?? '0'))
-  const paymentMethod = order?.PaymentMethod || 'Online'
+    calculatedTotal > 0 ? calculatedTotal + taxAmount - discAmount : parseFloat(String(order?.total ?? order?.TotalAmount ?? '0'))
+  const paymentMethod = (order?.payment_method ?? order?.PaymentMethod) || 'Online'
 
   const reorder = async () => {
     const cart = items.map((oi: any) => ({
-      id: oi.ProductId,
+      id: oi.product_id || oi.ProductId,
       name: itemName(oi),
-      points: parseFloat(String(oi.UnitPrice ?? '0')),
-      quantity: parseFloat(String(oi.Qty ?? '1')) || 1,
-      image: oi.ProductImage?.ImageName || oi.Products?.ProductImages?.[0]?.ImagePath || '',
+      points: parseFloat(String(oi.price ?? oi.UnitPrice ?? '0')),
+      quantity: parseFloat(String(oi.quantity ?? oi.Qty ?? '1')) || 1,
+      image: oi.product?.image || oi.ProductImage?.ImageName || oi.Products?.ProductImages?.[0]?.ImagePath || '',
     }))
     await setAsyncData('cart_items', cart as any)
     Toast.show('Items added to cart', { duration: Toast.durations.SHORT })
@@ -153,8 +172,8 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
             <Text style={s.backArrow}>←</Text>
           </TouchableOpacity>
           <View>
-            <Text style={s.headerTitle}>Order #{order.OrderNumber ?? orderId}</Text>
-            <Text style={s.headerSub}>{formatDateTime(order.CreatedAt)}</Text>
+            <Text style={s.headerTitle}>Order #{order.invoice_no ?? order.OrderNumber ?? orderId}</Text>
+            <Text style={s.headerSub}>{formatDateTime(order.created_at ?? order.CreatedAt)}</Text>
           </View>
         </View>
 
@@ -177,10 +196,10 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
           <View style={s.card}>
             {items.map((oi: any, i: number) => {
               const name = itemName(oi)
-              const img = buildImageUrl(oi.ProductImage?.ImageName || oi.Products?.ProductImages?.[0]?.ImagePath || '')
+              const img = buildImageUrl(oi.product?.image || oi.ProductImage?.ImageName || oi.Products?.ProductImages?.[0]?.ImagePath || '')
               const bg = AVATAR_COLORS[i % AVATAR_COLORS.length]
               return (
-                <View key={oi.Id ?? i} style={[s.itemRow, i < items.length - 1 && s.itemBorder]}>
+                <View key={oi.id ?? oi.Id ?? i} style={[s.itemRow, i < items.length - 1 && s.itemBorder]}>
                   <View style={[s.itemThumb, { backgroundColor: bg }]}>
                     {img ? (
                       <Image source={{ uri: img }} style={s.itemImg} resizeMode="contain" />
@@ -190,10 +209,10 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.itemName} numberOfLines={2}>{name}</Text>
-                    <Text style={s.itemQty}>{oi.Qty} × unit</Text>
+                    <Text style={s.itemQty}>{oi.quantity ?? oi.Qty} × unit</Text>
                   </View>
                   <Text style={s.itemPrice}>
-                    {formatCurrency(parseFloat(String(oi.Qty ?? '1')) * parseFloat(String(oi.UnitPrice ?? '0')))}
+                    {formatCurrency(parseFloat(String(oi.quantity ?? oi.Qty ?? '1')) * parseFloat(String(oi.price ?? oi.UnitPrice ?? '0')))}
                   </Text>
                 </View>
               )
@@ -230,15 +249,26 @@ const ViewOrderScreen = ({ navigation, route }: any) => {
             </View>
           </View>
 
-          {/* Delivered to */}
-          {address && (
+          {/* Delivered to (legacy object or new persisted order columns) */}
+          {(address || order.delivery_address) && (
             <View style={[s.card, s.addressCard]}>
               <Text style={{ fontSize: 22 }}>🏠</Text>
               <View style={{ flex: 1 }}>
-                <Text style={s.addressLabel}>Delivered to {address.Label || 'Home'}</Text>
-                <Text style={s.addressText}>
-                  {[address.Street, address.City, address.State, address.Pincode].filter(Boolean).join(', ')}
+                <Text style={s.addressLabel}>
+                  {order.delivery_address
+                    ? `Delivered to: ${order.receiver_name || 'Customer'} (${(order.receiver_type || 'myself') === 'myself' ? 'Myself' : 'Someone else'})`
+                    : `Delivered to ${address?.Label || 'Home'}`}
                 </Text>
+                <Text style={s.addressText}>
+                  {order.delivery_address
+                    ? `${order.delivery_address}${order.pincode ? ', Pincode: ' + order.pincode : ''}`
+                    : [address?.Street, address?.City, address?.State, address?.Pincode].filter(Boolean).join(', ')}
+                </Text>
+                {order.delivery_address && order.receiver_phone ? (
+                  <Text style={[s.addressText, { marginTop: 4, fontFamily: 'DMSans-Medium', color: '#141414' }]}>
+                    📞 Phone: {order.receiver_phone}
+                  </Text>
+                ) : null}
               </View>
             </View>
           )}

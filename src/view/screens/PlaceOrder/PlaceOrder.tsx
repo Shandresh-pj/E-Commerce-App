@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
-import { getData, postData } from '../../../shared/services/main-service'
+import { getData, postData, fetchApiCart, removeFromApiCart } from '../../../shared/services/main-service'
 import Toast from 'react-native-root-toast'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import LinearGradient from 'react-native-linear-gradient'
@@ -42,11 +42,29 @@ export default function PlaceOrderScreen() {
   const load = async () => {
     setLoading(true)
     try {
-      const [storedCart, addrRes] = await Promise.all([
-        getAsyncData('cart_items').catch(() => []),
+      const [rawCart, addrRes] = await Promise.all([
+        fetchApiCart().catch(() => []),
         getData('/address').catch(() => null),
       ])
-      setCartItems(Array.isArray(storedCart) ? storedCart : [])
+      if (rawCart) {
+        const mapped = rawCart.map((rawItem: any) => {
+          const product = rawItem.product ?? rawItem.Product ?? rawItem
+          return {
+            cartItemId: rawItem.id ?? rawItem.Id,
+            id: product.id ?? product.Id ?? rawItem.product_id ?? rawItem.ProductId,
+            name: product.name ?? rawItem.name ?? 'Product',
+            image: product.image ?? rawItem.image ?? '',
+            images: product.images ?? rawItem.images ?? [],
+            unit: product.unit ?? product.weight ?? rawItem.unit ?? '',
+            points: parseFloat(product.price ?? rawItem.price ?? '0') || 0,
+            quantity: rawItem.quantity ?? rawItem.Quantity ?? 1,
+            variantId: rawItem.variant_id ?? rawItem.VariantId ?? product.variant_id ?? null,
+          }
+        })
+        setCartItems(mapped)
+      } else {
+        setCartItems([])
+      }
       const list: any[] = addrRes?.data?.data || []
       setAddress(list.find((a: any) => a.isDefault) || list[0] || null)
     } finally {
@@ -91,26 +109,54 @@ export default function PlaceOrderScreen() {
   const placeOrder = async () => {
     setPlacing(true)
     try {
-      const payload = {
-        OrderItems: cartItems.map(item => ({
-          ProductId: item.id,
-          ProductVariantId: item.variantId,
-          Qty: item.quantity,
-        })),
-        Address: {
-          Street: address.line1 || address.Street || 'N/A',
-          City: address.city || address.City || '',
-          State: address.state || address.State || '',
-          Pincode: String(address.pincode || address.Pincode || ''),
-          Country: 'India',
-        },
-        PaymentMethod: activeMethod?.title,
+      const mapPaymentMethod = (key: string): string => {
+        switch (key) {
+          case 'cod':
+            return 'CASH_ON_DELIVERY'
+          case 'upi':
+            return 'UPI'
+          case 'wallet':
+            return 'WALLET'
+          case 'card':
+          case 'netbanking':
+          default:
+            return 'ONLINE'
+        }
       }
 
-      const response: any = await postData('/Orders/PlaceOrder', payload)
-      if (response.status === 200 || response.status === 201) {
+      const payload = {
+        company_id: address?.company_id || 1,
+        items: cartItems.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.points || 0,
+        })),
+        payment: {
+          method: mapPaymentMethod(activeMethod?.key || 'cod'),
+          status: activeMethod?.key === 'cod' ? 'PENDING' : 'SUCCESS',
+        },
+        receiver_name: address?.name || null,
+        receiver_phone: address?.phone || null,
+        receiver_type: address?.receiverType || address?.receiver_type || 'myself',
+        delivery_address: address ? [address.line1, address.city].filter(Boolean).join(', ') : null,
+        pincode: address?.pincode || null,
+      }
+
+      const response: any = await postData('/orders/create', payload)
+      if (response.status === 200 || response.status === 201 || response.data?.success) {
+        // Clear API cart item by item
+        await Promise.all(
+          cartItems.map(item => {
+            if (item.cartItemId) {
+              return removeFromApiCart(item.cartItemId)
+            }
+          })
+        ).catch(err => console.log('Clear API cart error:', err))
+
         await setAsyncData('cart_items', [] as any)
-        const orderNumber = response?.data?.data?.OrderNumber || 'JIF' + Date.now().toString().slice(-6)
+        
+        const orderData = response?.data?.data?.order || response?.data?.order
+        const orderNumber = orderData?.invoice_no || orderData?.OrderNumber || 'JIF' + Date.now().toString().slice(-6)
         navigation.replace('OrderTracking', { orderNumber: String(orderNumber), total: toPay, itemCount })
       } else {
         const msg = response?.message || response?.data?.message || 'Failed to place order.'

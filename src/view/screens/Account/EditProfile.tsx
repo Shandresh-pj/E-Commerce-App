@@ -20,8 +20,6 @@ import { launchImageLibrary } from 'react-native-image-picker'
 import Defaults from '../../../config'
 import LinearGradient from 'react-native-linear-gradient'
 
-const GENDERS = ['Male', 'Female', 'Other']
-
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <View style={s.fieldWrap}>
     <Text style={s.fieldLabel}>{label}</Text>
@@ -41,8 +39,6 @@ const EditProfileScreen = () => {
   const [fullName, setFullName] = useState(initName)
   const [email, setEmail] = useState(d?.email || d?.Email || '')
   const [mobile] = useState(d?.mobilenumber || d?.MobileNumber || '')
-  const [dob, setDob] = useState(d?.dob || d?.DOB || '')
-  const [gender, setGender] = useState(d?.gender || d?.Gender || 'Male')
   const [saving, setSaving] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [avatarUri, setAvatarUri] = useState<string | null>(() => {
@@ -76,9 +72,6 @@ const EditProfileScreen = () => {
       formData.append('name', fullName.trim())
       formData.append('email', email.trim())
       formData.append('mobilenumber', mobile.trim())
-      formData.append('dob', dob.trim())
-      formData.append('gender', gender)
-      formData.append('address', (d?.address || d?.Address || 'N/A').toString())
 
       if (avatarUri && !avatarUri.startsWith('http')) {
         const filename = avatarUri.split('/').pop() || 'avatar.jpg'
@@ -139,7 +132,7 @@ const EditProfileScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <Field label="FULL NAME">
+            <Field label="NAME">
               <View style={s.inputBox}>
                 <TextInput
                   style={s.input}
@@ -170,36 +163,6 @@ const EditProfileScreen = () => {
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-              </View>
-            </Field>
-
-            <Field label="DATE OF BIRTH">
-              <View style={s.inputBox}>
-                <TextInput
-                  style={s.input}
-                  value={dob}
-                  onChangeText={setDob}
-                  placeholder="DD Month YYYY"
-                  placeholderTextColor="#9a9a9a"
-                />
-              </View>
-            </Field>
-
-            <Field label="GENDER">
-              <View style={s.genderRow}>
-                {GENDERS.map(g => {
-                  const active = gender === g
-                  return (
-                    <TouchableOpacity
-                      key={g}
-                      style={[s.genderPill, active && s.genderPillActive]}
-                      onPress={() => setGender(g)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={[s.genderText, active && s.genderTextActive]}>{g}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
               </View>
             </Field>
 

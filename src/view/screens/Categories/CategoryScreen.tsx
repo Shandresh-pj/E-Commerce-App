@@ -21,7 +21,10 @@ import {
   fetchApiCart,
   addToApiCart,
   removeFromApiCart,
+  fetchMyWishlist,
+  toggleWishlist,
 } from '../../../shared/services/main-service'
+import Toast from 'react-native-root-toast'
 import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
 import { useTabBar } from '../../../shared/context/TabBarContext'
 import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal'
@@ -88,11 +91,13 @@ const getDiscountPercent = (item: ApiProduct) => {
 }
 
 const ProductCard = React.memo(({
-  item, qty, onAdd, onIncrease, onDecrease, onPress, index,
+  item, qty, isWished, onAdd, onIncrease, onDecrease, onPress, onToggleWishlist, onBuy, index,
 }: {
-  item: ApiProduct; qty: number; index: number
+  item: ApiProduct; qty: number; isWished: boolean; index: number
   onAdd: (id: number) => void; onIncrease: (id: number) => void
   onDecrease: (id: number) => void; onPress: (id: number) => void
+  onToggleWishlist: (id: number) => void
+  onBuy: (id: number) => void
 }) => {
   const initialImg = buildImageUrl(item.image, item.name, 'product')
   const [imgSrc, setImgSrc] = useState(initialImg)
@@ -109,31 +114,45 @@ const ProductCard = React.memo(({
 
   return (
     <View style={[card.root, { width: CARD_WIDTH }]}>
-      <TouchableOpacity activeOpacity={0.85} onPress={() => onPress(item.id)}>
-        <View style={[card.imgBox, { backgroundColor: bgColor }]}>
-          {discount > 0 && (
-            <View style={card.discountBadge}>
-              <Text style={card.discountText}>{discount}% OFF</Text>
-            </View>
-          )}
-          <Image
-            source={{ uri: imgSrc }}
-            style={card.img}
-            resizeMode="cover"
-            onError={() => {
-              const fallback = getFallbackImage(item.name, 'product')
-              if (imgSrc !== fallback) {
-                setImgSrc(fallback)
-              }
-            }}
-          />
-          {!inStock && (
-            <View style={card.oosOverlay}>
-              <Text style={card.oosLabel}>Out of Stock</Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
+      <View style={{ position: 'relative' }}>
+        <TouchableOpacity activeOpacity={0.85} onPress={() => onPress(item.id)}>
+          <View style={[card.imgBox, { backgroundColor: bgColor }]}>
+            {discount > 0 && (
+              <View style={card.discountBadge}>
+                <Text style={card.discountText}>{discount}% OFF</Text>
+              </View>
+            )}
+            <Image
+              source={{ uri: imgSrc }}
+              style={card.img}
+              resizeMode="cover"
+              onError={() => {
+                const fallback = getFallbackImage(item.name, 'product')
+                if (imgSrc !== fallback) {
+                  setImgSrc(fallback)
+                }
+              }}
+            />
+            {!inStock && (
+              <View style={card.oosOverlay}>
+                <Text style={card.oosLabel}>Out of Stock</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+        
+        {/* Wishlist Heart Button Overlay */}
+        <TouchableOpacity
+          style={card.heartBtn}
+          onPress={() => onToggleWishlist(item.id)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={[card.heartIcon, isWished && card.heartIconActive]}>
+            {isWished ? '♥' : '♡'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       <Text style={card.name} numberOfLines={2}>{item.name}</Text>
       <Text style={card.unit}>{item.unit || item.weight || 'per unit'}</Text>
       <View style={card.footer}>
@@ -144,21 +163,26 @@ const ProductCard = React.memo(({
           )}
         </View>
         {inStock ? (
-          qty === 0 ? (
-            <TouchableOpacity style={card.addBtn} onPress={() => onAdd(item.id)} activeOpacity={0.82}>
-              <Text style={card.addTxt}>ADD</Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {qty === 0 ? (
+              <TouchableOpacity style={card.addBtn} onPress={() => onAdd(item.id)} activeOpacity={0.82}>
+                <Text style={card.addTxt}>ADD</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={card.stepper}>
+                <TouchableOpacity style={card.stepBtn} onPress={() => onDecrease(item.id)}>
+                  <Text style={card.stepTxt}>−</Text>
+                </TouchableOpacity>
+                <Text style={card.stepQty}>{qty}</Text>
+                <TouchableOpacity style={card.stepBtn} onPress={() => onIncrease(item.id)}>
+                  <Text style={card.stepTxt}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <TouchableOpacity style={[card.addBtn, { backgroundColor: '#FFE500', borderColor: '#FFE500' }]} onPress={() => onBuy(item.id)} activeOpacity={0.82}>
+              <Text style={[card.addTxt, { color: '#141414' }]}>BUY</Text>
             </TouchableOpacity>
-          ) : (
-            <View style={card.stepper}>
-              <TouchableOpacity style={card.stepBtn} onPress={() => onDecrease(item.id)}>
-                <Text style={card.stepTxt}>−</Text>
-              </TouchableOpacity>
-              <Text style={card.stepQty}>{qty}</Text>
-              <TouchableOpacity style={card.stepBtn} onPress={() => onIncrease(item.id)}>
-                <Text style={card.stepTxt}>+</Text>
-              </TouchableOpacity>
-            </View>
-          )
+          </View>
         ) : (
           <View style={card.notifyBtn}>
             <Text style={card.notifyTxt}>NOTIFY</Text>
@@ -179,6 +203,7 @@ const CategoryScreen = () => {
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [sort, setSort] = useState<SortKey>('default')
   const [cartItems, setCartItems] = useState<any[]>([])
+  const [wishlistProductIds, setWishlistProductIds] = useState<Set<number>>(new Set())
 
   const [detailVisible, setDetailVisible] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -189,6 +214,7 @@ const CategoryScreen = () => {
       showTabBar()
       loadCategories()
       loadCart()
+      loadWishlist()
     }, []),
   )
 
@@ -246,6 +272,54 @@ const CategoryScreen = () => {
     }
   }
 
+  const loadWishlist = async () => {
+    try {
+      const dataList = await fetchMyWishlist()
+      if (dataList) {
+        const ids = dataList.map((item: any) => {
+          const product = item.product ?? item.Product ?? item
+          return product.id ?? product.Id ?? item.product_id ?? item.ProductId
+        })
+        setWishlistProductIds(new Set(ids))
+      }
+    } catch (e) {
+      console.log('CategoryScreen loadWishlist error:', e)
+    }
+  }
+
+  const toggleWish = useCallback(async (id: number) => {
+    const isWished = wishlistProductIds.has(id)
+    
+    // Optimistic UI update
+    setWishlistProductIds(prev => {
+      const next = new Set(prev)
+      if (isWished) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+
+    const success = await toggleWishlist(id, isWished)
+    if (success) {
+      Toast.show(isWished ? 'Removed from wishlist' : 'Added to wishlist ♥', { duration: Toast.durations.SHORT })
+      loadWishlist()
+    } else {
+      // Revert optimistic update
+      setWishlistProductIds(prev => {
+        const next = new Set(prev)
+        if (isWished) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+        return next
+      })
+      Toast.show('Failed to update wishlist', { duration: Toast.durations.SHORT })
+    }
+  }, [wishlistProductIds])
+
   const openDetail = useCallback(async (id: number) => {
     setDetailVisible(true)
     setDetailLoading(true)
@@ -270,13 +344,7 @@ const CategoryScreen = () => {
   const addToCart = useCallback(async (id: number) => {
     const product = products.find(p => p.id === id)
     if (!product) return
-    const existing = cartItems.find(i => i.id === id)
-    let updated
-    if (existing) {
-      updated = cartItems.map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
-    } else {
-      updated = [...cartItems, { ...product, quantity: 1, points: parseFloat(product.price) || 0 }]
-    }
+    const updated = [...cartItems, { ...product, quantity: 1, points: parseFloat(product.price) || 0 }]
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
 
@@ -288,6 +356,14 @@ const CategoryScreen = () => {
       setCartItems(Array.isArray(stored) ? stored : [])
     }
   }, [cartItems, products])
+
+  const handleBuy = useCallback(async (id: number) => {
+    const qty = getQty(id)
+    if (qty === 0) {
+      await addToCart(id)
+    }
+    navigation.navigate('PlaceOrder')
+  }, [cartItems, addToCart])
 
   const increase = useCallback(async (id: number) => {
     const updated = cartItems.map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
@@ -348,14 +424,17 @@ const CategoryScreen = () => {
       <ProductCard
         item={item}
         qty={getQty(item.id)}
+        isWished={wishlistProductIds.has(item.id)}
         onAdd={addToCart}
         onIncrease={increase}
         onDecrease={decrease}
         onPress={openDetail}
+        onToggleWishlist={toggleWish}
+        onBuy={handleBuy}
         index={index}
       />
     ),
-    [cartItems, addToCart, increase, decrease, openDetail],
+    [cartItems, wishlistProductIds, addToCart, increase, decrease, openDetail, toggleWish, handleBuy],
   )
 
   return (
@@ -508,6 +587,26 @@ const CategoryScreen = () => {
             <View style={s.cartCta}>
               <Text style={s.cartCtaText}>View cart</Text>
               <Text style={s.cartArrow}>→</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Floating Wishlist Bar */}
+        {wishlistProductIds.size > 0 && (
+          <TouchableOpacity
+            style={[s.wishlistBar, { bottom: cartCount > 0 ? 142 : 78 }]}
+            onPress={() => navigation.navigate('WishList')}
+            activeOpacity={0.92}
+          >
+            <View style={s.wishlistLeft}>
+              <Text style={s.wishlistHeart}>❤️</Text>
+              <Text style={s.wishlistText}>
+                {wishlistProductIds.size} item{wishlistProductIds.size > 1 ? 's' : ''} in wishlist
+              </Text>
+            </View>
+            <View style={s.wishlistCta}>
+              <Text style={s.wishlistCtaText}>View wishlist</Text>
+              <Text style={s.wishlistArrow}>→</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -696,6 +795,51 @@ const s = StyleSheet.create({
   cartCta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   cartCtaText: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#fff' },
   cartArrow: { fontSize: 17, color: '#fff' },
+
+  wishlistBar: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    height: 56,
+    backgroundColor: 'rgba(30, 41, 59, 0.95)',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    shadowColor: '#1E293B',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  wishlistLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wishlistHeart: {
+    fontSize: 16,
+  },
+  wishlistText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 13,
+    color: '#fff',
+  },
+  wishlistCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  wishlistCtaText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14,
+    color: '#F472B6',
+  },
+  wishlistArrow: {
+    fontSize: 17,
+    color: '#F472B6',
+  },
 })
 
 const card = StyleSheet.create({
@@ -743,6 +887,32 @@ const card = StyleSheet.create({
     borderRadius: 12,
   },
   oosLabel: { fontFamily: 'DMSans-Bold', fontSize: 11, color: '#C0392B' },
+  heartBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    zIndex: 10,
+  },
+  heartIcon: {
+    fontSize: 17,
+    color: '#8E8E93',
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  heartIconActive: {
+    color: '#FF4757',
+  },
   name: {
     fontFamily: 'DMSans-Bold',
     fontSize: 12,
@@ -775,8 +945,8 @@ const card = StyleSheet.create({
     borderColor: '#0C831F',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   addTxt: { fontFamily: 'DMSans-Bold', fontSize: 12, color: '#0C831F' },
   stepper: {

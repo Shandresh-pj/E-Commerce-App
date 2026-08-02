@@ -54,13 +54,31 @@ const formatCurrency = (amount: string | number) => {
   return `${num.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
 }
 
+const getStatusConfig = (item: any) => {
+  if (item.StatusId !== undefined && STATUS_CONFIG[item.StatusId]) {
+    return STATUS_CONFIG[item.StatusId]
+  }
+  const statusStr = String(item.status || item.StatusName || '').toUpperCase()
+  if (statusStr === 'DELIVERED' || statusStr === 'SUCCESS') {
+    return STATUS_CONFIG[28]
+  }
+  if (statusStr === 'CANCELLED' || statusStr === 'FAILED') {
+    return STATUS_CONFIG[29]
+  }
+  if (statusStr === 'PROCESSING' || statusStr === 'PENDING') {
+    return STATUS_CONFIG[27]
+  }
+  return DEFAULT_STATUS
+}
+
 const OrderCard = ({ item, onView, onReorder }: any) => {
-  const cfg = STATUS_CONFIG[item.StatusId] ?? DEFAULT_STATUS
-  const { date, time } = formatDateTime(item.CreatedAt)
+  const cfg = getStatusConfig(item)
+  const { date, time } = formatDateTime(item.created_at ?? item.CreatedAt)
 
   const productNames =
-    item.OrderItems?.map(
+    (item.items ?? item.OrderItems)?.map(
       (oi: any) =>
+        oi.product?.name ||
         oi.ProductTranslations?.[0]?.Name ||
         oi.Products?.ProductTranslation?.Name ||
         'Unknown Product',
@@ -71,7 +89,7 @@ const OrderCard = ({ item, onView, onReorder }: any) => {
         (productNames.length > 2 ? ` +${productNames.length - 2} more` : '')
       : 'No items'
 
-  const totalAmount = item.TotalPoints ?? 'N/A'
+  const totalAmount = item.total ?? item.TotalPoints ?? 'N/A'
 
   return (
     <View style={s.card}>
@@ -85,7 +103,7 @@ const OrderCard = ({ item, onView, onReorder }: any) => {
       <View style={s.cardBody}>
         <View style={s.infoRow}>
           <Text style={s.infoLabel}>Order ID</Text>
-          <Text style={s.infoValue}>{item.OrderNumber}</Text>
+          <Text style={s.infoValue}>{item.invoice_no ?? item.OrderNumber}</Text>
         </View>
         <View style={s.infoRow}>
           <Text style={s.infoLabel}>Items</Text>
@@ -99,7 +117,7 @@ const OrderCard = ({ item, onView, onReorder }: any) => {
         <View style={s.infoRow}>
           <Text style={s.infoLabel}>Scores</Text>
           <Text style={s.infoValueGreen}>
-            {totalAmount > 0 ? formatCurrency(item.TotalPoints) : 'N/A'}
+            {totalAmount > 0 || parseFloat(totalAmount) > 0 ? formatCurrency(totalAmount) : 'N/A'}
           </Text>
         </View>
         <View style={s.infoRow}>
@@ -147,7 +165,7 @@ const MyOrdersScreen = ({ navigation }: any) => {
   const fetchMyOrders = async () => {
     try {
       setLoading(true)
-      const response = await getData('/Orders/MyOrders')
+      const response = await getData('/orders')
       if (response && response.status) {
         const data = response.data?.data ?? response.data ?? []
         setMyOrders(Array.isArray(data) ? data : [])
@@ -163,7 +181,7 @@ const MyOrdersScreen = ({ navigation }: any) => {
     activeFilter === 'All'
       ? myOrders
       : myOrders.filter(o => {
-          const cfg = STATUS_CONFIG[o.StatusId]
+          const cfg = getStatusConfig(o)
           return cfg?.label === activeFilter
         })
 
@@ -236,7 +254,7 @@ const MyOrdersScreen = ({ navigation }: any) => {
         ) : (
           <FlatList
             data={filtered}
-            keyExtractor={item => String(item.Id)}
+            keyExtractor={item => String(item.id ?? item.Id)}
             renderItem={({ item }) => (
               <OrderCard
                 item={item}
@@ -245,27 +263,30 @@ const MyOrdersScreen = ({ navigation }: any) => {
                 }
                 onReorder={async (o: any) => {
                   try {
-                    if (!o.OrderItems || o.OrderItems.length === 0) {
+                    const orderItems = o.items ?? o.OrderItems
+                    if (!orderItems || orderItems.length === 0) {
                       Toast.show('No items found in this order', {
                         duration: Toast.durations.SHORT,
                       })
                       return
                     }
-                    const reorderItems = o.OrderItems.map((oi: any) => {
+                    const reorderItems = orderItems.map((oi: any) => {
                       const pName =
+                        oi.product?.name ||
                         oi.ProductTranslations?.[0]?.Name ||
                         oi.Products?.ProductTranslation?.Name ||
                         'Unknown Product'
                       const pImage =
+                        oi.product?.image ||
                         oi.ProductImage?.ImageName ||
                         oi.Products?.ProductImages?.[0]?.ImagePath
                       return {
-                        id: oi.ProductId,
+                        id: oi.product_id || oi.ProductId,
                         variantId: oi.ProductVariantId,
                         name: pName,
                         variantCode: oi.ProductVariants?.VariantCode ?? '',
-                        points: oi.UnitPrice ?? 0,
-                        quantity: oi.Qty ?? 1,
+                        points: oi.price || oi.UnitPrice || 0,
+                        // quantity: oi.quantity || oi.Qty ?? 1,
                         images: pImage ? [pImage] : [],
                       }
                     })

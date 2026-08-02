@@ -361,6 +361,20 @@ export const putData = async (url: string, data: any): Promise<any | void> => {
   }
 };
 
+export const deleteData = async (url: string): Promise<any | void> => {
+  try {
+    const result: any = await axios({
+      method: "DELETE",
+      url: `${API_URL}${url}`,
+      validateStatus: (status) => status < 600,
+      headers: { ...await authHeaderNew() },
+    });
+    return result;
+  } catch (error) {
+    console.log('deleteErr', error);
+  }
+};
+
 export const patchData = async (url: string, data: any): Promise<any | void> => {
   try {
     const result: any = await axios({
@@ -398,22 +412,6 @@ export const putFormData = async (url: string, data: any): Promise<any> => {
   }
 };
 
-export const deleteData = async (url: string, data: any): Promise<string | void> => {
-  try {
-    const result: any = await axios({
-      method: "DELETE",
-      url: `${API_URL}${url}`,
-      validateStatus: function (status) {
-        return status < 600;
-      },
-      data: data,
-      headers: { ...await authHeaderNew() },
-    });
-    return result;
-  } catch (error) {
-    console.log('deleteErr', error);
-  }
-};
 
 // --- Centralized API Methods ---
 

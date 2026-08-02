@@ -21,7 +21,7 @@ import {
   getData,
   postData,
   putData,
-  patchData,
+  fetchMyProfile,
   deleteData,
 } from '../../../shared/services/main-service'
 
@@ -35,11 +35,11 @@ interface Address {
   name: string
   phone: string
   line1: string
-  line2: string
   city: string
   state: string
   pincode: string
   isDefault: boolean
+  receiverType: 'myself' | 'other'
 }
 
 interface FormState {
@@ -47,11 +47,11 @@ interface FormState {
   name: string
   phone: string
   line1: string
-  line2: string
   city: string
   state: string
   pincode: string
   isDefault: boolean
+  receiverType: 'myself' | 'other'
 }
 
 const emptyForm = (): FormState => ({
@@ -59,11 +59,11 @@ const emptyForm = (): FormState => ({
   name: '',
   phone: '',
   line1: '',
-  line2: '',
   city: '',
   state: '',
   pincode: '',
   isDefault: false,
+  receiverType: 'myself',
 })
 
 const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLength }: any) => (
@@ -84,9 +84,13 @@ const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLeng
 const SavedAddressCard = ({
   address,
   onSelect,
+  onEdit,
+  onDelete,
 }: {
   address: Address
   onSelect: () => void
+  onEdit: () => void
+  onDelete: () => void
 }) => {
   const typeEmoji: Record<AddressType, string> = {
     Home: '🏠',
@@ -99,23 +103,39 @@ const SavedAddressCard = ({
     Other: '#E0F0FF',
   }
 
-  const fullAddress = [address.line1, address.line2, address.city, address.pincode]
+  const fullAddress = [address.line1, address.city, address.pincode]
     .filter(Boolean)
     .join(', ')
 
   return (
-    <TouchableOpacity style={s.savedCard} onPress={onSelect} activeOpacity={0.82}>
-      <View style={[s.savedIconBox, { backgroundColor: typeBg[address.label] }]}>
-        <Text style={s.savedEmoji}>{typeEmoji[address.label]}</Text>
+    <View style={s.savedCard}>
+      <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={onSelect} activeOpacity={0.75}>
+        <View style={[s.savedIconBox, { backgroundColor: typeBg[address.label] }]}>
+          <Text style={s.savedEmoji}>{typeEmoji[address.label]}</Text>
+        </View>
+        <View style={s.savedInfo}>
+          <Text style={s.savedLabel}>
+            {address.label}
+            {address.name ? ` (${address.name})` : ''}
+          </Text>
+          <Text style={s.savedAddress} numberOfLines={2}>{fullAddress}</Text>
+          {address.phone ? (
+            <Text style={{ fontSize: 11, color: '#757575', marginTop: 2, fontFamily: 'DMSans-Medium' }}>
+              📞 {address.phone}
+            </Text>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+
+      <View style={s.actionCol}>
+        <TouchableOpacity style={s.miniActionBtn} onPress={onEdit} activeOpacity={0.7}>
+          <Text style={s.miniActionText}>✏️</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.miniActionBtn} onPress={onDelete} activeOpacity={0.7}>
+          <Text style={[s.miniActionText, { color: '#E53935' }]}>🗑️</Text>
+        </TouchableOpacity>
       </View>
-      <View style={s.savedInfo}>
-        <Text style={s.savedLabel}>{address.label}</Text>
-        <Text style={s.savedAddress} numberOfLines={2}>{fullAddress}</Text>
-      </View>
-      <View style={s.etaBadge}>
-        <Text style={s.etaText}>8 min</Text>
-      </View>
-    </TouchableOpacity>
+    </View>
   )
 }
 
@@ -129,6 +149,10 @@ const AddressScreen = () => {
   const [saving, setSaving] = useState(false)
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
 
+  const [profileName, setProfileName] = useState('')
+  const [profilePhone, setProfilePhone] = useState('')
+  const [receiverType, setReceiverType] = useState<'myself' | 'other'>('myself')
+
   const slideAnim = useRef(new Animated.Value(H)).current
   const sheetSlide = useRef(new Animated.Value(0)).current
 
@@ -140,14 +164,14 @@ const AddressScreen = () => {
       const mapped = data.map(a => ({
         id: String(a.id),
         label: a.label as AddressType,
-        name: a.name,
-        phone: a.phone,
+        name: a.name || '',
+        phone: a.phone || '',
         line1: a.line1,
-        line2: a.line2 || '',
         city: a.city,
-        state: a.state,
+        state: a.state || 'N/A',
         pincode: a.pincode,
         isDefault: !!a.isDefault,
+        receiverType: (a.receiverType || a.receiver_type || 'myself') as 'myself' | 'other',
       }))
       setAddresses(mapped)
       const defaultAddr = mapped.find(a => a.isDefault) || mapped[0] || null
@@ -159,11 +183,37 @@ const AddressScreen = () => {
     }
   }, [])
 
+  const loadProfile = useCallback(async () => {
+    try {
+      const prof = await fetchMyProfile()
+      if (prof) {
+        const name = prof.FirstName
+          ? `${prof.FirstName}${prof.LastName ? ' ' + prof.LastName : ''}`
+          : prof.name || ''
+        setProfileName(name)
+        setProfilePhone(prof.phone || prof.Phone || '')
+      }
+    } catch (e) {
+      console.log('loadProfile error:', e)
+    }
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       loadAddresses()
-    }, [loadAddresses]),
+      loadProfile()
+    }, [loadAddresses, loadProfile]),
   )
+
+  const handleReceiverTypeChange = (type: 'myself' | 'other') => {
+    setReceiverType(type)
+    setForm(prev => ({
+      ...prev,
+      receiverType: type,
+      name: type === 'myself' ? profileName : '',
+      phone: type === 'myself' ? profilePhone : '',
+    }))
+  }
 
   const openModal = (address?: Address) => {
     if (address) {
@@ -173,16 +223,25 @@ const AddressScreen = () => {
         name: address.name,
         phone: address.phone,
         line1: address.line1,
-        line2: address.line2,
         city: address.city,
-        state: address.state,
+        state: address.state || 'N/A',
         pincode: address.pincode,
         isDefault: address.isDefault,
+        receiverType: address.receiverType || 'myself',
       })
+      const isMyself = (address.receiverType || 'myself') === 'myself'
+      setReceiverType(isMyself ? 'myself' : 'other')
     } else {
       setEditingId(null)
-      setForm(emptyForm())
+      setForm({
+        ...emptyForm(),
+        name: profileName,
+        phone: profilePhone,
+        receiverType: 'myself',
+      })
+      setReceiverType('myself')
     }
+
     setModalVisible(true)
     Animated.spring(slideAnim, {
       toValue: 0,
@@ -204,11 +263,10 @@ const AddressScreen = () => {
     setForm(prev => ({ ...prev, [key]: value }))
 
   const validate = () => {
-    if (!form.name.trim()) { Alert.alert('Error', 'Full name is required.'); return false }
-    if (!form.phone.trim() || form.phone.length !== 10) { Alert.alert('Error', 'Enter a valid 10-digit phone.'); return false }
+    if (!form.name.trim()) { Alert.alert('Error', "Receiver's name is required."); return false }
+    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length !== 10) { Alert.alert('Error', 'Enter a valid 10-digit receiver phone.'); return false }
     if (!form.line1.trim()) { Alert.alert('Error', 'Address line 1 is required.'); return false }
     if (!form.city.trim()) { Alert.alert('Error', 'City is required.'); return false }
-    if (!form.state.trim()) { Alert.alert('Error', 'State is required.'); return false }
     if (!form.pincode.trim() || form.pincode.length < 6) { Alert.alert('Error', 'Enter a valid 6-digit pincode.'); return false }
     return true
   }
@@ -222,11 +280,11 @@ const AddressScreen = () => {
         name: form.name.trim(),
         phone: form.phone.trim(),
         line1: form.line1.trim(),
-        line2: form.line2.trim(),
         city: form.city.trim(),
-        state: form.state.trim(),
+        state: form.state.trim() || 'N/A',
         pincode: form.pincode.trim(),
         isDefault: form.isDefault,
+        receiver_type: form.receiverType,
       }
 
       let res: any
@@ -249,6 +307,34 @@ const AddressScreen = () => {
     }
   }
 
+  const handleDeleteAddress = async (id: string) => {
+    Alert.alert(
+      'Delete Address',
+      'Are you sure you want to delete this address?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await deleteData(`/address/${id}`)
+              if (res?.data?.success) {
+                await loadAddresses()
+              } else {
+                Alert.alert('Error', res?.data?.message || 'Failed to delete address.')
+              }
+            } catch (err) {
+              console.log('deleteAddress error:', err)
+              Alert.alert('Error', 'Something went wrong.')
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    )
+  }
+
   const handleConfirm = () => {
     navigation.goBack()
   }
@@ -256,7 +342,7 @@ const AddressScreen = () => {
   const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other']
 
   const displayAddress = selectedAddress
-    ? [selectedAddress.line1, selectedAddress.line2, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
+    ? [selectedAddress.line1, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
     : 'Select a delivery address'
 
   return (
@@ -334,6 +420,8 @@ const AddressScreen = () => {
                   key={addr.id}
                   address={addr}
                   onSelect={() => setSelectedAddress(addr)}
+                  onEdit={() => openModal(addr)}
+                  onDelete={() => handleDeleteAddress(addr.id)}
                 />
               ))}
             </>
@@ -396,17 +484,46 @@ const AddressScreen = () => {
                   </View>
                 </View>
 
-                <GlassField label="Full Name *" value={form.name} onChange={setF('name')} placeholder="Your full name" />
+                <View style={f.fieldWrap}>
+                  <Text style={f.fieldLabel}>Receiver</Text>
+                  <View style={s.typeRow}>
+                    <TouchableOpacity
+                      style={[s.typeChip, receiverType === 'myself' && s.typeChipActive]}
+                      onPress={() => handleReceiverTypeChange('myself')}
+                    >
+                      <Text style={{ fontSize: 14 }}>👤</Text>
+                      <Text style={[s.typeChipText, receiverType === 'myself' && s.typeChipTextActive]}>
+                        Myself
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.typeChip, receiverType === 'other' && s.typeChipActive]}
+                      onPress={() => handleReceiverTypeChange('other')}
+                    >
+                      <Text style={{ fontSize: 14 }}>👥</Text>
+                      <Text style={[s.typeChipText, receiverType === 'other' && s.typeChipTextActive]}>
+                        Someone else
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <GlassField
-                  label="Phone Number *"
+                  label="Receiver's Name *"
+                  value={form.name}
+                  onChange={setF('name')}
+                  placeholder="Full name of receiver"
+                />
+                <GlassField
+                  label="Receiver's Phone Number *"
                   value={form.phone}
                   onChange={(v: string) => setF('phone')(v.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="10-digit mobile"
+                  placeholder="10-digit mobile number"
                   keyboardType="phone-pad"
                   maxLength={10}
                 />
+
                 <GlassField label="Address Line 1 *" value={form.line1} onChange={setF('line1')} placeholder="House / Flat / Block" />
-                <GlassField label="Address Line 2" value={form.line2} onChange={setF('line2')} placeholder="Area, Colony (optional)" />
                 <View style={s.rowFields}>
                   <View style={{ flex: 1, marginRight: 8 }}>
                     <GlassField label="City *" value={form.city} onChange={setF('city')} placeholder="City" />
@@ -415,7 +532,6 @@ const AddressScreen = () => {
                     <GlassField label="Pincode *" value={form.pincode} onChange={setF('pincode')} placeholder="6-digit" keyboardType="numeric" maxLength={6} />
                   </View>
                 </View>
-                <GlassField label="State *" value={form.state} onChange={setF('state')} placeholder="State" />
 
                 <TouchableOpacity
                   style={s.defaultToggle}
@@ -757,6 +873,31 @@ const s = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.65 },
   saveBtnText: { color: '#fff', fontSize: 15, fontFamily: 'DMSans-Bold' },
+
+  actionCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 'auto',
+  },
+  miniActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E4E4E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  miniActionText: {
+    fontSize: 13,
+  },
 })
 
 const f = StyleSheet.create({
