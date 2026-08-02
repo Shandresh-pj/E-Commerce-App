@@ -17,6 +17,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import Svg, { Path, Circle, Rect } from 'react-native-svg'
 import {
   getData,
   postData,
@@ -26,6 +27,7 @@ import {
 } from '../../../shared/services/main-service'
 
 const { width: W, height: H } = Dimensions.get('window')
+const isSmallDevice = W < 360
 
 type AddressType = 'Home' | 'Work' | 'Other'
 
@@ -66,21 +68,169 @@ const emptyForm = (): FormState => ({
   receiverType: 'myself',
 })
 
-const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLength }: any) => (
-  <View style={f.fieldWrap}>
-    <Text style={f.fieldLabel}>{label}</Text>
-    <TextInput
-      style={f.input}
-      value={value}
-      onChangeText={onChange}
-      placeholder={placeholder ?? label}
-      placeholderTextColor="#9a9a9a"
-      keyboardType={keyboardType ?? 'default'}
-      maxLength={maxLength}
+const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other']
+
+/* -------------------------------------------------------------------------- */
+/*                        CRISP VECTOR SVG ICONS                              */
+/* -------------------------------------------------------------------------- */
+const BackSvgIcon = ({ color = '#FFFFFF', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M19 12H5M12 19L5 12L12 5"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
-  </View>
+  </Svg>
 )
 
+const SearchSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="2" />
+    <Path
+      d="M20 20L16 16"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const HomeSvgIcon = ({ color = '#FBBF24', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 10.25L12 3L21 10.25V20C21 20.5523 20.5523 21 20 21H15V14H9V21H4C3.44772 21 3 20.5523 3 20V10.25Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
+const WorkSvgIcon = ({ color = '#FBBF24', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="7" width="18" height="13" rx="2" stroke={color} strokeWidth="2" />
+    <Path
+      d="M8 7V5C8 3.89543 8.89543 3 10 3H14C15.1046 3 16 3.89543 16 5V7"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const PinSvgIcon = ({ color = '#FBBF24', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21C16 17.5 20 13.4183 20 9C20 4.58172 16.4183 1 12 1C7.58172 1 4 4.58172 4 9C4 13.4183 8 17.5 12 21Z"
+      stroke={color}
+      strokeWidth="2"
+    />
+    <Circle cx="12" cy="9" r="2.5" fill={color} />
+  </Svg>
+)
+
+const UserSingleSvgIcon = ({ color = '#FBBF24', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="7" r="4.5" stroke={color} strokeWidth="2" />
+    <Path
+      d="M4 20C4 16.13 7.58 13 12 13C16.42 13 20 16.13 20 20"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const UserGroupSvgIcon = ({ color = '#FBBF24', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M17 21V19C17 16.7909 15.2091 15 13 15H11C8.79086 15 7 16.7909 7 19V21"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="2" />
+  </Svg>
+)
+
+const CloseSvgIcon = ({ color = '#829AB8', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6L6 18M6 6L18 18"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const EditSvgIcon = ({ color = '#FBBF24', size = 15 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M11 4H4C3.44772 4 3 4.44772 3 5V20C3 20.5523 3.44772 21 4 21H19C19.5523 21 20 20.5523 20 20V13"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
+const TrashSvgIcon = ({ color = '#FF6B6B', size = 15 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 6H5H21M19 6V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V6M8 6V4C8 3.44772 8.44772 3 9 3H15C15.5523 3 16 3.44772 16 4V6"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
+/* -------------------------------------------------------------------------- */
+/*                       SAPPHIRE GLASS FIELD COMPONENT                       */
+/* -------------------------------------------------------------------------- */
+const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLength }: any) => {
+  const [isFocused, setIsFocused] = useState(false)
+
+  return (
+    <View style={f.fieldWrap}>
+      <Text style={f.fieldLabel}>{label}</Text>
+      <View
+        style={[
+          f.inputContainer,
+          isFocused ? f.inputContainerFocused : null,
+        ]}
+      >
+        <TextInput
+          style={f.input}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder ?? label}
+          placeholderTextColor="#829AB8"
+          keyboardType={keyboardType ?? 'default'}
+          maxLength={maxLength}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        />
+      </View>
+    </View>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*                       SAVED ADDRESS CARD COMPONENT                         */
+/* -------------------------------------------------------------------------- */
 const SavedAddressCard = ({
   address,
   onSelect,
@@ -92,53 +242,56 @@ const SavedAddressCard = ({
   onEdit: () => void
   onDelete: () => void
 }) => {
-  const typeEmoji: Record<AddressType, string> = {
-    Home: '🏠',
-    Work: '💼',
-    Other: '📍',
-  }
-  const typeBg: Record<AddressType, string> = {
-    Home: '#FFF4D6',
-    Work: '#EBE4FF',
-    Other: '#E0F0FF',
-  }
-
   const fullAddress = [address.line1, address.city, address.pincode]
     .filter(Boolean)
     .join(', ')
 
   return (
     <View style={s.savedCard}>
-      <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={onSelect} activeOpacity={0.75}>
-        <View style={[s.savedIconBox, { backgroundColor: typeBg[address.label] }]}>
-          <Text style={s.savedEmoji}>{typeEmoji[address.label]}</Text>
+      <TouchableOpacity
+        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+        onPress={onSelect}
+        activeOpacity={0.8}
+      >
+        <View style={s.savedIconBox}>
+          {address.label === 'Home' ? (
+            <HomeSvgIcon color="#FBBF24" size={20} />
+          ) : address.label === 'Work' ? (
+            <WorkSvgIcon color="#FBBF24" size={20} />
+          ) : (
+            <PinSvgIcon color="#FBBF24" size={20} />
+          )}
         </View>
+
         <View style={s.savedInfo}>
           <Text style={s.savedLabel}>
             {address.label}
             {address.name ? ` (${address.name})` : ''}
           </Text>
-          <Text style={s.savedAddress} numberOfLines={2}>{fullAddress}</Text>
+          <Text style={s.savedAddress} numberOfLines={2}>
+            {fullAddress}
+          </Text>
           {address.phone ? (
-            <Text style={{ fontSize: 11, color: '#757575', marginTop: 2, fontFamily: 'DMSans-Medium' }}>
-              📞 {address.phone}
-            </Text>
+            <Text style={s.savedPhoneText}>📞 {address.phone}</Text>
           ) : null}
         </View>
       </TouchableOpacity>
 
       <View style={s.actionCol}>
-        <TouchableOpacity style={s.miniActionBtn} onPress={onEdit} activeOpacity={0.7}>
-          <Text style={s.miniActionText}>✏️</Text>
+        <TouchableOpacity style={s.miniActionBtn} onPress={onEdit} activeOpacity={0.75}>
+          <EditSvgIcon color="#FBBF24" size={15} />
         </TouchableOpacity>
-        <TouchableOpacity style={s.miniActionBtn} onPress={onDelete} activeOpacity={0.7}>
-          <Text style={[s.miniActionText, { color: '#E53935' }]}>🗑️</Text>
+        <TouchableOpacity style={s.miniActionBtn} onPress={onDelete} activeOpacity={0.75}>
+          <TrashSvgIcon color="#FF6B6B" size={15} />
         </TouchableOpacity>
       </View>
     </View>
   )
 }
 
+/* -------------------------------------------------------------------------- */
+/*                               MAIN COMPONENT                               */
+/* -------------------------------------------------------------------------- */
 const AddressScreen = () => {
   const navigation = useNavigation<any>()
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -154,7 +307,6 @@ const AddressScreen = () => {
   const [receiverType, setReceiverType] = useState<'myself' | 'other'>('myself')
 
   const slideAnim = useRef(new Animated.Value(H)).current
-  const sheetSlide = useRef(new Animated.Value(0)).current
 
   const loadAddresses = useCallback(async () => {
     setLoading(true)
@@ -205,6 +357,51 @@ const AddressScreen = () => {
     }, [loadAddresses, loadProfile]),
   )
 
+  const openModal = (addr?: Address) => {
+    if (addr) {
+      setEditingId(addr.id)
+      setForm({
+        label: addr.label,
+        name: addr.name,
+        phone: addr.phone,
+        line1: addr.line1,
+        city: addr.city,
+        state: addr.state,
+        pincode: addr.pincode,
+        isDefault: addr.isDefault,
+        receiverType: addr.receiverType,
+      })
+      setReceiverType(addr.receiverType || 'myself')
+    } else {
+      setEditingId(null)
+      setForm({
+        ...emptyForm(),
+        name: profileName,
+        phone: profilePhone,
+      })
+      setReceiverType('myself')
+    }
+    setModalVisible(true)
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 60,
+      friction: 11,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const closeModal = () => {
+    Animated.timing(slideAnim, {
+      toValue: H,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setModalVisible(false)
+      setForm(emptyForm())
+      setEditingId(null)
+    })
+  }
+
   const handleReceiverTypeChange = (type: 'myself' | 'other') => {
     setReceiverType(type)
     setForm(prev => ({
@@ -215,192 +412,132 @@ const AddressScreen = () => {
     }))
   }
 
-  const openModal = (address?: Address) => {
-    if (address) {
-      setEditingId(address.id)
-      setForm({
-        label: address.label,
-        name: address.name,
-        phone: address.phone,
-        line1: address.line1,
-        city: address.city,
-        state: address.state || 'N/A',
-        pincode: address.pincode,
-        isDefault: address.isDefault,
-        receiverType: address.receiverType || 'myself',
-      })
-      const isMyself = (address.receiverType || 'myself') === 'myself'
-      setReceiverType(isMyself ? 'myself' : 'other')
-    } else {
-      setEditingId(null)
-      setForm({
-        ...emptyForm(),
-        name: profileName,
-        phone: profilePhone,
-        receiverType: 'myself',
-      })
-      setReceiverType('myself')
-    }
-
-    setModalVisible(true)
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start()
-  }
-
-  const closeModal = () => {
-    Animated.timing(slideAnim, {
-      toValue: H,
-      duration: 260,
-      useNativeDriver: true,
-    }).start(() => setModalVisible(false))
-  }
-
-  const setF = (key: keyof FormState) => (value: any) =>
-    setForm(prev => ({ ...prev, [key]: value }))
-
-  const validate = () => {
-    if (!form.name.trim()) { Alert.alert('Error', "Receiver's name is required."); return false }
-    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length !== 10) { Alert.alert('Error', 'Enter a valid 10-digit receiver phone.'); return false }
-    if (!form.line1.trim()) { Alert.alert('Error', 'Address line 1 is required.'); return false }
-    if (!form.city.trim()) { Alert.alert('Error', 'City is required.'); return false }
-    if (!form.pincode.trim() || form.pincode.length < 6) { Alert.alert('Error', 'Enter a valid 6-digit pincode.'); return false }
-    return true
-  }
+  const setF = (key: keyof FormState) => (val: any) =>
+    setForm(prev => ({ ...prev, [key]: val }))
 
   const handleSave = async () => {
-    if (!validate()) return
+    if (!form.line1.trim() || !form.city.trim() || !form.pincode.trim()) {
+      Alert.alert('Required Fields', 'Please fill in Address Line 1, City, and Pincode.')
+      return
+    }
     setSaving(true)
     try {
       const payload = {
         label: form.label,
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        line1: form.line1.trim(),
-        city: form.city.trim(),
-        state: form.state.trim() || 'N/A',
-        pincode: form.pincode.trim(),
+        name: form.name,
+        phone: form.phone,
+        line1: form.line1,
+        city: form.city,
+        state: form.state || 'N/A',
+        pincode: form.pincode,
         isDefault: form.isDefault,
-        receiver_type: form.receiverType,
+        receiver_type: receiverType,
       }
 
-      let res: any
       if (editingId) {
-        res = await putData(`/address/${editingId}`, payload)
+        await putData(`/address/${editingId}`, payload)
       } else {
-        res = await postData('/address', payload)
+        await postData('/address', payload)
       }
-
-      if (res?.data?.success) {
-        await loadAddresses()
-        closeModal()
-      } else {
-        Alert.alert('Error', res?.data?.message || 'Failed to save address.')
-      }
-    } catch {
-      Alert.alert('Error', 'Something went wrong.')
+      await loadAddresses()
+      closeModal()
+    } catch (e: any) {
+      console.log('Save address error:', e)
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to save address')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDeleteAddress = async (id: string) => {
-    Alert.alert(
-      'Delete Address',
-      'Are you sure you want to delete this address?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const res = await deleteData(`/address/${id}`)
-              if (res?.data?.success) {
-                await loadAddresses()
-              } else {
-                Alert.alert('Error', res?.data?.message || 'Failed to delete address.')
-              }
-            } catch (err) {
-              console.log('deleteAddress error:', err)
-              Alert.alert('Error', 'Something went wrong.')
-            }
-          },
+  const handleDeleteAddress = (id: string) => {
+    Alert.alert('Delete Address', 'Are you sure you want to remove this address?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteData(`/address/${id}`)
+            if (selectedAddress?.id === id) setSelectedAddress(null)
+            loadAddresses()
+          } catch (e) {
+            console.log('Delete address error:', e)
+          }
         },
-      ],
-      { cancelable: true }
-    )
+      },
+    ])
   }
 
   const handleConfirm = () => {
+    if (!selectedAddress && addresses.length > 0) {
+      setSelectedAddress(addresses[0])
+    }
     navigation.goBack()
   }
 
-  const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other']
-
-  const displayAddress = selectedAddress
-    ? [selectedAddress.line1, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
-    : 'Select a delivery address'
-
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ECEEE8" />
+      <StatusBar barStyle="light-content" backgroundColor="#071224" translucent={false} />
 
-      {/* Map Background */}
+      {/* SAPPHIRE MAP BACKGROUND */}
       <View style={s.mapBg}>
         <SafeAreaView edges={['top']} style={s.searchOverlay}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={s.backArrow}>←</Text>
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <BackSvgIcon color="#FFFFFF" size={18} />
           </TouchableOpacity>
+
           <View style={s.searchBar}>
-            <Text style={s.searchIcon}>🔎</Text>
+            <SearchSvgIcon color="#FBBF24" size={18} />
             <Text style={s.searchPlaceholder}>Search area, street, landmark...</Text>
           </View>
         </SafeAreaView>
 
-        {/* Map grid */}
+        {/* Map Grid Elements */}
         <View style={s.gridContainer}>
-          <View style={[s.gridLineH, { top: '25%' }]} />
-          <View style={[s.gridLineH, { top: '50%' }]} />
-          <View style={[s.gridLineH, { top: '75%' }]} />
-          <View style={[s.gridLineV, { left: '25%' }]} />
-          <View style={[s.gridLineV, { left: '50%' }]} />
-          <View style={[s.gridLineV, { left: '75%' }]} />
-          <View style={s.greenPatch1} />
           <View style={s.roadH} />
           <View style={s.roadV} />
-        </View>
+          <View style={s.building1} />
+          <View style={s.building2} />
 
-        {/* Pin marker */}
-        <View style={s.pinContainer}>
-          <View style={s.pinLabel}>
-            <Text style={s.pinLabelText}>Your order arrives here</Text>
+          <View style={s.pinContainer}>
+            <View style={s.pinLabel}>
+              <Text style={s.pinLabelText}>⚡ Delivery Location</Text>
+            </View>
+            <PinSvgIcon color="#FBBF24" size={32} />
           </View>
-          <Text style={s.pinMarker}>📍</Text>
         </View>
       </View>
 
-      {/* Bottom Sheet */}
+      {/* FLOATING SAPPHIRE SHEET */}
       <View style={s.bottomSheet}>
         <View style={s.sheetHandle} />
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.sheetScroll}>
-          {/* Selected Address */}
-          <View style={s.selectedCard}>
-            <View style={s.selectedLeft}>
-              <Text style={s.selectedPin}>📍</Text>
-              <View style={s.selectedInfo}>
-                <Text style={s.selectedTitle}>Set delivery to this pin</Text>
-                <Text style={s.selectedAddress} numberOfLines={2}>{displayAddress}</Text>
+        <ScrollView contentContainerStyle={s.sheetScroll} showsVerticalScrollIndicator={false}>
+          {/* Selected Address Display */}
+          {selectedAddress ? (
+            <View style={s.selectedCard}>
+              <View style={s.selectedLeft}>
+                <PinSvgIcon color="#FBBF24" size={20} />
+                <View style={s.selectedInfo}>
+                  <Text style={s.selectedTitle}>
+                    {selectedAddress.label} {selectedAddress.name ? `• ${selectedAddress.name}` : ''}
+                  </Text>
+                  <Text style={s.selectedAddress} numberOfLines={2}>
+                    {[selectedAddress.line1, selectedAddress.city, selectedAddress.pincode]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </Text>
+                </View>
+              </View>
+              <View style={s.etaBadge}>
+                <Text style={s.etaText}>⚡ 8 MIN</Text>
               </View>
             </View>
-            <View style={s.etaBadge}>
-              <Text style={s.etaText}>8 MIN</Text>
-            </View>
-          </View>
+          ) : null}
 
           {/* Confirm Button */}
           <TouchableOpacity
@@ -411,7 +548,7 @@ const AddressScreen = () => {
             <Text style={s.confirmBtnText}>Confirm & continue →</Text>
           </TouchableOpacity>
 
-          {/* Saved Addresses */}
+          {/* Saved Addresses List */}
           {addresses.length > 0 && (
             <>
               <Text style={s.sectionTitle}>SAVED ADDRESSES</Text>
@@ -427,7 +564,7 @@ const AddressScreen = () => {
             </>
           )}
 
-          {/* Add New Address */}
+          {/* Add New Address Button */}
           <TouchableOpacity
             style={s.addNewBtn}
             onPress={() => openModal()}
@@ -441,8 +578,13 @@ const AddressScreen = () => {
         </ScrollView>
       </View>
 
-      {/* Add/Edit Address Modal */}
-      <Modal transparent visible={modalVisible} animationType="none" onRequestClose={closeModal}>
+      {/* ULTRA-MODERN ADD / EDIT ADDRESS MODAL SHEET */}
+      <Modal
+        transparent
+        visible={modalVisible}
+        animationType="none"
+        onRequestClose={closeModal}
+      >
         <View style={s.overlay}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
@@ -456,51 +598,66 @@ const AddressScreen = () => {
                 <Text style={s.modalTitle}>
                   {editingId ? 'Edit Address' : 'Add New Address'}
                 </Text>
-                <TouchableOpacity onPress={closeModal} style={s.closeBtn}>
-                  <Text style={s.closeBtnText}>✕</Text>
+                <TouchableOpacity onPress={closeModal} style={s.closeBtn} activeOpacity={0.8}>
+                  <CloseSvgIcon color="#829AB8" size={18} />
                 </TouchableOpacity>
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 24 }}
+              >
+                {/* Address Type Selector */}
                 <View style={f.fieldWrap}>
-                  <Text style={f.fieldLabel}>Address Type</Text>
+                  <Text style={f.fieldLabel}>ADDRESS TYPE</Text>
                   <View style={s.typeRow}>
-                    {ADDRESS_TYPES.map(t => (
-                      <TouchableOpacity
-                        key={t}
-                        style={[s.typeChip, form.label === t && s.typeChipActive]}
-                        onPress={() => setF('label')(t)}
-                      >
-                        <Text style={{ fontSize: 14 }}>
-                          {t === 'Home' ? '🏠' : t === 'Work' ? '💼' : '📍'}
-                        </Text>
-                        <Text
-                          style={[s.typeChipText, form.label === t && s.typeChipTextActive]}
+                    {ADDRESS_TYPES.map(t => {
+                      const isActive = form.label === t
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          style={[s.typeChip, isActive && s.typeChipActive]}
+                          onPress={() => setF('label')(t)}
+                          activeOpacity={0.8}
                         >
-                          {t}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          {t === 'Home' ? (
+                            <HomeSvgIcon color={isActive ? '#0B1B36' : '#FBBF24'} size={16} />
+                          ) : t === 'Work' ? (
+                            <WorkSvgIcon color={isActive ? '#0B1B36' : '#FBBF24'} size={16} />
+                          ) : (
+                            <PinSvgIcon color={isActive ? '#0B1B36' : '#FBBF24'} size={16} />
+                          )}
+                          <Text style={[s.typeChipText, isActive && s.typeChipTextActive]}>
+                            {t}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
                   </View>
                 </View>
 
+                {/* Receiver Type Selector */}
                 <View style={f.fieldWrap}>
-                  <Text style={f.fieldLabel}>Receiver</Text>
+                  <Text style={f.fieldLabel}>RECEIVER</Text>
                   <View style={s.typeRow}>
                     <TouchableOpacity
                       style={[s.typeChip, receiverType === 'myself' && s.typeChipActive]}
                       onPress={() => handleReceiverTypeChange('myself')}
+                      activeOpacity={0.8}
                     >
-                      <Text style={{ fontSize: 14 }}>👤</Text>
+                      <UserSingleSvgIcon color={receiverType === 'myself' ? '#0B1B36' : '#FBBF24'} size={16} />
                       <Text style={[s.typeChipText, receiverType === 'myself' && s.typeChipTextActive]}>
                         Myself
                       </Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
                       style={[s.typeChip, receiverType === 'other' && s.typeChipActive]}
                       onPress={() => handleReceiverTypeChange('other')}
+                      activeOpacity={0.8}
                     >
-                      <Text style={{ fontSize: 14 }}>👥</Text>
+                      <UserGroupSvgIcon color={receiverType === 'other' ? '#0B1B36' : '#FBBF24'} size={16} />
                       <Text style={[s.typeChipText, receiverType === 'other' && s.typeChipTextActive]}>
                         Someone else
                       </Text>
@@ -509,13 +666,14 @@ const AddressScreen = () => {
                 </View>
 
                 <GlassField
-                  label="Receiver's Name *"
+                  label="RECEIVER'S NAME *"
                   value={form.name}
                   onChange={setF('name')}
                   placeholder="Full name of receiver"
                 />
+
                 <GlassField
-                  label="Receiver's Phone Number *"
+                  label="RECEIVER'S PHONE NUMBER *"
                   value={form.phone}
                   onChange={(v: string) => setF('phone')(v.replace(/\D/g, '').slice(0, 10))}
                   placeholder="10-digit mobile number"
@@ -523,19 +681,39 @@ const AddressScreen = () => {
                   maxLength={10}
                 />
 
-                <GlassField label="Address Line 1 *" value={form.line1} onChange={setF('line1')} placeholder="House / Flat / Block" />
+                <GlassField
+                  label="ADDRESS LINE 1 *"
+                  value={form.line1}
+                  onChange={setF('line1')}
+                  placeholder="House / Flat / Block"
+                />
+
                 <View style={s.rowFields}>
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <GlassField label="City *" value={form.city} onChange={setF('city')} placeholder="City" />
+                  <View style={{ flex: 1, marginRight: 6 }}>
+                    <GlassField
+                      label="CITY *"
+                      value={form.city}
+                      onChange={setF('city')}
+                      placeholder="City"
+                    />
                   </View>
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <GlassField label="Pincode *" value={form.pincode} onChange={setF('pincode')} placeholder="6-digit" keyboardType="numeric" maxLength={6} />
+                  <View style={{ flex: 1, marginLeft: 6 }}>
+                    <GlassField
+                      label="PINCODE *"
+                      value={form.pincode}
+                      onChange={setF('pincode')}
+                      placeholder="6-digit"
+                      keyboardType="numeric"
+                      maxLength={6}
+                    />
                   </View>
                 </View>
 
+                {/* Default Toggle Checkbox */}
                 <TouchableOpacity
                   style={s.defaultToggle}
                   onPress={() => setF('isDefault')(!form.isDefault)}
+                  activeOpacity={0.8}
                 >
                   <View style={[s.checkbox, form.isDefault && s.checkboxChecked]}>
                     {form.isDefault && <Text style={s.checkIcon}>✓</Text>}
@@ -543,21 +721,21 @@ const AddressScreen = () => {
                   <Text style={s.defaultToggleText}>Set as default delivery address</Text>
                 </TouchableOpacity>
 
+                {/* Save CTA Button */}
                 <TouchableOpacity
                   style={[s.saveBtn, saving && s.saveBtnDisabled]}
                   onPress={handleSave}
-                  activeOpacity={0.85}
+                  activeOpacity={0.88}
                   disabled={saving}
                 >
                   {saving ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color="#0B1B36" size="small" />
                   ) : (
                     <Text style={s.saveBtnText}>
                       {editingId ? 'Update Address' : 'Save Address'}
                     </Text>
                   )}
                 </TouchableOpacity>
-                <View style={{ height: 24 }} />
               </ScrollView>
             </KeyboardAvoidingView>
           </Animated.View>
@@ -567,12 +745,15 @@ const AddressScreen = () => {
   )
 }
 
+/* -------------------------------------------------------------------------- */
+/*                               STYLES                                       */
+/* -------------------------------------------------------------------------- */
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ECEEE8' },
+  root: { flex: 1, backgroundColor: '#071224' },
 
   mapBg: {
     flex: 1,
-    backgroundColor: '#ECEEE8',
+    backgroundColor: '#0A1A34',
   },
 
   searchOverlay: {
@@ -584,105 +765,85 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: Platform.OS === 'android' ? 12 : 8,
     gap: 10,
   },
   backBtn: {
-    width: 42,
-    height: 42,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    backgroundColor: 'rgba(11, 27, 54, 0.92)',
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
-  backArrow: { fontSize: 18, color: '#141414' },
   searchBar: {
     flex: 1,
-    height: 44,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    height: 46,
+    backgroundColor: 'rgba(11, 27, 54, 0.92)',
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
-  searchIcon: { fontSize: 14 },
   searchPlaceholder: {
-    fontFamily: 'DMSans-Regular',
-    fontSize: 14,
-    color: '#9a9a9a',
+    fontFamily: 'DMSans-Medium',
+    fontSize: 13.5,
+    color: '#829AB8',
   },
 
-  gridContainer: { ...StyleSheet.absoluteFillObject },
-  gridLineH: {
-    position: 'absolute', left: 0, right: 0, height: 1,
-    backgroundColor: 'rgba(200,200,195,0.4)',
-  },
-  gridLineV: {
-    position: 'absolute', top: 0, bottom: 0, width: 1,
-    backgroundColor: 'rgba(200,200,195,0.4)',
-  },
-  greenPatch1: {
-    position: 'absolute', top: '20%', left: '30%', width: 90, height: 70,
-    backgroundColor: 'rgba(200,220,190,0.5)', borderRadius: 4,
-    transform: [{ rotate: '-5deg' }],
-  },
-  roadH: {
-    position: 'absolute', top: '45%', left: 0, right: 0, height: 8,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-  },
-  roadV: {
-    position: 'absolute', left: '50%', top: 0, bottom: 0, width: 8,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-  },
+  gridContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+  roadH: { position: 'absolute', top: '40%', left: 0, right: 0, height: 16, backgroundColor: '#102446' },
+  roadV: { position: 'absolute', left: '50%', top: 0, bottom: 0, width: 16, backgroundColor: '#102446' },
+  building1: { position: 'absolute', top: '20%', left: '20%', width: 70, height: 60, backgroundColor: '#0A1830', borderRadius: 8 },
+  building2: { position: 'absolute', bottom: '30%', right: '20%', width: 80, height: 70, backgroundColor: '#0A1830', borderRadius: 8 },
 
   pinContainer: {
     position: 'absolute',
     top: '35%',
-    alignSelf: 'center',
     alignItems: 'center',
   },
   pinLabel: {
-    backgroundColor: '#141414',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: '#FBBF24',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     marginBottom: 6,
   },
   pinLabelText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  pinMarker: {
-    fontSize: 32,
+    fontSize: 11.5,
+    color: '#0B1B36',
   },
 
   bottomSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: H * 0.55,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 16,
+    backgroundColor: 'rgba(11, 27, 54, 0.96)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    maxHeight: H * 0.58,
+    shadowColor: '#002B66',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    elevation: 20,
   },
   sheetHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: '#E4E4E2', alignSelf: 'center',
-    marginTop: 12, marginBottom: 8,
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FBBF24',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+    opacity: 0.8,
   },
   sheetScroll: {
     paddingHorizontal: 20,
@@ -692,11 +853,10 @@ const s = StyleSheet.create({
   selectedCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFCE8',
-    borderRadius: 14,
+    backgroundColor: '#162C50',
+    borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#FFE000',
-    borderStyle: 'dashed',
+    borderColor: '#FBBF24',
     padding: 14,
     marginBottom: 14,
   },
@@ -706,62 +866,68 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
   },
-  selectedPin: { fontSize: 18, marginTop: 2 },
   selectedInfo: { flex: 1 },
   selectedTitle: {
     fontFamily: 'DMSans-Bold',
     fontSize: 14,
-    color: '#141414',
-    marginBottom: 4,
+    color: '#FFFFFF',
+    marginBottom: 3,
   },
   selectedAddress: {
     fontFamily: 'DMSans-Regular',
     fontSize: 12,
-    color: '#8a8a8a',
+    color: '#94A3B8',
     lineHeight: 17,
   },
   etaBadge: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     borderWidth: 1,
-    borderColor: '#0C831F',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderColor: '#FBBF24',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   etaText: {
     fontFamily: 'DMSans-Bold',
     fontSize: 11,
-    color: '#0C831F',
+    color: '#FBBF24',
   },
 
   confirmBtn: {
-    backgroundColor: '#141414',
+    backgroundColor: '#FBBF24',
     borderRadius: 16,
-    height: 56,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
   confirmBtnText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: 15.5,
+    color: '#0B1B36',
   },
 
   sectionTitle: {
     fontFamily: 'DMSans-Bold',
     fontSize: 11,
-    color: '#9a9a9a',
-    letterSpacing: 1.5,
+    color: '#829AB8',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginBottom: 12,
+    marginBottom: 10,
   },
 
   savedCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FB',
-    borderRadius: 14,
+    backgroundColor: '#162C50',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#264878',
     padding: 14,
     marginBottom: 10,
     gap: 12,
@@ -770,31 +936,39 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  savedEmoji: { fontSize: 20 },
   savedInfo: { flex: 1 },
   savedLabel: {
     fontFamily: 'DMSans-Bold',
     fontSize: 14,
-    color: '#141414',
+    color: '#FFFFFF',
     marginBottom: 3,
   },
   savedAddress: {
     fontFamily: 'DMSans-Regular',
     fontSize: 12,
-    color: '#8a8a8a',
+    color: '#94A3B8',
     lineHeight: 17,
+  },
+  savedPhoneText: {
+    fontSize: 11,
+    color: '#FBBF24',
+    marginTop: 2,
+    fontFamily: 'DMSans-Medium',
   },
 
   addNewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E4E4E2',
-    borderStyle: 'dashed',
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    backgroundColor: '#162C50',
     padding: 14,
     marginTop: 4,
     gap: 12,
@@ -803,76 +977,162 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFE000',
+    backgroundColor: '#FBBF24',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addNewPlus: {
     fontFamily: 'DMSans-Bold',
     fontSize: 20,
-    color: '#141414',
+    color: '#0B1B36',
   },
   addNewText: {
     fontFamily: 'DMSans-Bold',
     fontSize: 14,
-    color: '#141414',
+    color: '#FFFFFF',
   },
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  /* MODAL STYLES */
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(7, 18, 36, 0.75)',
+    justifyContent: 'flex-end',
+  },
   sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: 'rgba(10, 25, 55, 0.98)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    maxHeight: H * 0.92,
+    paddingBottom: Platform.OS === 'android' ? 16 : 24,
+    maxHeight: H * 0.9,
+    shadowColor: '#002B66',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    elevation: 20,
   },
   modalHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: '#E4E4E2', alignSelf: 'center',
-    marginTop: 12, marginBottom: 4,
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FBBF24',
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+    opacity: 0.8,
   },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
-  modalTitle: { flex: 1, fontSize: 18, fontFamily: 'DMSans-Bold', color: '#141414' },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: isSmallDevice ? 19 : 22,
+    fontFamily: 'DMSans-Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
   closeBtn: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: '#F4F5F0', alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#162C50',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeBtnText: { fontSize: 16, color: '#9a9a9a' },
 
-  typeRow: { flexDirection: 'row', gap: 10 },
+  typeRow: { flexDirection: 'row', gap: 8 },
   typeChip: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 10, borderRadius: 12,
-    borderWidth: 1.5, borderColor: '#E4E4E2', backgroundColor: '#F8F9FB',
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#264878',
+    backgroundColor: '#162C50',
   },
-  typeChipActive: { backgroundColor: '#141414', borderColor: '#141414' },
-  typeChipText: { fontSize: 13, fontFamily: 'DMSans-Bold', color: '#9a9a9a' },
-  typeChipTextActive: { color: '#fff' },
+  typeChipActive: {
+    backgroundColor: '#FBBF24',
+    borderColor: '#FBBF24',
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  typeChipText: {
+    fontSize: 13,
+    fontFamily: 'DMSans-Bold',
+    color: '#829AB8',
+  },
+  typeChipTextActive: {
+    color: '#0B1B36',
+  },
 
   rowFields: { flexDirection: 'row' },
 
   defaultToggle: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginTop: 4, marginBottom: 20, paddingHorizontal: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 18,
+    paddingHorizontal: 2,
   },
   checkbox: {
-    width: 22, height: 22, borderRadius: 6,
-    borderWidth: 2, borderColor: '#E4E4E2',
-    alignItems: 'center', justifyContent: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: 'rgba(251, 191, 36, 0.4)',
+    backgroundColor: '#162C50',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  checkboxChecked: { backgroundColor: '#0C831F', borderColor: '#0C831F' },
-  checkIcon: { fontSize: 12, color: '#fff', fontFamily: 'DMSans-Bold' },
-  defaultToggleText: { fontSize: 13.5, fontFamily: 'DMSans-Medium', color: '#141414' },
+  checkboxChecked: {
+    backgroundColor: '#FBBF24',
+    borderColor: '#FBBF24',
+  },
+  checkIcon: {
+    fontSize: 12,
+    color: '#0B1B36',
+    fontFamily: 'DMSans-Bold',
+  },
+  defaultToggleText: {
+    fontSize: 13.5,
+    fontFamily: 'DMSans-Medium',
+    color: '#E2E8F0',
+  },
 
   saveBtn: {
-    backgroundColor: '#0C831F', borderRadius: 14, paddingVertical: 16,
+    backgroundColor: '#FBBF24',
+    borderRadius: 16,
+    height: 52,
     alignItems: 'center',
-    shadowColor: '#0C831F', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
+    justifyContent: 'center',
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
   saveBtnDisabled: { opacity: 0.65 },
-  saveBtnText: { color: '#fff', fontSize: 15, fontFamily: 'DMSans-Bold' },
+  saveBtnText: {
+    color: '#0B1B36',
+    fontSize: 16,
+    fontFamily: 'DMSans-Bold',
+    letterSpacing: 0.3,
+  },
 
   actionCol: {
     flexDirection: 'row',
@@ -881,35 +1141,50 @@ const s = StyleSheet.create({
     marginLeft: 'auto',
   },
   miniActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: '#18345C',
     borderWidth: 1,
-    borderColor: '#E4E4E2',
+    borderColor: 'rgba(251, 191, 36, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  miniActionText: {
-    fontSize: 13,
   },
 })
 
 const f = StyleSheet.create({
-  fieldWrap: { marginBottom: 14 },
+  fieldWrap: { marginBottom: 12 },
   fieldLabel: {
-    fontSize: 12, fontFamily: 'DMSans-Bold', color: '#9a9a9a',
-    letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 6,
+    fontSize: 11,
+    fontFamily: 'DMSans-Bold',
+    color: '#829AB8',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  inputContainer: {
+    backgroundColor: '#162C50',
+    borderWidth: 1.5,
+    borderColor: '#264878',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 50,
+    justifyContent: 'center',
+  },
+  inputContainerFocused: {
+    borderColor: '#FBBF24',
+    backgroundColor: '#1E3A68',
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   input: {
-    backgroundColor: '#F8F9FB', borderWidth: 1.5, borderColor: '#E4E4E2',
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, fontFamily: 'DMSans-Regular', color: '#141414',
+    fontSize: 14,
+    fontFamily: 'DMSans-Medium',
+    color: '#FFFFFF',
+    height: '100%',
   },
 })
 

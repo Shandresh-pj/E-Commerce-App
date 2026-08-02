@@ -17,8 +17,92 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DeviceInfo from 'react-native-device-info'
+import Svg, { Path, Circle, Rect } from 'react-native-svg'
 
 const { width: W, height: H } = Dimensions.get('window')
+const isSmallDevice = W < 360
+
+/* -------------------------------------------------------------------------- */
+/*                        CRISP VECTOR SVG ICONS                              */
+/* -------------------------------------------------------------------------- */
+const BackSvgIcon = ({ color = '#FFFFFF', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M19 12H5M12 19L5 12L12 5"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
+const SearchSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="2" />
+    <Path
+      d="M20 20L16 16"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const CompassSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
+    <Path
+      d="M16.24 7.76L14.12 14.12L7.76 16.24L9.88 9.88L16.24 7.76Z"
+      stroke={color}
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+    <Circle cx="12" cy="12" r="1.5" fill={color} />
+  </Svg>
+)
+
+const MapPinSvgIcon = ({ color = '#0B1B36', size = 26 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21C16 17.5 20 13.4183 20 9C20 4.58172 16.4183 1 12 1C7.58172 1 4 4.58172 4 9C4 13.4183 8 17.5 12 21Z"
+      fill="#FBBF24"
+      stroke="#F59E0B"
+      strokeWidth="1.5"
+    />
+    <Circle cx="12" cy="9" r="3" fill={color} />
+  </Svg>
+)
+
+const NavigationSvgIcon = ({ color = '#0B1B36', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 11L22 2L13 21L11 13L3 11Z"
+      fill={color}
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
+const EditLocationSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M11 4H4C3.44772 4 3 4.44772 3 5V20C3 20.5523 3.44772 21 4 21H19C19.5523 21 20 20.5523 20 20V13"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
 
 interface LocationPermissionProps {
   navigation: any
@@ -26,23 +110,91 @@ interface LocationPermissionProps {
 
 export default function LocationPermission({ navigation }: LocationPermissionProps) {
   const [loading, setLoading] = useState(false)
-  const sheetSlide = useRef(new Animated.Value(300)).current
+  const sheetSlide = useRef(new Animated.Value(350)).current
   const sheetFade = useRef(new Animated.Value(0)).current
 
+  // Map Animation Values
+  const pulseAnim1 = useRef(new Animated.Value(0.4)).current
+  const pulseAnim2 = useRef(new Animated.Value(0.4)).current
+  const radarRotate = useRef(new Animated.Value(0)).current
+  const pinBounce = useRef(new Animated.Value(0)).current
+
   useEffect(() => {
+    // Sheet Entry Animation
     Animated.parallel([
       Animated.spring(sheetSlide, {
         toValue: 0,
-        tension: 50,
-        friction: 12,
+        tension: 60,
+        friction: 11,
         useNativeDriver: true,
       }),
       Animated.timing(sheetFade, {
         toValue: 1,
-        duration: 600,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start()
+
+    // Continuous Ripple Pulse Rings Animation
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(pulseAnim1, {
+            toValue: 1.8,
+            duration: 2600,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim1, {
+            toValue: 0.4,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.delay(1300),
+          Animated.timing(pulseAnim2, {
+            toValue: 1.8,
+            duration: 2600,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim2, {
+            toValue: 0.4,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ).start()
+
+    // Radar Beam Rotation
+    Animated.loop(
+      Animated.timing(radarRotate, {
+        toValue: 1,
+        duration: 8000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start()
+
+    // Pin Gentle Hover Bounce
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pinBounce, {
+          toValue: -8,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pinBounce, {
+          toValue: 0,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start()
 
     const subscription = AppState.addEventListener('change', handleAppStateChange)
     checkExistingPermission()
@@ -155,42 +307,116 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
     navigateToHome()
   }
 
+  const radarSpin = radarRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  })
+
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ECEEE8" translucent={false} />
+      <StatusBar barStyle="light-content" backgroundColor="#071224" translucent={false} />
 
-      {/* Map-like Background */}
+      {/* ULTRA-MODERN SAPPHIRE MAP BACKGROUND */}
       <View style={s.mapBg}>
-        {/* Search bar overlay */}
+        {/* Floating Top Search Bar Header */}
         <SafeAreaView edges={['top']} style={s.searchOverlay}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={s.backArrow}>←</Text>
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <BackSvgIcon color="#FFFFFF" size={18} />
           </TouchableOpacity>
-          <View style={s.searchBar}>
-            <Text style={s.searchIcon}>🔎</Text>
+
+          <TouchableOpacity
+            style={s.searchBar}
+            onPress={handleEnterManually}
+            activeOpacity={0.9}
+          >
+            <SearchSvgIcon color="#FBBF24" size={18} />
             <Text style={s.searchPlaceholder}>Search area, street, landmark...</Text>
-          </View>
+            <CompassSvgIcon color="#829AB8" size={18} />
+          </TouchableOpacity>
         </SafeAreaView>
 
-        {/* Faux map grid lines */}
+        {/* Vector Map Elements & Grid */}
         <View style={s.gridContainer}>
-          <View style={[s.gridLineH, { top: '25%' }]} />
-          <View style={[s.gridLineH, { top: '50%' }]} />
-          <View style={[s.gridLineH, { top: '75%' }]} />
-          <View style={[s.gridLineV, { left: '20%' }]} />
-          <View style={[s.gridLineV, { left: '45%' }]} />
-          <View style={[s.gridLineV, { left: '70%' }]} />
-          {/* Park-like green patches */}
-          <View style={s.greenPatch1} />
-          <View style={s.greenPatch2} />
-          <View style={s.bluePatch} />
-          {/* Road-like wider lines */}
-          <View style={s.roadH} />
-          <View style={s.roadV} />
+          {/* Faux Dark Roads & Avenues */}
+          <View style={s.roadH1} />
+          <View style={s.roadH2} />
+          <View style={s.roadV1} />
+          <View style={s.roadV2} />
+          <View style={s.roadDiagonal} />
+
+          {/* Building Blocks */}
+          <View style={s.building1} />
+          <View style={s.building2} />
+          <View style={s.building3} />
+          <View style={s.parkArea} />
+          <View style={s.riverArea} />
+
+          {/* Animated Radar Pulse Rings & Location Marker */}
+          <View style={s.pinCenterAnchor}>
+            {/* Outer Pulse Wave 1 */}
+            <Animated.View
+              style={[
+                s.pulseRing,
+                {
+                  transform: [{ scale: pulseAnim1 }],
+                  opacity: pulseAnim1.interpolate({
+                    inputRange: [0.4, 1.8],
+                    outputRange: [0.7, 0],
+                  }),
+                },
+              ]}
+            />
+            {/* Outer Pulse Wave 2 */}
+            <Animated.View
+              style={[
+                s.pulseRing,
+                {
+                  transform: [{ scale: pulseAnim2 }],
+                  opacity: pulseAnim2.interpolate({
+                    inputRange: [0.4, 1.8],
+                    outputRange: [0.7, 0],
+                  }),
+                },
+              ]}
+            />
+
+            {/* Radar Beam Sector */}
+            <Animated.View
+              style={[
+                s.radarBeam,
+                { transform: [{ rotate: radarSpin }] },
+              ]}
+            />
+
+            {/* Bouncing Pin Marker */}
+            <Animated.View
+              style={[
+                s.bouncingPinWrap,
+                { transform: [{ translateY: pinBounce }] },
+              ]}
+            >
+              {/* Floating ETA Tag */}
+              <View style={s.etaBadge}>
+                <Text style={s.etaBadgeText}>⚡ 10-Min Delivery Zone</Text>
+              </View>
+
+              {/* Pin Icon Frame */}
+              <View style={s.pinGlowFrame}>
+                <MapPinSvgIcon color="#0B1B36" size={28} />
+              </View>
+
+              {/* Shadow Base Dot */}
+              <View style={s.pinShadowDot} />
+            </Animated.View>
+          </View>
         </View>
       </View>
 
-      {/* Bottom Sheet */}
+      {/* SLEEK FLOATING SAPPHIRE BLUE SHEET */}
       <Animated.View
         style={[
           s.bottomSheet,
@@ -203,40 +429,60 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
         <View style={s.sheetHandle} />
 
         <View style={s.sheetContent}>
+          {/* Header Row */}
           <View style={s.locationHeader}>
             <View style={s.pinIconBox}>
-              <Text style={s.pinIcon}>📍</Text>
+              <MapPinSvgIcon color="#0B1B36" size={30} />
             </View>
             <View style={s.locationTextWrap}>
               <Text style={s.locationTitle}>Where do we deliver?</Text>
               <Text style={s.locationSub}>
-                We need your location to show stock & ETA near you.
+                We need your location to show live inventory & 10-Min ETA near you.
               </Text>
             </View>
           </View>
 
+          {/* Micro Perks Badges */}
+          <View style={s.perksRow}>
+            <View style={s.perkPill}>
+              <Text style={s.perkIcon}>⚡</Text>
+              <Text style={s.perkText}>10-Min Delivery</Text>
+            </View>
+            <View style={s.perkPill}>
+              <Text style={s.perkIcon}>📍</Text>
+              <Text style={s.perkText}>Precise GPS</Text>
+            </View>
+            <View style={s.perkPill}>
+              <Text style={s.perkIcon}>🎁</Text>
+              <Text style={s.perkText}>Local Rewards</Text>
+            </View>
+          </View>
+
+          {/* Primary CTA: Use Current Location */}
           <TouchableOpacity
             style={s.primaryBtn}
             onPress={handleRequestPermission}
-            activeOpacity={0.85}
+            activeOpacity={0.88}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color="#0B1B36" size="small" />
             ) : (
               <>
-                <Text style={s.primaryBtnIcon}>⚡</Text>
+                <NavigationSvgIcon color="#0B1B36" size={18} />
                 <Text style={s.primaryBtnText}>Use my current location</Text>
               </>
             )}
           </TouchableOpacity>
 
+          {/* Secondary CTA: Enter Location Manually */}
           <TouchableOpacity
             style={s.secondaryBtn}
             onPress={handleEnterManually}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
             disabled={loading}
           >
+            <EditLocationSvgIcon color="#FBBF24" size={18} />
             <Text style={s.secondaryBtnText}>Enter location manually</Text>
           </TouchableOpacity>
         </View>
@@ -245,171 +491,307 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
   )
 }
 
+/* -------------------------------------------------------------------------- */
+/*                               STYLES                                       */
+/* -------------------------------------------------------------------------- */
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#ECEEE8',
+    backgroundColor: '#071224',
   },
 
   mapBg: {
     flex: 1,
-    backgroundColor: '#ECEEE8',
+    backgroundColor: '#0A1A34',
+    position: 'relative',
   },
 
+  /* Search Overlay Header */
   searchOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
+    zIndex: 20,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: Platform.OS === 'android' ? 12 : 8,
     gap: 10,
   },
   backBtn: {
-    width: 42,
-    height: 42,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    backgroundColor: 'rgba(11, 27, 54, 0.92)',
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
-  },
-  backArrow: {
-    fontSize: 18,
-    color: '#141414',
+    elevation: 6,
   },
   searchBar: {
     flex: 1,
-    height: 44,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    height: 46,
+    backgroundColor: 'rgba(11, 27, 54, 0.92)',
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    gap: 8,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
   },
-  searchIcon: { fontSize: 14 },
   searchPlaceholder: {
-    fontFamily: 'DMSans-Regular',
-    fontSize: 14,
-    color: '#9a9a9a',
+    flex: 1,
+    fontFamily: 'DMSans-Medium',
+    fontSize: 13.5,
+    color: '#829AB8',
   },
 
+  /* Grid & Map Styling */
   gridContainer: {
     ...StyleSheet.absoluteFillObject,
-  },
-  gridLineH: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(200,200,195,0.4)',
-  },
-  gridLineV: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: 'rgba(200,200,195,0.4)',
-  },
-  greenPatch1: {
-    position: 'absolute',
-    top: '22%',
-    left: '35%',
-    width: 80,
-    height: 60,
-    backgroundColor: 'rgba(200,220,190,0.5)',
-    borderRadius: 4,
-    transform: [{ rotate: '-5deg' }],
-  },
-  greenPatch2: {
-    position: 'absolute',
-    bottom: '25%',
-    right: '5%',
-    width: 70,
-    height: 50,
-    backgroundColor: 'rgba(200,220,190,0.4)',
-    borderRadius: 4,
-  },
-  bluePatch: {
-    position: 'absolute',
-    bottom: '30%',
-    left: '10%',
-    width: 60,
-    height: 60,
-    backgroundColor: 'rgba(190,210,230,0.35)',
-    borderRadius: 4,
-  },
-  roadH: {
-    position: 'absolute',
-    top: '40%',
-    left: 0,
-    right: 0,
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-  },
-  roadV: {
-    position: 'absolute',
-    left: '55%',
-    top: 0,
-    bottom: 0,
-    width: 8,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#071224',
   },
 
-  bottomSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 16,
+  /* Map Roads */
+  roadH1: {
+    position: 'absolute',
+    top: '30%',
+    left: 0,
+    right: 0,
+    height: 14,
+    backgroundColor: '#102446',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  sheetHandle: {
-    width: 40,
+  roadH2: {
+    position: 'absolute',
+    top: '55%',
+    left: 0,
+    right: 0,
+    height: 20,
+    backgroundColor: '#122A50',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.15)',
+  },
+  roadV1: {
+    position: 'absolute',
+    left: '30%',
+    top: 0,
+    bottom: 0,
+    width: 14,
+    backgroundColor: '#102446',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  roadV2: {
+    position: 'absolute',
+    left: '65%',
+    top: 0,
+    bottom: 0,
+    width: 18,
+    backgroundColor: '#122A50',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.15)',
+  },
+  roadDiagonal: {
+    position: 'absolute',
+    width: W * 1.4,
+    height: 12,
+    backgroundColor: '#0F2242',
+    transform: [{ rotate: '35deg' }],
+  },
+
+  /* Buildings & Parks */
+  building1: {
+    position: 'absolute',
+    top: '15%',
+    left: '10%',
+    width: 80,
+    height: 70,
+    backgroundColor: '#0A1830',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  building2: {
+    position: 'absolute',
+    top: '38%',
+    right: '8%',
+    width: 90,
+    height: 60,
+    backgroundColor: '#0A1830',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  building3: {
+    position: 'absolute',
+    bottom: '28%',
+    left: '12%',
+    width: 75,
+    height: 75,
+    backgroundColor: '#0A1830',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  parkArea: {
+    position: 'absolute',
+    top: '18%',
+    right: '12%',
+    width: 85,
+    height: 85,
+    backgroundColor: 'rgba(12, 131, 31, 0.12)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(12, 131, 31, 0.25)',
+  },
+  riverArea: {
+    position: 'absolute',
+    bottom: '22%',
+    right: '-10%',
+    width: 140,
+    height: 90,
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderRadius: 45,
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.25)',
+  },
+
+  /* Pin & Radar Center */
+  pinCenterAnchor: {
+    position: 'absolute',
+    top: '42%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 2,
+    borderColor: '#FBBF24',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+  },
+  radarBeam: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.15)',
+    borderTopColor: '#FBBF24',
+  },
+  bouncingPinWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  etaBadge: {
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 6,
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  etaBadgeText: {
+    fontSize: 10.5,
+    fontFamily: 'DMSans-Bold',
+    color: '#0B1B36',
+  },
+  pinGlowFrame: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#0B1B36',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FBBF24',
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 10,
+  },
+  pinShadowDot: {
+    width: 12,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E4E4E2',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    marginTop: 4,
+  },
+
+  /* SLEEK FLOATING SAPPHIRE BLUE SHEET */
+  bottomSheet: {
+    backgroundColor: 'rgba(11, 27, 54, 0.96)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    paddingBottom: Platform.OS === 'android' ? 24 : 32,
+    shadowColor: '#002B66',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    elevation: 20,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FBBF24',
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 8,
+    opacity: 0.8,
   },
   sheetContent: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
 
   locationHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 16,
-    marginBottom: 28,
+    gap: 14,
+    marginBottom: 16,
   },
   pinIconBox: {
-    width: 56,
-    height: 56,
-    backgroundColor: '#FFE000',
+    width: 52,
+    height: 52,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
     borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  pinIcon: {
-    fontSize: 28,
   },
   locationTextWrap: {
     flex: 1,
@@ -417,48 +799,82 @@ const s = StyleSheet.create({
   },
   locationTitle: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 22,
-    color: '#141414',
-    letterSpacing: -0.3,
-    marginBottom: 6,
+    fontSize: isSmallDevice ? 20 : 23,
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   locationSub: {
     fontFamily: 'DMSans-Regular',
-    fontSize: 14,
-    color: '#8a8a8a',
-    lineHeight: 20,
+    fontSize: 12.5,
+    color: '#94A3B8',
+    lineHeight: 18,
   },
 
+  /* Feature Perks */
+  perksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  perkPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#18345C',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    gap: 4,
+  },
+  perkIcon: { fontSize: 11 },
+  perkText: {
+    fontSize: 11,
+    fontFamily: 'DMSans-Medium',
+    color: '#E2E8F0',
+  },
+
+  /* Primary Button */
   primaryBtn: {
     flexDirection: 'row',
-    backgroundColor: '#141414',
+    backgroundColor: '#FBBF24',
     borderRadius: 16,
-    height: 56,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     marginBottom: 12,
-  },
-  primaryBtnIcon: {
-    fontSize: 16,
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
   primaryBtnText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: 15.5,
+    color: '#0B1B36',
+    letterSpacing: 0.3,
   },
 
+  /* Secondary Button */
   secondaryBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#162C50',
     borderRadius: 16,
-    height: 56,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
     borderWidth: 1.5,
-    borderColor: '#E4E4E2',
+    borderColor: 'rgba(251, 191, 36, 0.35)',
   },
   secondaryBtnText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 16,
-    color: '#141414',
+    fontSize: 15,
+    color: '#FBBF24',
   },
 })

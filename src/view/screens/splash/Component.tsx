@@ -8,11 +8,19 @@ import {
   Easing,
   TouchableOpacity,
   Dimensions,
+  Image,
+  ScrollView,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import MovingBackground from '../../elements/MovingBackground'
 import { initalStateAsync } from '../../../shared/redux/reducers/auth'
 import { getAsyncData } from '../../../shared/utils/storage'
 
 const { width: W, height: H } = Dimensions.get('window')
+const isSmallDevice = W < 360
+
+const SCOOTER_PNG = require('../../../assets/images/scooter.png')
+const BRAND_LOGO_PNG = require('../../../assets/images/brand_logo.png')
 
 export interface Props {
   splashLaunched: Function
@@ -25,26 +33,30 @@ function Splash(props: any) {
   const { splashLaunched, navigation, dispatch } = props
 
   const scaleAnim = React.useRef(new Animated.Value(0.4)).current
-  const rotateAnim = React.useRef(new Animated.Value(-0.1)).current
   const opacityAnim = React.useRef(new Animated.Value(0)).current
   const cardSlide = React.useRef(new Animated.Value(60)).current
   const cardFade = React.useRef(new Animated.Value(0)).current
   const badgeFade = React.useRef(new Animated.Value(0)).current
   const badgeSlide = React.useRef(new Animated.Value(20)).current
+  const btnScale = React.useRef(new Animated.Value(1)).current
+
+  // Live scooter bobbing + tilt
+  const scooterY = React.useRef(new Animated.Value(0)).current
+  const scooterTilt = React.useRef(new Animated.Value(0)).current
+
+  // Badge pulse aura
+  const badgePulse = React.useRef(new Animated.Value(1)).current
+
   const [autoNavigated, setAutoNavigated] = React.useState(false)
 
   React.useEffect(() => {
+    // Entrance animations
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 1.08,
-          duration: 400,
-          easing: Easing.out(Easing.back(1.5)),
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 0.03,
-          duration: 400,
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 80,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
@@ -53,33 +65,20 @@ function Splash(props: any) {
           useNativeDriver: true,
         }),
       ]),
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 80,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]),
     ]).start()
 
-    Animated.stagger(200, [
+    Animated.stagger(180, [
       Animated.parallel([
         Animated.timing(badgeFade, {
           toValue: 1,
           duration: 500,
-          delay: 500,
+          delay: 300,
           useNativeDriver: true,
         }),
         Animated.timing(badgeSlide, {
           toValue: 0,
           duration: 500,
-          delay: 500,
+          delay: 300,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
@@ -87,22 +86,79 @@ function Splash(props: any) {
       Animated.parallel([
         Animated.timing(cardFade, {
           toValue: 1,
-          duration: 600,
-          delay: 300,
+          duration: 550,
+          delay: 200,
           useNativeDriver: true,
         }),
         Animated.timing(cardSlide, {
           toValue: 0,
-          duration: 600,
-          delay: 300,
+          duration: 550,
+          delay: 200,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
       ]),
     ]).start()
 
+    // Scooter live floating bobbing + gentle tilt
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scooterY, {
+            toValue: -10,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scooterTilt, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(scooterY, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scooterTilt, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ).start()
+
+    // Delivery badge live pulse
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(badgePulse, {
+          toValue: 1.04,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(badgePulse, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start()
+
     getInitialData()
   }, [])
+
+  const tiltInterpolate = scooterTilt.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-2deg', '2deg'],
+  })
 
   const getInitialData = async () => {
     await dispatch(initalStateAsync)
@@ -114,11 +170,6 @@ function Splash(props: any) {
     }
   }
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [-0.1, 0.1],
-    outputRange: ['-12deg', '12deg'],
-  })
-
   const handleGetStarted = () => {
     navigation.navigate('Login')
   }
@@ -127,145 +178,176 @@ function Splash(props: any) {
     navigation.navigate('Login')
   }
 
+  const handlePressIn = () => {
+    Animated.spring(btnScale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.spring(btnScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start()
+  }
+
   if (autoNavigated) return null
 
   return (
-    <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#FFE000"
-        translucent={false}
-      />
-      <View style={st.root}>
-        {/* Yellow Hero Section */}
-        <View style={st.heroSection}>
-          <View style={st.bubbleLarge} />
-          <View style={st.bubbleSmall} />
+    <MovingBackground theme="yellow">
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <SafeAreaView style={st.safe} edges={['top']}>
+        <View style={st.rootContainer}>
+          {/* Upper Hero Section */}
+          <View style={st.heroSection}>
+            <Animated.View
+              style={[
+                st.logoWrap,
+                {
+                  opacity: opacityAnim,
+                  transform: [
+                    { scale: scaleAnim },
+                    { translateY: scooterY },
+                    { rotate: tiltInterpolate },
+                  ],
+                },
+              ]}
+            >
+              <View style={st.logoBox}>
+                <Image source={SCOOTER_PNG} style={st.scooterImage} resizeMode="cover" />
+              </View>
+            </Animated.View>
 
-          <Animated.View
-            style={[
-              st.logoWrap,
-              {
-                opacity: opacityAnim,
-                transform: [{ scale: scaleAnim }, { rotate }],
-              },
-            ]}
-          >
-            <View style={st.logoBox}>
-              <Text style={st.logoEmoji}>🛵</Text>
-            </View>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              st.deliveryBadge,
-              {
-                opacity: badgeFade,
-                transform: [{ translateY: badgeSlide }],
-              },
-            ]}
-          >
-            <Text style={st.deliveryBadgeIcon}>⚡</Text>
-            <Text style={st.deliveryBadgeText}>AVG DELIVERY 9 MIN 48 SEC</Text>
-          </Animated.View>
-        </View>
-
-        {/* Dark Bottom Card */}
-        <Animated.View
-          style={[
-            st.darkCard,
-            {
-              opacity: cardFade,
-              transform: [{ translateY: cardSlide }],
-            },
-          ]}
-        >
-          <Text style={st.tagline}>
-            Your groceries,{'\n'}
-            <Text style={st.taglineHighlight}>crazy fast.</Text>
-          </Text>
-
-          <Text style={st.subtitle}>
-            5,000+ products. One flat fee. Delivered to your{'\n'}door before your kettle boils.
-          </Text>
-
-          <View style={st.featureRow}>
-            <View style={st.featureDot} />
-            <Text style={st.featureText}>No order minimum</Text>
-            <View style={[st.featureDot, { marginLeft: 20 }]} />
-            <Text style={st.featureText}>Live tracking</Text>
+            <Animated.View
+              style={[
+                st.deliveryBadge,
+                {
+                  opacity: badgeFade,
+                  transform: [
+                    { translateY: badgeSlide },
+                    { scale: badgePulse },
+                  ],
+                },
+              ]}
+            >
+              <View style={st.badgeIconFrame}>
+                <Image source={BRAND_LOGO_PNG} style={st.badgeIcon} resizeMode="cover" />
+              </View>
+              <Text style={st.deliveryBadgeText}>AVG DELIVERY 9 MIN 48 SEC</Text>
+            </Animated.View>
           </View>
 
-          <TouchableOpacity
-            style={st.getStartedBtn}
-            onPress={handleGetStarted}
-            activeOpacity={0.85}
+          {/* Dark Bottom Card Container */}
+          <Animated.View
+            style={[
+              st.darkCard,
+              {
+                opacity: cardFade,
+                transform: [{ translateY: cardSlide }],
+              },
+            ]}
           >
-            <Text style={st.getStartedText}>Get started →</Text>
-          </TouchableOpacity>
+            <SafeAreaView edges={['bottom']}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={st.cardScrollContent}
+              >
+                <Text style={st.tagline}>
+                  Your groceries,{'\n'}
+                  <Text style={st.taglineHighlight}>crazy fast.</Text>
+                </Text>
 
-          <TouchableOpacity onPress={handleLogin} style={st.loginRow}>
-            <Text style={st.loginText}>
-              Already have an account?{' '}
-              <Text style={st.loginLink}>Log in</Text>
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </>
+                <Text style={st.subtitle}>
+                  5,000+ products. One flat fee. Delivered to your door before your kettle boils.
+                </Text>
+
+                <View style={st.featureRow}>
+                  <View style={st.featureItem}>
+                    <View style={st.featureDot} />
+                    <Text style={st.featureText}>No order minimum</Text>
+                  </View>
+                  <View style={[st.featureItem, { marginLeft: 18 }]}>
+                    <View style={st.featureDot} />
+                    <Text style={st.featureText}>Live tracking</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  onPress={handleGetStarted}
+                  style={st.btnWrap}
+                >
+                  <Animated.View
+                    style={[
+                      st.getStartedBtn,
+                      { transform: [{ scale: btnScale }] },
+                    ]}
+                  >
+                    <Text style={st.getStartedText}>Get started →</Text>
+                  </Animated.View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleLogin} style={st.loginRow} activeOpacity={0.8}>
+                  <Text style={st.loginText}>
+                    Already have an account? <Text style={st.loginLink}>Log in</Text>
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </Animated.View>
+        </View>
+      </SafeAreaView>
+    </MovingBackground>
   )
 }
 
 const st = StyleSheet.create({
-  root: {
+  safe: {
     flex: 1,
-    backgroundColor: '#FFE000',
+  },
+  rootContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
 
   heroSection: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  bubbleLarge: {
-    position: 'absolute',
-    top: -60,
-    right: -40,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: 'rgba(255,213,0,0.6)',
-  },
-  bubbleSmall: {
-    position: 'absolute',
-    bottom: 40,
-    left: -60,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingTop: 10,
+    paddingBottom: 20,
   },
 
   logoWrap: {
     alignItems: 'center',
   },
   logoBox: {
-    width: 120,
-    height: 120,
+    width: isSmallDevice ? 114 : 140,
+    height: isSmallDevice ? 114 : 140,
     backgroundColor: '#141414',
-    borderRadius: 32,
+    borderRadius: 38,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.45,
-    shadowRadius: 36,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.5,
+    shadowRadius: 40,
     elevation: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  logoEmoji: {
-    fontSize: 60,
-    lineHeight: 72,
+  scooterImage: {
+    width: '100%',
+    height: '100%',
   },
 
   deliveryBadge: {
@@ -273,61 +355,92 @@ const st = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#141414',
     borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    marginTop: 24,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    marginTop: isSmallDevice ? 18 : 26,
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 224, 0, 0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    elevation: 10,
   },
-  deliveryBadgeIcon: {
-    fontSize: 14,
+  badgeIconFrame: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
+  badgeIcon: {
+    width: '100%',
+    height: '100%',
   },
   deliveryBadgeText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 12,
+    fontSize: isSmallDevice ? 10.5 : 12,
     color: '#FFE000',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
 
   darkCard: {
-    backgroundColor: '#141414',
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
-    paddingHorizontal: 28,
-    paddingTop: 36,
-    paddingBottom: 32,
+    backgroundColor: 'rgba(11, 27, 54, 0.96)',
+    borderTopLeftRadius: 38,
+    borderTopRightRadius: 38,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    paddingHorizontal: Math.min(W * 0.07, 28),
+    shadowColor: '#0B1B36',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 32,
+    elevation: 20,
+  },
+
+  cardScrollContent: {
+    paddingTop: isSmallDevice ? 24 : 32,
+    paddingBottom: 24,
   },
 
   tagline: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 36,
+    fontSize: isSmallDevice ? 28 : 35,
     color: '#FFFFFF',
-    lineHeight: 42,
-    letterSpacing: -1,
+    lineHeight: isSmallDevice ? 34 : 42,
+    letterSpacing: -0.8,
   },
   taglineHighlight: {
-    color: '#FFE000',
+    color: '#FBBF24',
     fontStyle: 'italic',
   },
 
   subtitle: {
     fontFamily: 'DMSans-Regular',
     fontSize: 14,
-    color: '#9a9a9a',
+    color: '#94A3B8',
     lineHeight: 22,
-    marginTop: 14,
+    marginTop: 12,
   },
 
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 18,
+    flexWrap: 'wrap',
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   featureDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FFE000',
+    backgroundColor: '#FBBF24',
     marginRight: 8,
   },
   featureText: {
@@ -336,34 +449,42 @@ const st = StyleSheet.create({
     color: '#FFFFFF',
   },
 
+  btnWrap: {
+    marginTop: 28,
+    width: '100%',
+  },
   getStartedBtn: {
-    backgroundColor: '#FFE000',
-    borderRadius: 16,
+    backgroundColor: '#FBBF24',
+    borderRadius: 18,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 28,
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 8,
   },
   getStartedText: {
     fontFamily: 'DMSans-Bold',
     fontSize: 17,
-    color: '#141414',
+    color: '#0F172A',
     letterSpacing: 0.3,
   },
 
   loginRow: {
     alignItems: 'center',
     marginTop: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   loginText: {
     fontFamily: 'DMSans-Regular',
-    fontSize: 13,
-    color: '#9a9a9a',
+    fontSize: 13.5,
+    color: '#94A3B8',
   },
   loginLink: {
     fontFamily: 'DMSans-Bold',
-    color: '#FFFFFF',
+    color: '#FBBF24',
     textDecorationLine: 'underline',
   },
 })

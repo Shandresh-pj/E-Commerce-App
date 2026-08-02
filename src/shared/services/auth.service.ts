@@ -10,6 +10,21 @@ class AuthService {
     return axios.post(Defaults.apis.baseUrl + Defaults.apis.user.signup, data, { headers: HEADERS });
   }
 
+  register(data: { name: string; email: string; password: string; mobilenumber: string }) {
+    return axios.post(
+      Defaults.apis.baseUrl + '/api/auth/register',
+      data,
+      { headers: HEADERS },
+    ).catch(err => {
+      // Fallback endpoint if without /api prefix
+      return axios.post(
+        Defaults.apis.baseUrl + '/auth/register',
+        data,
+        { headers: HEADERS },
+      );
+    });
+  }
+
   loginNew(data: any) {
     return axios.post(Defaults.apis.baseUrl + Defaults.apis.user.login, data, { headers: HEADERS });
   }

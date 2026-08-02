@@ -15,13 +15,31 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient'
 import UniqueGlassCard from './UniqueGlassCard'
 import { buildImageUrl, getFallbackImage } from '../../shared/utils/imageHelper'
+import { useTheme } from '../../shared/context/ThemeContext'
+import Svg, { Path, Rect } from 'react-native-svg'
 
-const PRODUCT_BG_COLORS = [
+const BoxProductSvgIcon = ({ color = '#0066CC', size = 36 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="6" width="18" height="14" rx="3" stroke={color} strokeWidth="1.8" />
+    <Path d="M3 10H21" stroke={color} strokeWidth="1.8" />
+    <Path d="M8 6V4C8 3.44772 8.44772 3 9 3H15C15.5523 3 16 3.44772 16 4V6" stroke={color} strokeWidth="1.8" />
+  </Svg>
+)
+
+const PRODUCT_BG_COLORS_LIGHT = [
   ['#F0F7FF', '#E0EFFE'],
   ['#FFF5F5', '#FFE4E4'],
   ['#F5FFF8', '#DDF7E3'],
   ['#FFFBF0', '#FEF3C7'],
   ['#FAF5FF', '#F3E8FF'],
+]
+
+const PRODUCT_BG_COLORS_DARK = [
+  ['rgba(30, 58, 100, 0.6)', 'rgba(15, 35, 70, 0.8)'],
+  ['rgba(40, 20, 50, 0.6)', 'rgba(25, 10, 35, 0.8)'],
+  ['rgba(20, 50, 40, 0.6)', 'rgba(10, 30, 25, 0.8)'],
+  ['rgba(50, 45, 20, 0.6)', 'rgba(30, 25, 10, 0.8)'],
+  ['rgba(35, 25, 60, 0.6)', 'rgba(20, 15, 40, 0.8)'],
 ]
 
 interface ProductCardProps {
@@ -49,15 +67,19 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
   onInc,
   onDec,
 }) => {
+  const { isDark, colors } = useTheme()
   const price = parseFloat(item.price) || 0
   const mrp = parseFloat(item.mrp || item.compare_at_price) || 0
-  const bgColors = PRODUCT_BG_COLORS[index % PRODUCT_BG_COLORS.length]
+  const bgPalette = isDark ? PRODUCT_BG_COLORS_DARK : PRODUCT_BG_COLORS_LIGHT
+  const bgColors = bgPalette[index % bgPalette.length]
 
   const initialImg = buildImageUrl(imageUri || item.image, item.name, 'product')
   const [currentImg, setCurrentImg] = useState(initialImg)
+  const [imgFailed, setImgFailed] = useState(false)
 
   useEffect(() => {
     setCurrentImg(buildImageUrl(imageUri || item.image, item.name, 'product'))
+    setImgFailed(false)
   }, [imageUri, item.image, item.name])
 
   const btnScale = useSharedValue(1)
@@ -78,39 +100,47 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
       style={{ width: cardWidth, marginBottom: 14 }}
     >
       <UniqueGlassCard onPress={onPress}>
-        {/* Curved Image Box with Pastel Mesh Gradient */}
+        {/* Image Box */}
         <LinearGradient
           colors={bgColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.imgBox}
         >
-          {/* Floating Hot Discount Pill */}
+          {/* Floating Discount Pill */}
           {discount > 0 && (
             <View style={styles.discountTag}>
               <Text style={styles.discountText}>🔥 {discount}% OFF</Text>
             </View>
           )}
 
-          <Image
-            source={{ uri: currentImg }}
-            style={styles.productImg}
-            resizeMode="contain"
-            onError={() => {
-              const fallback = getFallbackImage(item.name, 'product')
-              if (currentImg !== fallback) {
-                setCurrentImg(fallback)
-              }
-            }}
-          />
+          {!imgFailed ? (
+            <Image
+              source={{ uri: currentImg }}
+              style={styles.productImg}
+              resizeMode="contain"
+              onError={() => {
+                const fallback = getFallbackImage(item.name, 'product')
+                if (currentImg !== fallback && fallback) {
+                  setCurrentImg(fallback)
+                } else {
+                  setImgFailed(true)
+                }
+              }}
+            />
+          ) : (
+            <View style={styles.svgFallbackWrap}>
+              <BoxProductSvgIcon color={isDark ? '#FBBF24' : '#0B1B36'} size={36} />
+            </View>
+          )}
         </LinearGradient>
 
         {/* Name & Unit */}
-        <Text style={styles.productName} numberOfLines={2}>
+        <Text style={[styles.productName, { color: colors.textPrimary }]} numberOfLines={2}>
           {item.name}
         </Text>
-        <View style={styles.unitPill}>
-          <Text style={styles.unitText} numberOfLines={1}>
+        <View style={[styles.unitPill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}>
+          <Text style={[styles.unitText, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.unit || item.weight || '1 unit'}
           </Text>
         </View>
@@ -118,11 +148,11 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
         {/* Pricing & ADD Stepper */}
         <View style={styles.bottomRow}>
           <View style={styles.priceContainer}>
-            <Text style={styles.priceText}>
+            <Text style={[styles.priceText, { color: isDark ? '#FBBF24' : colors.textPrimary }]}>
               ₹{price.toLocaleString('en-IN')}
             </Text>
             {mrp > price && (
-              <Text style={styles.mrpText}>
+              <Text style={[styles.mrpText, { color: colors.textMuted }]}>
                 ₹{mrp.toLocaleString('en-IN')}
               </Text>
             )}
@@ -139,37 +169,37 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
                 }}
               >
                 <LinearGradient
-                  colors={['#0C831F', '#10B981']}
+                  colors={isDark ? ['#FBBF24', '#F59E0B'] : ['#0B1B36', '#1E3A8A']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.addBtnGradient}
                 >
-                  <Text style={hText.addBtnText}>ADD</Text>
+                  <Text style={[hText.addBtnText, { color: isDark ? '#0B1B36' : '#FBBF24' }]}>ADD</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </Animated.View>
           ) : (
-            <Animated.View style={[styles.stepperContainer, animatedBtnStyle]}>
+            <Animated.View style={[styles.stepperContainer, animatedBtnStyle, { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FFFBEB', borderColor: colors.accent }]}>
               <TouchableOpacity
-                style={styles.stepBtn}
+                style={[styles.stepBtn, { backgroundColor: colors.accent }]}
                 onPress={() => {
                   handlePop()
                   onDec()
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.stepSymbol}>−</Text>
+                <Text style={[styles.stepSymbol, { color: colors.accentText }]}>−</Text>
               </TouchableOpacity>
-              <Text style={styles.qtyText}>{qty}</Text>
+              <Text style={[styles.qtyText, { color: isDark ? '#FBBF24' : '#0B1B36' }]}>{qty}</Text>
               <TouchableOpacity
-                style={styles.stepBtn}
+                style={[styles.stepBtn, { backgroundColor: colors.accent }]}
                 onPress={() => {
                   handlePop()
                   onInc()
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.stepSymbol}>+</Text>
+                <Text style={[styles.stepSymbol, { color: colors.accentText }]}>+</Text>
               </TouchableOpacity>
             </Animated.View>
           )}
@@ -181,9 +211,8 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
 
 const hText = StyleSheet.create({
   addBtnText: {
-    color: '#FFFFFF',
     fontSize: 11.5,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
 })
@@ -198,6 +227,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     position: 'relative',
     overflow: 'hidden',
+  },
+  svgFallbackWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   discountTag: {
     position: 'absolute',
@@ -224,20 +258,14 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 14,
   },
-  fallbackEmoji: {
-    fontSize: 34,
-    color: '#8E8E93',
-  },
   productName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#141414',
     marginBottom: 4,
     minHeight: 34,
     lineHeight: 17,
   },
   unitPill: {
-    backgroundColor: '#F2F2F7',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -246,7 +274,6 @@ const styles = StyleSheet.create({
   },
   unitText: {
     fontSize: 10.5,
-    color: '#636366',
     fontWeight: '600',
   },
   bottomRow: {
@@ -260,11 +287,9 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 14.5,
     fontWeight: '800',
-    color: '#141414',
   },
   mrpText: {
     fontSize: 10.5,
-    color: '#8E8E93',
     textDecorationLine: 'line-through',
   },
   addBtnGradient: {
@@ -273,39 +298,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E4F6E6',
     borderRadius: 12,
     paddingHorizontal: 3,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
   },
   stepBtn: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#0C831F',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepSymbol: {
-    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   qtyText: {
     fontSize: 12,
-    fontWeight: '800',
-    color: '#0C831F',
+    fontWeight: '900',
     marginHorizontal: 7,
   },
 })

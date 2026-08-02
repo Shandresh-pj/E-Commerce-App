@@ -22,6 +22,61 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated'
 import LinearGradient from 'react-native-linear-gradient'
+import Svg, { Path, Circle, Rect, G, Polyline, Line } from 'react-native-svg'
+
+/* ── Inline SVG Icons ─────────────────────────────────────────────────── */
+const SearchSvgIcon = ({ color = '#0066CC', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="2" />
+    <Line x1="16.5" y1="16.5" x2="22" y2="22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+)
+
+const MicSvgIcon = ({ color = '#0066CC', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="9" y="2" width="6" height="12" rx="3" stroke={color} strokeWidth="2" />
+    <Path d="M5 10C5 13.866 8.13401 17 12 17C15.866 17 19 13.866 19 10" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <Line x1="12" y1="17" x2="12" y2="22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <Line x1="8" y1="22" x2="16" y2="22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+)
+
+const CameraSvgIcon = ({ color = '#0066CC', size = 16 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M23 19C23 20.1046 22.1046 21 21 21H3C1.89543 21 1 20.1046 1 19V8C1 6.89543 1.89543 6 3 6H7L9 3H15L17 6H21C22.1046 6 23 6.89543 23 8V19Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+    <Circle cx="12" cy="13" r="4" stroke={color} strokeWidth="2" />
+  </Svg>
+)
+
+const LocationPinSvgIcon = ({ color = '#0066CC', size = 14 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 21C16 17.5 20 13.4183 20 9C20 4.58172 16.4183 1 12 1C7.58172 1 4 4.58172 4 9C4 13.4183 8 17.5 12 21Z" stroke={color} strokeWidth="2" />
+    <Circle cx="12" cy="9" r="2.5" fill={color} />
+  </Svg>
+)
+
+const ChevronDownSvgIcon = ({ color = '#0066CC', size = 12 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 9L12 15L18 9" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+)
+
+const CartFloatSvgIcon = ({ color = '#0066CC', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M6 2L3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6L18 2H6Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+    <Path d="M3 6H21" stroke={color} strokeWidth="2" />
+    <Path d="M16 10C16 12.2091 14.2091 14 12 14C9.79086 14 8 12.2091 8 10" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+)
+
+const CategorySvgIcon = ({ color = '#0066CC', size = 26 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="3" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+    <Rect x="14" y="3" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+    <Rect x="3" y="14" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+    <Rect x="14" y="14" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+  </Svg>
+)
 import { useFocusEffect } from '@react-navigation/native'
 import { useTabBar } from '../../../shared/context/TabBarContext'
 import {
@@ -36,6 +91,7 @@ import Defaults from '../../../config/index'
 import AttractiveProductCard from '../../elements/AttractiveProductCard'
 import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal'
 import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper'
+import { useTheme } from '../../../shared/context/ThemeContext'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -46,21 +102,24 @@ const BANNER_GAP = 12
 const BANNER_SNAP = BANNER_W + BANNER_GAP
 
 const CATEGORY_COLORS = [
-  { bg: '#EFF6FF', border: '#BFDBFE' },
-  { bg: '#F0FDF4', border: '#BBF7D0' },
-  { bg: '#FAF5FF', border: '#E9D5FF' },
-  { bg: '#FFF7ED', border: '#FFEDD5' },
-  { bg: '#ECFEFF', border: '#A5F3FC' },
-  { bg: '#FDF2F8', border: '#FBCFE8' },
+  { bg: 'rgba(30, 58, 100, 0.9)', border: 'rgba(251,191,36,0.3)' },
+  { bg: 'rgba(22, 44, 80, 0.9)', border: 'rgba(251,191,36,0.25)' },
+  { bg: 'rgba(15, 35, 70, 0.9)', border: 'rgba(251,191,36,0.2)' },
+  { bg: 'rgba(20, 40, 80, 0.9)', border: 'rgba(251,191,36,0.28)' },
+  { bg: 'rgba(25, 50, 90, 0.9)', border: 'rgba(251,191,36,0.22)' },
+  { bg: 'rgba(18, 38, 75, 0.9)', border: 'rgba(251,191,36,0.26)' },
 ]
 
 const CategoryItemCard = ({ cat, index, navigation }: any) => {
+  const { isDark, colors } = useTheme()
   const colorConfig = CATEGORY_COLORS[index % CATEGORY_COLORS.length]
   const initialUri = buildImageUrl(cat.image, cat.name, 'category')
   const [imgSrc, setImgSrc] = useState(initialUri)
+  const [imgFailed, setImgFailed] = useState(false)
 
   useEffect(() => {
     setImgSrc(buildImageUrl(cat.image, cat.name, 'category'))
+    setImgFailed(false)
   }, [cat.image, cat.name])
 
   return (
@@ -78,24 +137,32 @@ const CategoryItemCard = ({ cat, index, navigation }: any) => {
           style={[
             h.catBox,
             {
-              backgroundColor: colorConfig.bg,
-              borderColor: colorConfig.border,
+              backgroundColor: isDark ? colorConfig.bg : '#F1F5F9',
+              borderColor: isDark ? colorConfig.border : '#E2E8F0',
             },
           ]}
         >
-          <Image
-            source={{ uri: imgSrc }}
-            style={h.catImg}
-            resizeMode="cover"
-            onError={() => {
-              const fallback = getFallbackImage(cat.name, 'category')
-              if (imgSrc !== fallback) {
-                setImgSrc(fallback)
-              }
-            }}
-          />
+          {!imgFailed ? (
+            <Image
+              source={{ uri: imgSrc }}
+              style={h.catImg}
+              resizeMode="cover"
+              onError={() => {
+                const fallback = getFallbackImage(cat.name, 'category')
+                if (imgSrc !== fallback && fallback) {
+                  setImgSrc(fallback)
+                } else {
+                  setImgFailed(true)
+                }
+              }}
+            />
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <CategorySvgIcon color={isDark ? '#ffff00' : '#0B1B36'} size={24} />
+            </View>
+          )}
         </View>
-        <Text style={h.catName} numberOfLines={1}>
+        <Text style={[h.catName, { color: colors.textPrimary }]} numberOfLines={1}>
           {cat.name}
         </Text>
       </TouchableOpacity>
@@ -104,6 +171,7 @@ const CategoryItemCard = ({ cat, index, navigation }: any) => {
 }
 
 function Home({ navigation }: any) {
+  const { isDark, colors } = useTheme()
   const { showTabBar } = useTabBar()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -347,10 +415,10 @@ function Home({ navigation }: any) {
   )
 
   return (
-    <View style={h.root}>
+    <View style={[h.root, { backgroundColor: colors.background }]}>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#FFE500"
+        barStyle={colors.statusBarStyle}
+        backgroundColor={colors.statusBarBg}
         translucent={false}
       />
 
@@ -372,9 +440,9 @@ function Home({ navigation }: any) {
         onViewCart={() => navigation.navigate('Cart')}
       />
 
-      {/* Signature Vibrant Yellow Header */}
+      {/* Signature Yellow Brand Header */}
       <LinearGradient
-        colors={['#FFE500', '#FFDD00']}
+        colors={['#ffff00', '#ffff00']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={h.headerBlock}
@@ -387,53 +455,54 @@ function Home({ navigation }: any) {
           >
             <Animated.View style={[h.headerDelivery, animatedPulseStyle]}>
               <LinearGradient
-                colors={['#141414', '#262626']}
+                colors={['rgba(11, 27, 54, 0.12)', 'rgba(11, 27, 54, 0.18)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={h.deliveryPill}
               >
                 <Text style={h.deliveryBolt}>⚡</Text>
-                <Text style={h.deliveryTime}>8 MIN EXPRESS</Text>
+                <Text style={[h.deliveryTime, { color: '#0B1B36' }]}>8 MIN EXPRESS</Text>
               </LinearGradient>
             </Animated.View>
             <View style={h.addressRow}>
-              <Text style={h.addressText} numberOfLines={1}>
+              <LocationPinSvgIcon color="#0B1B36" size={14} />
+              <Text style={[h.addressText, { color: '#0B1B36' }]} numberOfLines={1}>
                 {address}
               </Text>
-              <Text style={h.addressChevron}>▾</Text>
+              <ChevronDownSvgIcon color="#0B1B36" size={12} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={h.profileBtn}
+            style={[h.profileBtn, { backgroundColor: '#0B1B36', borderColor: 'rgba(11, 27, 54, 0.3)' }]}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('Profile' as never)}
           >
-            <Text style={h.profileBtnText}>{userInitial}</Text>
+            <Text style={[h.profileBtnText, { color: '#ffff00' }]}>{userInitial}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* iOS Liquid Glass Search Bar */}
+        {/* Dynamic Search Bar */}
         <TouchableOpacity
-          style={h.searchBar}
+          style={[h.searchBar, { backgroundColor: '#FFFFFF', borderColor: 'rgba(11, 27, 54, 0.18)' }]}
           activeOpacity={0.9}
           onPress={() => navigation.navigate('Search' as never)}
         >
           <View style={h.searchIconBadge}>
-            <Text style={h.searchIcon}>🔍</Text>
+            <SearchSvgIcon color="#0B1B36" size={17} />
           </View>
           <View style={h.searchPlaceholderContainer}>
-            <Text style={h.searchPlaceholder} numberOfLines={1}>
+            <Text style={[h.searchPlaceholder, { color: '#475569' }]} numberOfLines={1}>
               {SEARCH_HINTS[hintIndex]}
             </Text>
           </View>
           <View style={h.searchActionGroup}>
-            <View style={h.voiceBadge}>
-              <Text style={h.voiceIcon}>🎙️</Text>
+            <View style={[h.voiceBadge, { backgroundColor: 'rgba(11, 27, 54, 0.07)', borderColor: 'rgba(11, 27, 54, 0.12)' }]}>
+              <MicSvgIcon color="#0B1B36" size={15} />
             </View>
             <View style={h.searchDivider} />
-            <View style={h.scanBadge}>
-              <Text style={h.scanIcon}>📸</Text>
+            <View style={[h.scanBadge, { backgroundColor: 'rgba(11, 27, 54, 0.07)', borderColor: 'rgba(11, 27, 54, 0.12)' }]}>
+              <CameraSvgIcon color="#0B1B36" size={15} />
             </View>
           </View>
         </TouchableOpacity>
@@ -516,11 +585,11 @@ function Home({ navigation }: any) {
             </View>
           </View>
 
-          {/* Categories Grid (API Response Based) */}
+          {/* Categories Grid */}
           {categories.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
-                <Text style={h.sectionTitle}>Explore Categories 🏷️</Text>
+                <Text style={[h.sectionTitle, { color: colors.textPrimary }]}>Explore Categories 🏷️</Text>
               </View>
               <ScrollView
                 horizontal
@@ -543,7 +612,7 @@ function Home({ navigation }: any) {
           {deals.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
-                <Text style={h.sectionTitle}>Trending Deals 🔥</Text>
+                <Text style={[h.sectionTitle, { color: colors.textPrimary }]}>Trending Deals 🔥</Text>
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate('CategoryProducts', {
@@ -551,7 +620,7 @@ function Home({ navigation }: any) {
                     })
                   }
                 >
-                  <Text style={h.seeAllText}>See All →</Text>
+                  <Text style={[h.seeAllText, { color: colors.accent }]}>See All →</Text>
                 </TouchableOpacity>
               </View>
               <View style={h.productGrid}>
@@ -578,7 +647,7 @@ function Home({ navigation }: any) {
           {bestsellers.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
-                <Text style={h.sectionTitle}>Best Sellers ⭐</Text>
+                <Text style={[h.sectionTitle, { color: colors.textPrimary }]}>Best Sellers ⭐</Text>
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate('CategoryProducts', {
@@ -586,7 +655,7 @@ function Home({ navigation }: any) {
                     })
                   }
                 >
-                  <Text style={h.seeAllText}>See All →</Text>
+                  <Text style={[h.seeAllText, { color: colors.accent }]}>See All →</Text>
                 </TouchableOpacity>
               </View>
               <View style={h.productGrid}>
@@ -613,7 +682,7 @@ function Home({ navigation }: any) {
           {remainingProds.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
-                <Text style={h.sectionTitle}>Fresh Products 🍏</Text>
+                <Text style={[h.sectionTitle, { color: colors.textPrimary }]}>Fresh Products 🍏</Text>
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate('CategoryProducts', {
@@ -662,37 +731,37 @@ function Home({ navigation }: any) {
         </ScrollView>
       )}
 
-      {/* iOS Liquid Glass Floating Cart Footer */}
+      {/* Floating Cart Footer */}
       {cartCount > 0 && (
         <Animated.View
           entering={ZoomIn.springify()}
-          style={h.floatingCartWrapper}
+          style={[h.floatingCartWrapper, { bottom: 78 }]}
         >
           <TouchableOpacity
             activeOpacity={0.92}
             onPress={() => navigation.navigate('Cart' as never)}
           >
-            <View style={h.liquidGlassPill}>
+            <View style={[h.liquidGlassPill, { backgroundColor: isDark ? '#0B1B36' : '#0B1B36', borderColor: colors.accent }]}>
               <LinearGradient
-                colors={['#0C831F', '#10B981']}
+                colors={isDark ? ['#0B1B36', '#0D2044'] : ['#0B1B36', '#1E3A8A']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={h.floatingCartContent}
               >
                 <View style={h.floatingCartLeft}>
-                  <View style={h.cartCountBadge}>
-                    <Text style={h.cartCountText}>{cartCount}</Text>
+                  <View style={[h.cartCountBadge, { backgroundColor: colors.accent }]}>
+                    <Text style={[h.cartCountText, { color: colors.accentText }]}>{cartCount}</Text>
                   </View>
                   <View>
-                    <Text style={h.floatingCartTotalLabel}>CART TOTAL</Text>
-                    <Text style={h.floatingCartText}>
+                    <Text style={[h.floatingCartTotalLabel, { color: '#829AB8' }]}>CART TOTAL</Text>
+                    <Text style={[h.floatingCartText, { color: '#ffff00' }]}>
                       ₹{cartTotal.toLocaleString('en-IN')}
                     </Text>
                   </View>
                 </View>
                 <View style={h.floatingCartRight}>
-                  <Text style={h.floatingCartPrice}>View Cart</Text>
-                  <Text style={h.cartArrow}>→</Text>
+                  <Text style={[h.floatingCartPrice, { color: '#ffff00' }]}>View Cart</Text>
+                  <Text style={[h.cartArrow, { color: '#ffff00' }]}>→</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -706,24 +775,25 @@ function Home({ navigation }: any) {
 const h = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: '#071224',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#071224',
   },
   headerBlock: {
     paddingHorizontal: H_PADDING,
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 18,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowColor: '#ffff00',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 12,
   },
   header: {
     flexDirection: 'row',
@@ -753,80 +823,70 @@ const h = StyleSheet.create({
   deliveryTime: {
     fontSize: 10.5,
     fontWeight: '900',
-    color: '#FFE500',
+    color: '#ffff00',
     letterSpacing: 0.6,
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
     marginTop: 2,
   },
   addressText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#141414',
-    maxWidth: SCREEN_WIDTH * 0.65,
-  },
-  addressChevron: {
-    fontSize: 12,
-    color: '#141414',
-    marginLeft: 4,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    maxWidth: SCREEN_WIDTH * 0.6,
   },
   profileBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(20, 20, 20, 0.08)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(20, 20, 20, 0.15)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffff00',
+    borderWidth: 2,
+    borderColor: '#ffff00',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#ffff00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   profileBtnText: {
     fontSize: 16,
-    fontWeight: '800',
-    color: '#141414',
+    fontWeight: '900',
+    color: '#0B1B36',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   searchIconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: 'rgba(24, 24, 27, 0.06)',
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
-  },
-  searchIcon: {
-    fontSize: 15,
   },
   searchPlaceholderContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   searchPlaceholder: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: '#829AB8',
     letterSpacing: -0.1,
   },
   searchActionGroup: {
@@ -835,27 +895,25 @@ const h = StyleSheet.create({
     gap: 6,
   },
   voiceBadge: {
-    backgroundColor: 'rgba(24, 24, 27, 0.05)',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
     paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  voiceIcon: {
-    fontSize: 13,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.2)',
   },
   searchDivider: {
     width: 1,
     height: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    backgroundColor: 'rgba(130, 154, 184, 0.25)',
   },
   scanBadge: {
-    backgroundColor: 'rgba(24, 24, 27, 0.05)',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
     paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  scanIcon: {
-    fontSize: 13,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.2)',
   },
   scrollContent: {
     paddingBottom: 20,
@@ -881,11 +939,11 @@ const h = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255, 229, 0, 0.12)',
+    backgroundColor: '#ffff00',
   },
   bannerTag: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    backgroundColor: '#ffff00',
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
@@ -894,22 +952,22 @@ const h = StyleSheet.create({
   bannerTagText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#F59E0B',
+    color: '#ffff00',
     letterSpacing: 0.5,
   },
   bannerTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#ffff00',
     lineHeight: 23,
   },
   bannerHighlight: {
-    color: '#F59E0B',
+    color: '#ffff00',
   },
   bannerSub: {
     fontSize: 11.5,
     fontWeight: '500',
-    color: '#A1A1AA',
+    color: '#ffff00',
     marginTop: 4,
   },
   bannerGradient: {
@@ -926,11 +984,11 @@ const h = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: '#ffff00',
   },
   bannerTagLight: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#ffff00',
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
@@ -939,13 +997,13 @@ const h = StyleSheet.create({
   bannerTagLightText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#030303ff',
     letterSpacing: 0.5,
   },
   bannerSubLight: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(0, 0, 0, 0.9)',
     marginTop: 4,
   },
   dotsRow: {
@@ -959,11 +1017,11 @@ const h = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#000000ff',
   },
   dotActive: {
     width: 20,
-    backgroundColor: '#0C831F',
+    backgroundColor: '#ffff00',
   },
   section: {
     marginTop: 20,
@@ -978,13 +1036,13 @@ const h = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#000000ff',
     letterSpacing: -0.2,
   },
   seeAllText: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: '#0C831F',
+    color: '#ffff00',
   },
   catScroll: {
     paddingRight: H_PADDING,
@@ -998,15 +1056,15 @@ const h = StyleSheet.create({
     width: 66,
     height: 66,
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowColor: '#ffff00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
     marginBottom: 6,
   },
   catImg: {
@@ -1015,9 +1073,9 @@ const h = StyleSheet.create({
     borderRadius: 12,
   },
   catName: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#334155',
+    color: '#0a0a0aff',
     textAlign: 'center',
   },
   productGrid: {
@@ -1038,23 +1096,23 @@ const h = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#000000ff',
     marginBottom: 6,
   },
   emptySub: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#000000ff',
     textAlign: 'center',
     marginBottom: 16,
   },
   retryBtn: {
-    backgroundColor: '#0C831F',
+    backgroundColor: '#ffff00',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
   },
   retryBtnText: {
-    color: '#FFFFFF',
+    color: '#ffff00',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1065,16 +1123,16 @@ const h = StyleSheet.create({
     right: H_PADDING,
   },
   liquidGlassPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    backgroundColor: 'rgba(11, 27, 54, 0.96)',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.88)',
+    borderColor: '#ffff00',
     borderRadius: 24,
     padding: 5,
-    shadowColor: '#0C831F',
+    shadowColor: '#ffff00',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 12,
   },
   floatingCartContent: {
     flexDirection: 'row',
@@ -1082,7 +1140,8 @@ const h = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    backgroundColor: '#ffff00',
   },
   floatingCartLeft: {
     flexDirection: 'row',
@@ -1090,27 +1149,27 @@ const h = StyleSheet.create({
     gap: 12,
   },
   cartCountBadge: {
-    backgroundColor: '#FFFFFF',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    backgroundColor: '#0B1B36',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cartCountText: {
-    color: '#0C831F',
+    color: '#ffff00',
     fontWeight: '900',
     fontSize: 13,
   },
   floatingCartTotalLabel: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(11, 27, 54, 0.75)',
     fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
   floatingCartText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    color: '#0B1B36',
+    fontWeight: '900',
     fontSize: 15,
   },
   floatingCartRight: {
@@ -1119,14 +1178,14 @@ const h = StyleSheet.create({
     gap: 4,
   },
   floatingCartPrice: {
-    color: '#FFFFFF',
+    color: '#0B1B36',
     fontWeight: '700',
     fontSize: 14,
   },
   cartArrow: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 16,
+    color: '#0B1B36',
+    fontWeight: '900',
+    fontSize: 17,
   },
 })
 

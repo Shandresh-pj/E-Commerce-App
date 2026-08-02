@@ -11,6 +11,30 @@ import { navigationRef } from './navigation/RootNavigation'
 import useInAppUpdate from './shared/services/useInAppUpdate'
 import { StatusBar, View } from 'react-native'
 import { LIQUID_GLASS_THEME } from './constants/theme'
+import { ThemeProvider, useTheme } from './shared/context/ThemeContext'
+
+/** Inner shell — consumes ThemeContext after it is mounted */
+function AppShell() {
+  const { colors } = useTheme()
+  return (
+    <>
+      <StatusBar
+        barStyle={colors.statusBarStyle}
+        backgroundColor={colors.statusBarBg}
+        translucent={false}
+      />
+      <SafeAreaView
+        edges={['left', 'right']}
+        style={{ flex: 1, backgroundColor: colors.background }}
+      >
+        <NavigationContainer ref={navigationRef}>
+          <Toast />
+          <StackNavigator />
+        </NavigationContainer>
+      </SafeAreaView>
+    </>
+  )
+}
 
 export default function App() {
   useInAppUpdate()
@@ -19,20 +43,9 @@ export default function App() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Provider store={store}>
-          <StatusBar
-            barStyle="dark-content"
-            backgroundColor="#FFE500"
-            translucent={false}
-          />
-          <SafeAreaView
-            edges={['left', 'right']}
-            style={{ flex: 1, backgroundColor: LIQUID_GLASS_THEME.colors.background }}
-          >
-            <NavigationContainer ref={navigationRef}>
-              <Toast />
-              <StackNavigator />
-            </NavigationContainer>
-          </SafeAreaView>
+          <ThemeProvider>
+            <AppShell />
+          </ThemeProvider>
         </Provider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

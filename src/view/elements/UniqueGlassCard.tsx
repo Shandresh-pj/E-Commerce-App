@@ -5,8 +5,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated'
+import { useTheme } from '../../shared/context/ThemeContext'
 
 interface UniqueGlassCardProps extends TouchableOpacityProps {
   gradientColors?: string[]
@@ -17,12 +17,16 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
   onPress,
   activeOpacity = 0.88,
   gradientColors,
-  borderColor = 'rgba(255, 255, 255, 0.8)',
+  borderColor,
   style,
   children,
   ...props
 }) => {
+  const { isDark, colors } = useTheme()
   const scale = useSharedValue(1)
+
+  const defaultBorder = borderColor || (isDark ? 'rgba(251, 191, 36, 0.25)' : 'rgba(0, 0, 0, 0.08)')
+  const containerBg = isDark ? 'rgba(11, 27, 54, 0.96)' : '#FFFFFF'
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -30,7 +34,7 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
 
   const handlePressIn = () => {
     if (onPress) {
-      scale.value = withSpring(0.95, { damping: 14, stiffness: 260 })
+      scale.value = withSpring(0.96, { damping: 14, stiffness: 260 })
     }
   }
 
@@ -44,7 +48,7 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
     <View style={styles.cardInner}>
       {/* Top Gloss Sheen */}
       <LinearGradient
-        colors={['rgba(255, 255, 255, 0.75)', 'rgba(255, 255, 255, 0.1)']}
+        colors={isDark ? ['rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.01)'] : ['rgba(255, 255, 255, 0.75)', 'rgba(255, 255, 255, 0.1)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 0.35 }}
         style={styles.glossSheen}
@@ -59,7 +63,7 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
           {children}
         </LinearGradient>
       ) : (
-        <View style={styles.whiteContainer}>{children}</View>
+        <View style={[styles.whiteContainer, { backgroundColor: containerBg }]}>{children}</View>
       )}
     </View>
   )
@@ -74,7 +78,7 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
         style={[styles.shadowWrapper, style]}
         {...props}
       >
-        <Animated.View style={[styles.cardBorder, { borderColor }, animatedStyle]}>
+        <Animated.View style={[styles.cardBorder, { borderColor: defaultBorder, backgroundColor: containerBg }, animatedStyle]}>
           {cardContent}
         </Animated.View>
       </TouchableOpacity>
@@ -82,7 +86,7 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
   }
 
   return (
-    <Animated.View style={[styles.shadowWrapper, styles.cardBorder, { borderColor }, animatedStyle, style]} {...props}>
+    <Animated.View style={[styles.shadowWrapper, styles.cardBorder, { borderColor: defaultBorder, backgroundColor: containerBg }, animatedStyle, style]} {...props}>
       {cardContent}
     </Animated.View>
   )
@@ -91,17 +95,16 @@ export const UniqueGlassCard: React.FC<UniqueGlassCardProps> = ({
 const styles = StyleSheet.create({
   shadowWrapper: {
     borderRadius: 22,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
   },
   cardBorder: {
     borderRadius: 22,
     borderWidth: 1.2,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
   },
   cardInner: {
     position: 'relative',
@@ -125,7 +128,6 @@ const styles = StyleSheet.create({
   whiteContainer: {
     padding: 12,
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
 })
 

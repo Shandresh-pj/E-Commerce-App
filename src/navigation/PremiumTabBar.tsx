@@ -14,15 +14,74 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated'
-import { LIQUID_GLASS_THEME, scaleFont } from '../constants/theme'
+import Svg, { Path, Circle, Rect } from 'react-native-svg'
+import { useTheme } from '../shared/context/ThemeContext'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
-const TAB_CONFIG: Record<string, { label: string; emoji: string }> = {
-  HomeTab: { label: 'Home', emoji: '🏠' },
-  ProductList: { label: 'Categories', emoji: '🧇' },
-  Cart: { label: 'Cart', emoji: '🛒' },
-  AccountTab: { label: 'Account', emoji: '👤' },
+/* ── Crisp Vector SVG Tab Icons ───────────────────────────────────── */
+const HomeTabSvgIcon = ({ color = '#0066CC', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 10.25L12 3L21 10.25V20C21 20.5523 20.5523 21 20 21H15V14H9V21H4C3.44772 21 3 20.5523 3 20V10.25Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+)
+
+const CategoryTabSvgIcon = ({ color = '#0066CC', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="3" y="3" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+    <Rect x="14" y="3" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+    <Rect x="3" y="14" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+    <Rect x="14" y="14" width="7" height="7" rx="2" stroke={color} strokeWidth="2" />
+  </Svg>
+)
+
+const CartTabSvgIcon = ({ color = '#0066CC', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6 2L3 6V20C3 20.5523 3.44772 21 4 21H20C20.5523 21 21 20.5523 21 20V6L18 2H6Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M3 6H21"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M16 10C16 12.2091 14.2091 14 12 14C9.79086 14 8 12.2091 8 10"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const AccountTabSvgIcon = ({ color = '#0066CC', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="7" r="4.5" stroke={color} strokeWidth="2" />
+    <Path
+      d="M4 20C4 16.13 7.58 13 12 13C16.42 13 20 16.13 20 20"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const TAB_CONFIG: Record<string, { label: string; icon: React.FC<{ color: string; size?: number }> }> = {
+  HomeTab: { label: 'Home', icon: HomeTabSvgIcon },
+  ProductList: { label: 'Categories', icon: CategoryTabSvgIcon },
+  Cart: { label: 'Cart', icon: CartTabSvgIcon },
+  AccountTab: { label: 'Account', icon: AccountTabSvgIcon },
 }
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity)
@@ -34,7 +93,7 @@ export const PremiumTabBar: React.FC<BottomTabBarProps> = ({
   const insets = useSafeAreaInsets()
   const activeIndex = state.index
   const totalTabs = state.routes.filter(r => TAB_CONFIG[r.name]).length
-  
+
   const tabWidth = SCREEN_WIDTH / (totalTabs || 1)
   const activeSlideX = useSharedValue(activeIndex * tabWidth)
 
@@ -52,19 +111,21 @@ export const PremiumTabBar: React.FC<BottomTabBarProps> = ({
   }))
 
   return (
-    <View
+    <LinearGradient
+      colors={['#ffff00', '#ffff00']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
       style={[
         styles.container,
-        { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 },
+        {
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+        },
       ]}
     >
-      {/* Glossy Top Glass Border Line */}
-      <View style={styles.topBorderLine} />
-
       {/* 144FPS Animated Active Indicator Pill */}
       <Animated.View style={[styles.activePillContainer, animatedPillStyle]}>
         <LinearGradient
-          colors={['rgba(255, 229, 0, 0.25)', 'rgba(255, 221, 0, 0.15)']}
+          colors={['#0B1B36', '#1E3A8A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.activePillGradient}
@@ -102,7 +163,7 @@ export const PremiumTabBar: React.FC<BottomTabBarProps> = ({
           )
         })}
       </View>
-    </View>
+    </LinearGradient>
   )
 }
 
@@ -113,7 +174,7 @@ function TabButton({
   onLongPress,
   tabWidth,
 }: {
-  config: { label: string; emoji: string }
+  config: { label: string; icon: React.FC<{ color: string; size?: number }> }
   isFocused: boolean
   onPress: () => void
   onLongPress: () => void
@@ -132,6 +193,11 @@ function TabButton({
     transform: [{ scale: scale.value }],
   }))
 
+  const IconComponent = config.icon
+  const activeColor = '#ffff00'
+  const inactiveColor = '#0066CC'
+  const currentColor = isFocused ? activeColor : inactiveColor
+
   return (
     <AnimatedTouchable
       activeOpacity={0.8}
@@ -141,15 +207,13 @@ function TabButton({
       accessibilityRole="button"
       accessibilityState={isFocused ? { selected: true } : {}}
     >
-      <Text style={styles.emoji}>{config.emoji}</Text>
+      <IconComponent color={currentColor} size={20} />
       <Text
         style={[
           styles.label,
           {
-            color: isFocused
-              ? '#141414'
-              : '#8E8E93',
-            fontWeight: isFocused ? '700' : '500',
+            color: currentColor,
+            fontFamily: isFocused ? 'DMSans-Bold' : 'DMSans-Medium',
           },
         ]}
         numberOfLines={1}
@@ -162,37 +226,29 @@ function TabButton({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
     paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.06)',
-    shadowColor: '#1F1C14',
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 10,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#ffff00',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 20,
     position: 'relative',
-  },
-  topBorderLine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    overflow: 'hidden',
   },
   activePillContainer: {
     position: 'absolute',
-    top: 6,
-    bottom: 6,
-    borderRadius: 16,
+    top: 5,
+    bottom: 5,
+    borderRadius: 20,
     overflow: 'hidden',
   },
   activePillGradient: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 221, 0, 0.4)',
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   tabRow: {
     flexDirection: 'row',
@@ -202,16 +258,12 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
-  },
-  emoji: {
-    fontSize: 20,
-    lineHeight: 24,
+    paddingVertical: 3,
   },
   label: {
-    fontSize: scaleFont(10.5),
+    fontSize: 11,
     letterSpacing: 0.1,
-    marginTop: 2,
+    marginTop: 3,
   },
 })
 
