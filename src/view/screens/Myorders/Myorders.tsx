@@ -115,9 +115,9 @@ const OrderCard = ({ item, onView, onReorder }: any) => {
           </Text>
         </View>
         <View style={s.infoRow}>
-          <Text style={s.infoLabel}>Scores</Text>
+          <Text style={s.infoLabel}>Total Price</Text>
           <Text style={s.infoValueGreen}>
-            {totalAmount > 0 || parseFloat(totalAmount) > 0 ? formatCurrency(totalAmount) : 'N/A'}
+            {totalAmount > 0 || parseFloat(totalAmount) > 0 ? `₹${formatCurrency(totalAmount)}` : 'N/A'}
           </Text>
         </View>
         <View style={s.infoRow}>

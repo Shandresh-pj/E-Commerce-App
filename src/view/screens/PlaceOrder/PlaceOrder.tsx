@@ -143,6 +143,9 @@ export default function PlaceOrderScreen() {
       }
 
       const response: any = await postData('/orders/create', payload)
+
+      console.log("PlaceOrder", response,'payload',payload);
+
       if (response.status === 200 || response.status === 201 || response.data?.success) {
         // Clear API cart item by item
         await Promise.all(

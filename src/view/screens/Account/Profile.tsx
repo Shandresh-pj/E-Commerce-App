@@ -40,13 +40,6 @@ const MoonSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
   </Svg>
 )
 
-const SystemThemeSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Rect x="5" y="2" width="14" height="20" rx="3" stroke={color} strokeWidth="2" />
-    <Line x1="12" y1="18" x2="12.01" y2="18" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </Svg>
-)
-
 const { width: W } = Dimensions.get('window')
 const isSmallDevice = W < 360
 
@@ -56,7 +49,6 @@ interface ProfileData {
   LastName: string | null
   Email: string
   MobileNumber: string
-  AvailablePoints: number
   image?: string
   [key: string]: any
 }
@@ -277,7 +269,7 @@ const ProfileScreen = (props: any) => {
                 )}
                 <TouchableOpacity
                   style={[s.editBadge, { backgroundColor: colors.accent }]}
-                  onPress={() => navigation.navigate('EditProfile')}
+                  onPress={() => navigation.navigate('EditProfile', { profile })}
                   activeOpacity={0.8}
                 >
                   <EditSvgIcon color={colors.accentText} size={13} />
@@ -296,24 +288,13 @@ const ProfileScreen = (props: any) => {
 
               <TouchableOpacity
                 style={[s.editProfileBtn, { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(11, 27, 54, 0.08)' }]}
-                onPress={() => navigation.navigate('EditProfile')}
+                onPress={() => navigation.navigate('EditProfile', { profile })}
                 activeOpacity={0.8}
               >
                 <Text style={[s.editProfileText, { color: colors.accent }]}>Edit</Text>
               </TouchableOpacity>
             </View>
           )}
-
-          {/* Points & Membership Bar */}
-          <View style={[s.rewardBanner, { backgroundColor: isDark ? 'rgba(7, 18, 36, 0.8)' : '#F8FAFC' }]}>
-            <View style={s.rewardLeft}>
-              <Text style={[s.rewardTitle, { color: colors.textPrimary }]}>⚡ Future Believe Rewards</Text>
-              <Text style={[s.rewardSub, { color: colors.textSecondary }]}>Earn 5% cashback on every 10-Min order</Text>
-            </View>
-            <View style={s.pointsBadge}>
-              <Text style={s.pointsText}>{profile?.AvailablePoints || 150} pts</Text>
-            </View>
-          </View>
         </View>
 
         {/* Account Menu */}

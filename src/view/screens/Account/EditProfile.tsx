@@ -31,6 +31,7 @@ const EditProfileScreen = () => {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
   const d = route.params?.profile ?? {}
+console.log('ddd',d);
 
   const initName =
     d?.name ||
@@ -38,7 +39,7 @@ const EditProfileScreen = () => {
 
   const [fullName, setFullName] = useState(initName)
   const [email, setEmail] = useState(d?.email || d?.Email || '')
-  const [mobile] = useState(d?.mobilenumber || d?.MobileNumber || '')
+  const [mobile, setMobile] = useState(d?.mobilenumber || d?.MobileNumber || '')
   const [saving, setSaving] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [avatarUri, setAvatarUri] = useState<string | null>(() => {
@@ -72,6 +73,9 @@ const EditProfileScreen = () => {
       formData.append('name', fullName.trim())
       formData.append('email', email.trim())
       formData.append('mobilenumber', mobile.trim())
+      
+      const addr = d?.address || d?.Address || 'N/A';
+      formData.append('address', String(addr))
 
       if (avatarUri && !avatarUri.startsWith('http')) {
         const filename = avatarUri.split('/').pop() || 'avatar.jpg'
@@ -146,9 +150,15 @@ const EditProfileScreen = () => {
             </Field>
 
             <Field label="MOBILE NUMBER">
-              <View style={[s.inputBox, s.inputBoxLocked]}>
-                <Text style={s.lockedText}>{mobile ? `+91 ${mobile}` : 'Not set'}</Text>
-                <View style={s.verifiedBadge}><Text style={s.verifiedText}>VERIFIED</Text></View>
+              <View style={s.inputBox}>
+                <TextInput
+                  style={s.input}
+                  value={mobile}
+                  onChangeText={setMobile}
+                  placeholder="Mobile number"
+                  placeholderTextColor="#9a9a9a"
+                  keyboardType="phone-pad"
+                />
               </View>
             </Field>
 

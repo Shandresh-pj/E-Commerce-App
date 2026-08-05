@@ -343,7 +343,7 @@ const AddressScreen = () => {
           ? `${prof.FirstName}${prof.LastName ? ' ' + prof.LastName : ''}`
           : prof.name || ''
         setProfileName(name)
-        setProfilePhone(prof.phone || prof.Phone || '')
+        setProfilePhone(prof.mobilenumber || prof.MobileNumber || prof.phone || prof.Phone || '')
       }
     } catch (e) {
       console.log('loadProfile error:', e)

@@ -103,7 +103,7 @@ const ProductDetailModal = ({
     points:
       isVariantType && selectedVariant
         ? parseFloat(selectedVariant.Price)
-        : productDetail?.Points ?? 0,
+        : parseFloat(productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '0') ?? 0,
     images: images,
     quantity: 1,
     ...(isVariantType && selectedVariant
@@ -118,7 +118,7 @@ const ProductDetailModal = ({
   const scoreValue =
     selectedVariant && parseFloat(selectedVariant.Price) > 0
       ? parseFloat(selectedVariant.Price).toFixed(0)
-      : productDetail?.Points
+      : (productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '0')
 
   return (
     <Modal
@@ -197,8 +197,8 @@ const ProductDetailModal = ({
                 <Text style={s.productTitle}>{productName}</Text>
 
                 <View style={s.scoreRow}>
-                  <Text style={s.scoreValue}>{scoreValue}</Text>
-                  <Text style={s.scoreUnit}>Scores</Text>
+                  <Text style={s.scoreValue}>₹{scoreValue}</Text>
+                  <Text style={s.scoreUnit}>Price</Text>
                 </View>
 
                 {/* Stock Badge */}
@@ -274,7 +274,7 @@ const ProductDetailModal = ({
                                   isSelected && s.variantPriceSelected,
                                 ]}
                               >
-                                {variantPriceVal.toFixed(0)} Scores
+                                ₹{variantPriceVal.toFixed(0)}
                               </Text>
                               <Text
                                 style={[
