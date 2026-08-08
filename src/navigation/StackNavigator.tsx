@@ -37,6 +37,7 @@ import NotificationsScreen from '../view/screens/Notifications/Notifications';
 import LanguageScreen from '../view/screens/Language/Language';
 import PartnerNavigator from '../view/screens/DeliveryPartner/PartnerNavigator';
 import RoleSelection from '../view/screens/RoleSelection/RoleSelection';
+import MapViewScreen from '../view/screens/Map';
 
 
 const Stack = createStackNavigator();
@@ -387,6 +388,19 @@ const MainStackNavigator = (props: any) => {
       <Stack.Screen
         name="PartnerApp"
         component={PartnerNavigator}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+
+      <Stack.Screen
+        name="MapView"
+        component={MapViewScreen}
         options={{
           headerShown: false,
           transitionSpec: {

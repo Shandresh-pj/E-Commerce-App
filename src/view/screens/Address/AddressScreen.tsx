@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Dimensions,
+  PermissionsAndroid,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
@@ -25,6 +26,9 @@ import {
   fetchMyProfile,
   deleteData,
 } from '../../../shared/services/main-service'
+import { MapView } from '../../elements/MapView'
+import Geolocation from '@react-native-community/geolocation'
+import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
 
 const { width: W, height: H } = Dimensions.get('window')
 const isSmallDevice = W < 360
@@ -200,7 +204,16 @@ const TrashSvgIcon = ({ color = '#FF6B6B', size = 15 }) => (
 /* -------------------------------------------------------------------------- */
 /*                       SAPPHIRE GLASS FIELD COMPONENT                       */
 /* -------------------------------------------------------------------------- */
-const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLength }: any) => {
+const GlassField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  keyboardType,
+  maxLength,
+  autoComplete,
+  textContentType,
+}: any) => {
   const [isFocused, setIsFocused] = useState(false)
 
   return (
@@ -220,6 +233,8 @@ const GlassField = ({ label, value, onChange, placeholder, keyboardType, maxLeng
           placeholderTextColor="#829AB8"
           keyboardType={keyboardType ?? 'default'}
           maxLength={maxLength}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
@@ -295,8 +310,12 @@ const SavedAddressCard = ({
 const AddressScreen = () => {
   const navigation = useNavigation<any>()
   const [addresses, setAddresses] = useState<Address[]>([])
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
+  const modalVisibleRef = useRef(false)
+  useEffect(() => {
+    modalVisibleRef.current = modalVisible
+  }, [modalVisible])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm())
   const [saving, setSaving] = useState(false)
@@ -305,6 +324,339 @@ const AddressScreen = () => {
   const [profileName, setProfileName] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [receiverType, setReceiverType] = useState<'myself' | 'other'>('myself')
+
+  const watchIdRef = useRef<number | null>(null)
+  const [coords, setCoords] = useState({ latitude: 0, longitude: 0 })
+  const [mapCenter, setMapCenter] = useState({ latitude: 0, longitude: 0 })
+
+  // Geolocation/GPS States
+  const [isLocatingUser, setIsLocatingUser] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
+  const [gpsError, setGpsError] = useState(false)
+
+  // Map dragging & micro-animation states
+  const [isMapMoving, setIsMapMoving] = useState(false)
+  const pinTranslateY = useRef(new Animated.Value(-18)).current
+
+  // Reverse Geocoding States
+  const [isGeocoding, setIsGeocoding] = useState(false)
+  const [geocodedAddress, setGeocodedAddress] = useState<string>('')
+  const [geocodedDetails, setGeocodedDetails] = useState<any>(null)
+  const geocodeTimeoutRef = useRef<any>(null)
+
+  // Search Autocomplete States
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchModalVisible, setSearchModalVisible] = useState(false)
+  const searchTimeoutRef = useRef<any>(null)
+
+  const saveCachedLocation = async (lat: number, lng: number) => {
+    try {
+      await setAsyncData('last_location_coords', { latitude: lat, longitude: lng } as any)
+    } catch (e) {
+      console.warn('Failed to save cached location:', e)
+    }
+  }
+
+  const loadCachedLocation = useCallback(async () => {
+    try {
+      const cached = await getAsyncData('last_location_coords')
+      if (cached && cached.latitude && cached.longitude) {
+        setCoords({ latitude: cached.latitude, longitude: cached.longitude })
+        setMapCenter({ latitude: cached.latitude, longitude: cached.longitude })
+        return { latitude: cached.latitude, longitude: cached.longitude }
+      }
+    } catch (err) {
+      console.warn('Error reading cached location:', err)
+    }
+    // Fallback
+    setCoords({ latitude: 12.9716, longitude: 77.5946 })
+    setMapCenter({ latitude: 12.9716, longitude: 77.5946 })
+    return { latitude: 12.9716, longitude: 77.5946 }
+  }, [])
+
+  const fetchCurrentLocation = useCallback(async () => {
+    setIsLocatingUser(true)
+    setPermissionDenied(false)
+    setGpsError(false)
+
+    try {
+      if (Platform.OS === 'android') {
+        const fineGranted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        )
+        const coarseGranted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+        )
+        if (!fineGranted && !coarseGranted) {
+          const status = await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          ])
+          const fg = status[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION]
+          const cg = status[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION]
+          if (fg !== PermissionsAndroid.RESULTS.GRANTED && cg !== PermissionsAndroid.RESULTS.GRANTED) {
+            setPermissionDenied(true)
+            setIsLocatingUser(false)
+            await loadCachedLocation()
+            return
+          }
+        }
+      } else if (Platform.OS === 'ios') {
+        if (typeof Geolocation.requestAuthorization === 'function') {
+          Geolocation.requestAuthorization()
+        }
+      }
+
+      if (watchIdRef.current !== null) {
+        Geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
+
+      // Timeout protection for slow/disabled GPS
+      const gpsTimeout = setTimeout(() => {
+        setIsLocatingUser(prev => {
+          if (prev) {
+            setGpsError(true)
+            loadCachedLocation()
+          }
+          return false
+        })
+      }, 8000)
+
+      Geolocation.getCurrentPosition(
+        position => {
+          clearTimeout(gpsTimeout)
+          const { latitude, longitude } = position.coords
+          setCoords({ latitude, longitude })
+          setMapCenter({ latitude, longitude })
+          saveCachedLocation(latitude, longitude)
+          setIsLocatingUser(false)
+          setGpsError(false)
+          setPermissionDenied(false)
+          reverseGeocode(latitude, longitude)
+        },
+        error => {
+          console.warn('High accuracy location failed, trying low accuracy...', error)
+          Geolocation.getCurrentPosition(
+            position => {
+              clearTimeout(gpsTimeout)
+              const { latitude, longitude } = position.coords
+              setCoords({ latitude, longitude })
+              setMapCenter({ latitude, longitude })
+              saveCachedLocation(latitude, longitude)
+              setIsLocatingUser(false)
+              setGpsError(false)
+              setPermissionDenied(false)
+              reverseGeocode(latitude, longitude)
+            },
+            err2 => {
+              clearTimeout(gpsTimeout)
+              console.warn('Low accuracy location failed as well', err2)
+              setGpsError(true)
+              setIsLocatingUser(false)
+              loadCachedLocation()
+            },
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 10000 }
+          )
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 }
+      )
+
+      // Watch position
+      const watchId = Geolocation.watchPosition(
+        position => {
+          const { latitude, longitude } = position.coords
+          setCoords({ latitude, longitude })
+          saveCachedLocation(latitude, longitude)
+        },
+        error => {
+          console.warn('AddressScreen watch geolocation error:', error)
+        },
+        {
+          enableHighAccuracy: true,
+          distanceFilter: 5,
+          interval: 10000,
+          fastestInterval: 5000,
+        }
+      )
+      watchIdRef.current = watchId
+    } catch (err) {
+      console.warn('Error starting location watch in AddressScreen:', err)
+      setGpsError(true)
+      setIsLocatingUser(false)
+      await loadCachedLocation()
+    }
+  }, [loadCachedLocation])
+
+  // Initialize location on mount
+  useEffect(() => {
+    const init = async () => {
+      const initial = await loadCachedLocation()
+      if (initial && initial.latitude !== 0) {
+        reverseGeocode(initial.latitude, initial.longitude)
+      }
+      fetchCurrentLocation()
+    }
+    init()
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        Geolocation.clearWatch(watchIdRef.current)
+      }
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current)
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [loadCachedLocation, fetchCurrentLocation])
+
+  // Central Pin Bounce Animations
+  const handleRegionChangeStart = useCallback(() => {
+    if (modalVisibleRef.current) return
+    setIsMapMoving(true)
+    Animated.timing(pinTranslateY, {
+      toValue: -32,
+      duration: 150,
+      useNativeDriver: true,
+    }).start()
+  }, [pinTranslateY])
+
+  const handleRegionChangeComplete = useCallback((lat: number, lng: number) => {
+    if (modalVisibleRef.current) return
+    setIsMapMoving(false)
+    Animated.spring(pinTranslateY, {
+      toValue: -18,
+      friction: 4,
+      tension: 40,
+      useNativeDriver: true,
+    }).start()
+
+    setMapCenter({ latitude: lat, longitude: lng })
+    debouncedReverseGeocode(lat, lng)
+  }, [pinTranslateY])
+
+  // Reverse Geocoding
+  const reverseGeocode = async (lat: number, lng: number) => {
+    if (lat === 0 && lng === 0) return
+    setIsGeocoding(true)
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'FutureBelieveECommerceApp/1.0',
+          },
+        }
+      )
+      const data = await response.json()
+      if (data && data.address) {
+        const addressObj = data.address
+        const road = addressObj.road || addressObj.suburb || addressObj.neighbourhood || addressObj.industrial || ''
+        const city = addressObj.city || addressObj.town || addressObj.village || addressObj.state_district || addressObj.county || ''
+        const state = addressObj.state || ''
+        const pincode = addressObj.postcode || ''
+        const displayName = data.display_name || ''
+
+        setGeocodedAddress(displayName)
+        setGeocodedDetails({
+          line1: road,
+          city,
+          state,
+          pincode,
+        })
+      } else {
+        setGeocodedAddress('Unknown Location')
+        setGeocodedDetails(null)
+      }
+    } catch (error) {
+      console.warn('Geocoding error:', error)
+      setGeocodedAddress('Location pinpointed')
+    } finally {
+      setIsGeocoding(false)
+    }
+  }
+
+  const debouncedReverseGeocode = (lat: number, lng: number) => {
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current)
+    }
+    setIsGeocoding(true)
+    setGeocodedAddress('Locating...')
+    geocodeTimeoutRef.current = setTimeout(() => {
+      reverseGeocode(lat, lng)
+    }, 800)
+  }
+
+  // Search Input handler
+  const handleSearchInputChange = (text: string) => {
+    setSearchQuery(text)
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    if (text.trim().length < 3) {
+      setSearchResults([])
+      return
+    }
+    setIsSearching(true)
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            text
+          )}&limit=6&addressdetails=1&countrycodes=in`,
+          {
+            headers: {
+              'User-Agent': 'FutureBelieveECommerceApp/1.0',
+            },
+          }
+        )
+        const data = await response.json()
+        setSearchResults(data || [])
+      } catch (error) {
+        console.warn('Location search error:', error)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 600)
+  }
+
+  // Select search result
+  const handleSelectSearchResult = (item: any) => {
+    const lat = Number(item.lat)
+    const lon = Number(item.lon)
+    setMapCenter({ latitude: lat, longitude: lon })
+    setSearchModalVisible(false)
+    reverseGeocode(lat, lon)
+  }
+
+  // Confirm current pinpointed map location
+  const handleConfirmMapLocation = () => {
+    setEditingId(null)
+    setForm({
+      label: 'Home',
+      name: profileName,
+      phone: profilePhone,
+      line1: geocodedDetails?.line1 || '',
+      city: geocodedDetails?.city || '',
+      state: geocodedDetails?.state || '',
+      pincode: geocodedDetails?.pincode || '',
+      isDefault: addresses.length === 0,
+      receiverType: 'myself',
+    })
+    setReceiverType('myself')
+    
+    setModalVisible(true)
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 60,
+      friction: 11,
+      useNativeDriver: true,
+    }).start()
+  }
 
   const slideAnim = useRef(new Animated.Value(H)).current
 
@@ -333,7 +685,7 @@ const AddressScreen = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedAddress])
 
   const loadProfile = useCallback(async () => {
     try {
@@ -412,8 +764,9 @@ const AddressScreen = () => {
     }))
   }
 
-  const setF = (key: keyof FormState) => (val: any) =>
+  const handleInputChange = useCallback((key: keyof FormState, val: any) => {
     setForm(prev => ({ ...prev, [key]: val }))
+  }, [])
 
   const handleSave = async () => {
     if (!form.line1.trim() || !form.city.trim() || !form.pincode.trim()) {
@@ -481,6 +834,51 @@ const AddressScreen = () => {
 
       {/* SAPPHIRE MAP BACKGROUND */}
       <View style={s.mapBg}>
+        {/* Real Interactive Leaflet Map */}
+        <View style={StyleSheet.absoluteFill}>
+          <MapView
+            latitude={mapCenter.latitude}
+            longitude={mapCenter.longitude}
+            userLatitude={coords.latitude}
+            userLongitude={coords.longitude}
+            showRecenter={!modalVisible}
+            recenterBottom={H * 0.58 + 16}
+            showMapType={!modalVisible}
+            mapTypeBottom={H * 0.58 + 66}
+            onRegionChangeStart={modalVisible ? undefined : handleRegionChangeStart}
+            onRegionChangeComplete={modalVisible ? undefined : handleRegionChangeComplete}
+          />
+        </View>
+
+        {permissionDenied && (
+          <View style={s.errorBanner}>
+            <Text style={s.errorBannerText}>
+              🔒 Location permission denied. Please allow permission to locate automatically.
+            </Text>
+            <TouchableOpacity style={s.errorBannerBtn} onPress={fetchCurrentLocation}>
+              <Text style={s.errorBannerBtnText}>Grant</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {gpsError && (
+          <View style={s.errorBanner}>
+            <Text style={s.errorBannerText}>
+              ⚠️ GPS request failed or disabled. Check GPS settings.
+            </Text>
+            <TouchableOpacity style={s.errorBannerBtn} onPress={fetchCurrentLocation}>
+              <Text style={s.errorBannerBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {isLocatingUser && (
+          <View style={s.mapLoader}>
+            <ActivityIndicator size="large" color="#FBBF24" />
+            <Text style={s.mapLoaderText}>Locating your position...</Text>
+          </View>
+        )}
+
         <SafeAreaView edges={['top']} style={s.searchOverlay}>
           <TouchableOpacity
             style={s.backBtn}
@@ -490,26 +888,29 @@ const AddressScreen = () => {
             <BackSvgIcon color="#FFFFFF" size={18} />
           </TouchableOpacity>
 
-          <View style={s.searchBar}>
+          <TouchableOpacity
+            style={s.searchBar}
+            onPress={() => setSearchModalVisible(true)}
+            activeOpacity={0.8}
+          >
             <SearchSvgIcon color="#FBBF24" size={18} />
             <Text style={s.searchPlaceholder}>Search area, street, landmark...</Text>
-          </View>
+          </TouchableOpacity>
         </SafeAreaView>
 
-        {/* Map Grid Elements */}
-        <View style={s.gridContainer}>
-          <View style={s.roadH} />
-          <View style={s.roadV} />
-          <View style={s.building1} />
-          <View style={s.building2} />
-
-          <View style={s.pinContainer}>
-            <View style={s.pinLabel}>
-              <Text style={s.pinLabelText}>⚡ Delivery Location</Text>
-            </View>
-            <PinSvgIcon color="#FBBF24" size={32} />
+        {/* Center Marker Overlay */}
+        <Animated.View
+          style={[
+            s.pinContainer,
+            { transform: [{ translateY: pinTranslateY }] }
+          ]}
+          pointerEvents="none"
+        >
+          <View style={s.pinLabel}>
+            <Text style={s.pinLabelText}>⚡ Delivery Location</Text>
           </View>
-        </View>
+          <PinSvgIcon color="#FBBF24" size={32} />
+        </Animated.View>
       </View>
 
       {/* FLOATING SAPPHIRE SHEET */}
@@ -517,6 +918,44 @@ const AddressScreen = () => {
         <View style={s.sheetHandle} />
 
         <ScrollView contentContainerStyle={s.sheetScroll} showsVerticalScrollIndicator={false}>
+          {/* Current Pin Location Card (Blinkit UX) */}
+          <View style={s.currentPinCard}>
+            <View style={s.currentPinLeft}>
+              <View style={s.locIconBox}>
+                <Text style={{ fontSize: 18 }}>📍</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.currentPinTitle}>Selected Delivery Location</Text>
+                {isMapMoving ? (
+                  <Text style={s.currentPinAddrText}>Moving map...</Text>
+                ) : isGeocoding ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                    <ActivityIndicator size="small" color="#FBBF24" style={{ marginRight: 6 }} />
+                    <Text style={[s.currentPinAddrText, { color: '#829AB8' }]}>Fetching address details...</Text>
+                  </View>
+                ) : geocodedAddress ? (
+                  <Text style={s.currentPinAddrText} numberOfLines={2}>
+                    {geocodedAddress}
+                  </Text>
+                ) : (
+                  <Text style={[s.currentPinAddrText, { color: '#FF6B6B' }]}>
+                    No address pinpointed. Pan map to select.
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {!isMapMoving && !isGeocoding && geocodedAddress && (
+              <TouchableOpacity
+                style={s.confirmLocationBtn}
+                onPress={handleConfirmMapLocation}
+                activeOpacity={0.85}
+              >
+                <Text style={s.confirmLocationBtnText}>Confirm Location ➔</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Selected Address Display */}
           {selectedAddress ? (
             <View style={s.selectedCard}>
@@ -618,7 +1057,7 @@ const AddressScreen = () => {
                         <TouchableOpacity
                           key={t}
                           style={[s.typeChip, isActive && s.typeChipActive]}
-                          onPress={() => setF('label')(t)}
+                          onPress={() => handleInputChange('label', t)}
                           activeOpacity={0.8}
                         >
                           {t === 'Home' ? (
@@ -668,24 +1107,30 @@ const AddressScreen = () => {
                 <GlassField
                   label="RECEIVER'S NAME *"
                   value={form.name}
-                  onChange={setF('name')}
+                  onChange={(v: string) => handleInputChange('name', v)}
                   placeholder="Full name of receiver"
+                  autoComplete="name"
+                  textContentType="name"
                 />
 
                 <GlassField
                   label="RECEIVER'S PHONE NUMBER *"
                   value={form.phone}
-                  onChange={(v: string) => setF('phone')(v.replace(/\D/g, '').slice(0, 10))}
+                  onChange={(v: string) => handleInputChange('phone', v.replace(/\D/g, '').slice(0, 10))}
                   placeholder="10-digit mobile number"
                   keyboardType="phone-pad"
                   maxLength={10}
+                  autoComplete="tel"
+                  textContentType="telephoneNumber"
                 />
 
                 <GlassField
                   label="ADDRESS LINE 1 *"
                   value={form.line1}
-                  onChange={setF('line1')}
+                  onChange={(v: string) => handleInputChange('line1', v)}
                   placeholder="House / Flat / Block"
+                  autoComplete="street-address"
+                  textContentType="streetAddressLine1"
                 />
 
                 <View style={s.rowFields}>
@@ -693,18 +1138,22 @@ const AddressScreen = () => {
                     <GlassField
                       label="CITY *"
                       value={form.city}
-                      onChange={setF('city')}
+                      onChange={(v: string) => handleInputChange('city', v)}
                       placeholder="City"
+                      autoComplete="postal-address-locality"
+                      textContentType="addressCity"
                     />
                   </View>
                   <View style={{ flex: 1, marginLeft: 6 }}>
                     <GlassField
                       label="PINCODE *"
                       value={form.pincode}
-                      onChange={setF('pincode')}
+                      onChange={(v: string) => handleInputChange('pincode', v)}
                       placeholder="6-digit"
                       keyboardType="numeric"
                       maxLength={6}
+                      autoComplete="postal-code"
+                      textContentType="postalCode"
                     />
                   </View>
                 </View>
@@ -712,7 +1161,7 @@ const AddressScreen = () => {
                 {/* Default Toggle Checkbox */}
                 <TouchableOpacity
                   style={s.defaultToggle}
-                  onPress={() => setF('isDefault')(!form.isDefault)}
+                  onPress={() => handleInputChange('isDefault', !form.isDefault)}
                   activeOpacity={0.8}
                 >
                   <View style={[s.checkbox, form.isDefault && s.checkboxChecked]}>
@@ -740,6 +1189,75 @@ const AddressScreen = () => {
             </KeyboardAvoidingView>
           </Animated.View>
         </View>
+      </Modal>
+
+      {/* LOCATION SEARCH AUTOCOMPLETE MODAL */}
+      <Modal
+        visible={searchModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setSearchModalVisible(false)}
+      >
+        <SafeAreaView style={s.searchContainer}>
+          <View style={s.searchHeader}>
+            <TouchableOpacity
+              style={s.searchBackBtn}
+              onPress={() => setSearchModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={s.searchBackBtnText}>←</Text>
+            </TouchableOpacity>
+            <View style={s.searchInputWrapper}>
+              <TextInput
+                style={s.searchInput}
+                value={searchQuery}
+                onChangeText={handleSearchInputChange}
+                placeholder="Search area, street, landmark..."
+                placeholderTextColor="#829AB8"
+                autoFocus
+                clearButtonMode="while-editing"
+              />
+            </View>
+          </View>
+
+          {isSearching ? (
+            <View style={s.searchLoaderWrapper}>
+              <ActivityIndicator size="large" color="#FBBF24" />
+              <Text style={s.searchLoaderText}>Searching places...</Text>
+            </View>
+          ) : searchResults.length > 0 ? (
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.searchResultsList}>
+              {searchResults.map((item, index) => (
+                <TouchableOpacity
+                  key={item.place_id || index}
+                  style={s.searchResultItem}
+                  onPress={() => handleSelectSearchResult(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={s.searchResultIcon}>
+                    <Text style={{ fontSize: 16 }}>📍</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.resultName} numberOfLines={1}>
+                      {item.display_name.split(',')[0]}
+                    </Text>
+                    <Text style={s.resultAddress} numberOfLines={2}>
+                      {item.display_name}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : searchQuery.trim().length >= 3 ? (
+            <View style={s.searchEmptyWrapper}>
+              <Text style={s.searchEmptyText}>No locations found</Text>
+            </View>
+          ) : (
+            <View style={s.searchEmptyWrapper}>
+              <Text style={s.searchEmptyText}>Type at least 3 characters to search</Text>
+            </View>
+          )}
+        </SafeAreaView>
       </Modal>
     </View>
   )
@@ -804,8 +1322,12 @@ const s = StyleSheet.create({
 
   pinContainer: {
     position: 'absolute',
-    top: '35%',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   pinLabel: {
     backgroundColor: '#FBBF24',
@@ -1150,6 +1672,213 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  currentPinCard: {
+    backgroundColor: '#162C50',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#002B66',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  currentPinLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  locIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+  },
+  currentPinTitle: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14.5,
+    color: '#FBBF24',
+    marginBottom: 4,
+  },
+  currentPinAddrText: {
+    fontFamily: 'DMSans-Medium',
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 18,
+  },
+  confirmLocationBtn: {
+    backgroundColor: '#FBBF24',
+    borderRadius: 14,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  confirmLocationBtnText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14,
+    color: '#0B1B36',
+  },
+  errorBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 70 : 100,
+    left: 16,
+    right: 16,
+    backgroundColor: '#7F1D1D',
+    borderColor: '#EF4444',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 15,
+  },
+  errorBannerText: {
+    fontFamily: 'DMSans-Medium',
+    fontSize: 11.5,
+    color: '#FCA5A5',
+    flex: 1,
+    marginRight: 10,
+  },
+  errorBannerBtn: {
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  errorBannerBtnText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 11.5,
+    color: '#FFFFFF',
+  },
+  mapLoader: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(7, 18, 36, 0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  mapLoaderText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 13.5,
+    color: '#FBBF24',
+    marginTop: 10,
+  },
+  searchContainer: {
+    flex: 1,
+    backgroundColor: '#071224',
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.06)',
+    gap: 12,
+  },
+  searchBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#162C50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  searchBackBtnText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 18,
+    color: '#FBBF24',
+  },
+  searchInputWrapper: {
+    flex: 1,
+    height: 44,
+    backgroundColor: '#162C50',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#264878',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+  },
+  searchInput: {
+    fontFamily: 'DMSans-Medium',
+    fontSize: 14.5,
+    color: '#FFFFFF',
+    height: '100%',
+  },
+  searchLoaderWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchLoaderText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 13.5,
+    color: '#FBBF24',
+  },
+  searchResultsList: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: '#162C50',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#264878',
+    padding: 14,
+    marginBottom: 10,
+  },
+  searchResultIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resultName: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  resultAddress: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 11.5,
+    color: '#829AB8',
+    lineHeight: 16,
+  },
+  searchEmptyWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  searchEmptyText: {
+    fontFamily: 'DMSans-Medium',
+    fontSize: 14,
+    color: '#829AB8',
+    textAlign: 'center',
+  },
 })
 
 const f = StyleSheet.create({
@@ -1174,11 +1903,6 @@ const f = StyleSheet.create({
   inputContainerFocused: {
     borderColor: '#FBBF24',
     backgroundColor: '#1E3A68',
-    shadowColor: '#FBBF24',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
   },
   input: {
     fontSize: 14,
