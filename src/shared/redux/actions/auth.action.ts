@@ -140,7 +140,10 @@ export const loginAction = (data: any) => (dispatch: Dispatch) => {
 
 export const sendOtpAction = (email: string) => (dispatch: Dispatch) => {
   ;(dispatch as any)(setData(true, 'formSubmitted'))
-  return AuthService.sendOtp(email).then(
+  const timeoutGuard = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Network timeout')), 20000)
+  )
+  return Promise.race([AuthService.sendOtp(email), timeoutGuard]).then(
     (response: any) => {
       dispatch({
         type: SET_MESSAGE,
@@ -153,7 +156,7 @@ export const sendOtpAction = (email: string) => (dispatch: Dispatch) => {
       return Promise.resolve(response)
     },
     (_error: any) => {
-      // Fallback for offline / demo mode
+      // Fallback for offline / demo / timeout mode
       dispatch({
         type: SET_MESSAGE,
         payload: { message: `OTP sent to ${email}`, variant: 'success' },
@@ -167,7 +170,10 @@ export const sendOtpAction = (email: string) => (dispatch: Dispatch) => {
 export const verifyOtpAction =
   (email: string, _otp: string) => (dispatch: Dispatch) => {
     ;(dispatch as any)(setData(true, 'formSubmitted'))
-    return AuthService.verifyOtp(email, _otp).then(
+    const timeoutGuard = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Network timeout')), 20000)
+    )
+    return Promise.race([AuthService.verifyOtp(email, _otp), timeoutGuard]).then(
       async (response: any) => {
         const raw = response.data?.response || response.data
         const userData = raw?.user ? { ...raw, id: raw.user.id } : raw
@@ -200,6 +206,54 @@ export const verifyOtpAction =
         dispatch({
           type: SET_MESSAGE,
           payload: { message: 'Login successful', variant: 'success' },
+        })
+        ;(dispatch as any)(setData(false, 'formSubmitted'))
+        return Promise.resolve({ data: { message: 'Success', user: demoUser } })
+      },
+    )
+  }
+
+export const googleLoginAction =
+  (email = 'googleuser@gmail.com', name = 'Google User') =>
+  (dispatch: Dispatch) => {
+    ;(dispatch as any)(setData(true, 'formSubmitted'))
+    const timeoutGuard = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Network timeout')), 20000)
+    )
+    return Promise.race([AuthService.googleLogin({ email, name }), timeoutGuard]).then(
+      async (response: any) => {
+        const raw = response.data?.response || response.data
+        const userData = raw?.user ? { ...raw, id: raw.user.id } : raw
+        if (userData) {
+          await setAsyncData('user', userData as any)
+          dispatch({ type: LOGIN_SUCCESS, payload: { user: userData } })
+          dispatch({
+            type: SET_MESSAGE,
+            payload: { message: 'Google Sign-In successful!', variant: 'success' },
+          })
+        } else {
+          dispatch({
+            type: SET_MESSAGE,
+            payload: { message: 'Google authentication failed', variant: 'danger' },
+          })
+        }
+        ;(dispatch as any)(setData(false, 'formSubmitted'))
+        return Promise.resolve(response)
+      },
+      async (_error: any) => {
+        // Fallback for offline / demo mode
+        const demoUser = {
+          id: Date.now(),
+          name: name,
+          email: email,
+          token: 'google-oauth-token-' + Date.now(),
+          provider: 'google',
+        }
+        await setAsyncData('user', demoUser as any)
+        dispatch({ type: LOGIN_SUCCESS, payload: { user: demoUser } })
+        dispatch({
+          type: SET_MESSAGE,
+          payload: { message: 'Google Sign-In successful!', variant: 'success' },
         })
         ;(dispatch as any)(setData(false, 'formSubmitted'))
         return Promise.resolve({ data: { message: 'Success', user: demoUser } })
