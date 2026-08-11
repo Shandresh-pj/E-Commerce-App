@@ -35,7 +35,6 @@ local.properties
 !debug.keystore
 .kotlin/
 src/config/index.ts
-src/shared/context/ThemeContext.tsx
 
 # node.js
 #
