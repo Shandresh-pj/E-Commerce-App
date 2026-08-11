@@ -46,7 +46,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [localMapType, setLocalMapType] = useState<'roadmap' | 'satellite'>('roadmap');
 
-  // HTML content for Leaflet Map
+  // HTML for Leaflet Map
   const mapHtml = useMemo(() => `
     <!DOCTYPE html>
     <html>
@@ -64,7 +64,7 @@ export const MapView: React.FC<MapViewProps> = ({
           background-color: #f4f5f7;
         }
         
-        /* Pulse locator animation styles */
+        /* Pulse locator styles */
         .gps-marker-container {
           background: transparent;
           border: none;
@@ -131,20 +131,19 @@ export const MapView: React.FC<MapViewProps> = ({
             attributionControl: false
           }).setView([0, 0], 18);
 
-          // Standard roadmap layer (Direct mt1 server mapping)
+          // Roadmap layer
           roadmapLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 21
           });
 
-          // Satellite hybrid layer (Direct mt1 server mapping)
+          // Satellite layer
           satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 21
           });
 
-          // Default to roadmap
-          roadmapLayer.addTo(map);
+                    roadmapLayer.addTo(map);
 
-          // Map pan/move listeners for location selection
+          // Map move listeners
           map.on('movestart', function() {
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_MOVE_START' }));
           });
@@ -207,7 +206,7 @@ export const MapView: React.FC<MapViewProps> = ({
         function drawRoute(points, liveLat, liveLng) {
           if (!initialized) return;
 
-          // 1. Clear existing dynamic route elements
+          // Clear route elements
           if (routePath) {
             map.removeLayer(routePath);
             routePath = null;
@@ -232,20 +231,20 @@ export const MapView: React.FC<MapViewProps> = ({
           var latlngs = [];
           var hasLive = (liveLat !== undefined && liveLng !== undefined && liveLat !== 0 && liveLng !== 0);
 
-          // 2. Add API route points
+          // Add route points
           if (points && points.length > 0) {
             points.forEach(function(p) {
               latlngs.push([p.latitude, p.longitude]);
             });
           }
 
-          // 3. Update current context position to live position if present (for live pulsing dot)
+          // Update to live position
           if (hasLive) {
             currentLat = liveLat;
             currentLng = liveLng;
           }
 
-          // Draw the route line connecting all points
+          // Draw route line
           if (latlngs.length > 1) {
             routePath = L.polyline(latlngs, {
               color: '#1A73E8',
@@ -255,7 +254,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }).addTo(map);
           }
 
-          // 4. Start marker
+          // Start marker
           if (points && points.length > 0) {
             var startLatLng = [points[0].latitude, points[0].longitude];
             var startIcon = L.divIcon({
@@ -267,7 +266,7 @@ export const MapView: React.FC<MapViewProps> = ({
             startMarker = L.marker(startLatLng, { icon: startIcon }).bindPopup('<b>Start Location</b>').addTo(map);
           }
 
-          // 5. End marker of route
+          // End marker
           if (points && points.length > 1) {
             var endLatLng = [points[points.length - 1].latitude, points[points.length - 1].longitude];
             var endIcon = L.divIcon({
@@ -279,7 +278,7 @@ export const MapView: React.FC<MapViewProps> = ({
             endMarker = L.marker(endLatLng, { icon: endIcon }).bindPopup('<b>End Location</b>').addTo(map);
           }
 
-          // 6. Live Location Marker (Pulsing Blue Dot with High zIndexOffset)
+          // Live location marker
           if (hasLive) {
             var liveLatLng = [currentLat, currentLng];
             var liveIcon = L.divIcon({
@@ -294,7 +293,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }).bindPopup('<b>Current Live Location</b>').addTo(map);
           }
 
-          // 7. Intermediate points markers
+          // Intermediate markers
           if (points && points.length > 2) {
             for (var i = 1; i < points.length - 1; i++) {
               var p = points[i];
@@ -309,7 +308,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }
           }
 
-          // 8. Automatic fitting of all markers within the viewport (only if we have route points!)
+          // Fit viewport bounds
           if (points && points.length > 0) {
             var bounds = L.latLngBounds();
             if (startMarker) bounds.extend(startMarker.getLatLng());
@@ -329,14 +328,13 @@ export const MapView: React.FC<MapViewProps> = ({
           }
         }
 
-        // Initialize immediately
-        initMap();
+                initMap();
       </script>
     </body>
     </html>
   `, []);
 
-  // Inject user live location updates and route updates when props change
+  // Inject route and location updates
   useEffect(() => {
     if (isWebViewReady) {
       const liveLat = userLatitude !== undefined ? userLatitude : latitude;
@@ -351,7 +349,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   }, [routePoints, latitude, longitude, userLatitude, userLongitude, isWebViewReady]);
 
-  // Set map camera position when coordinates are updated programmatically
+  // Update camera position
   const lastWebviewCenter = useRef({ latitude: 0, longitude: 0 });
   useEffect(() => {
     const hasCoordsChanged = Math.abs(latitude - lastWebviewCenter.current.latitude) > 0.00001 ||

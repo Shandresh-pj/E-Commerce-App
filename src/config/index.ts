@@ -1,6 +1,6 @@
 const base = '/api';
 //const domain = __DEV__ ? '192.168.29.229:3000' : '192.168.29.229:3000';
-const domain = (__DEV__)? '10.0.2.2:3000': 'new-e-commerce-backend-xt4w.onrender.com';
+const domain = (__DEV__)? '192.168.29.229:3000': 'new-e-commerce-backend-xt4w.onrender.com';
 import { name as appName } from '../../app.json';
 const Defaults = {
   appName: appName,

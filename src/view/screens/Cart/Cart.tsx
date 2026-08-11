@@ -76,11 +76,11 @@ const FREE_THRESHOLD = 199
 const TIP_OPTIONS = [10, 20, 30]
 const COUPON = { code: 'JIFFY50', amount: 50, desc: '₹50 off your first order' }
 
-// Maps a raw API cart item to the shape CartCard expects
+// Map cart item to card shape
 const mapCartItem = (raw: any) => {
   const product = raw.product ?? raw.Product ?? raw
   return {
-    cartItemId: raw.id ?? raw.Id,          // cart row id — used for DELETE /cart/{id}
+    cartItemId: raw.id ?? raw.Id,          // Cart item ID for deletion
     id: product.id ?? product.Id ?? raw.product_id ?? raw.ProductId,
     name: product.name ?? raw.name ?? 'Product',
     image: product.image ?? raw.image ?? '',
@@ -163,7 +163,7 @@ export default function CartScreen() {
       if (raw && raw.length >= 0) {
         const mapped = raw.map(mapCartItem)
         setCartItems(mapped)
-        // Keep AsyncStorage in sync so other screens can read cart count
+        // Sync cart count to storage
         await setAsyncData('cart_items', mapped as any)
       }
     } catch (e) {
@@ -183,7 +183,7 @@ export default function CartScreen() {
       const updated = prev.filter(i => i.cartItemId !== cartItemId)
       await setAsyncData('cart_items', updated as any)
     } else {
-      setCartItems(prev)  // revert on failure
+      setCartItems(prev)  // Revert on failure
       Toast.show('Could not remove item. Please try again.', { duration: Toast.durations.SHORT })
     }
   }
@@ -238,7 +238,7 @@ export default function CartScreen() {
     >
       <StatusBar backgroundColor={colors.statusBarBg} barStyle={colors.statusBarStyle} />
       <SafeAreaView style={s.safe} edges={[]}>
-        {/* Pure White Premium Header */}
+        {/* Header */}
         <LinearGradient
           colors={['#FFFFFF', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
@@ -298,7 +298,7 @@ export default function CartScreen() {
               )}
               ListFooterComponent={
                 <>
-                  {/* Add more */}
+                  {/* Add more button */}
                   <TouchableOpacity
                     style={[s.addMoreBtn, { backgroundColor: colors.cartCard, borderColor: colors.cartBorder }]}
                     onPress={() => navigation.navigate('ProductList')}
@@ -307,7 +307,7 @@ export default function CartScreen() {
                     <Text style={[s.addMoreText, { color: colors.accent }]}>+ Add more items</Text>
                   </TouchableOpacity>
 
-                  {/* Coupon */}
+                  {/* Coupon section */}
                   <TouchableOpacity style={[s.couponCard, { backgroundColor: colors.cartCard, borderColor: colors.accent }]} onPress={toggleCoupon} activeOpacity={0.85}>
                     <View style={s.couponIconWrap}>
                       <CouponSvgIcon color={colors.accent} size={20} />
@@ -330,7 +330,7 @@ export default function CartScreen() {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Tip */}
+                  {/* Tip section */}
                   <View style={[s.tipCard, { backgroundColor: colors.cartCard }]}>
                     <View style={s.tipHeader}>
                       <HeartTipSvgIcon color="#FF6B6B" size={18} />

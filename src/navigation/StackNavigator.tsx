@@ -93,7 +93,6 @@ const MainStackNavigator = (props: any) => {
       }, 2000);
     }
   };
-  //}
   if (isLoading) {
     return (
       <>
@@ -107,7 +106,6 @@ const MainStackNavigator = (props: any) => {
   }
   return (
     <Stack.Navigator
-      //screenOptions={screenOptionStyle}
       initialRouteName={initialRouteName}
     >
       <>
@@ -416,7 +414,6 @@ const MainStackNavigator = (props: any) => {
 };
 
 const mapStateToProps = (state: any) => {
-  //console.log('state', state)
   const { isLoggedIn } = state.auth;
   const { user } = state?.auth;
   const { messages, otherData } = state;
@@ -443,7 +440,6 @@ export const UnAuthrizedStack = (props: any) => {
     <Stack.Navigator
       initialRouteName={'Splash'}
     >
-      {/* {!isLoggedIn ? */}
 
       <Stack.Screen
         name="Splash"

@@ -23,11 +23,11 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
   children,
   style,
 }) => {
-  // 1. Continuous 360-degree 144 FPS Rotating Energy Rays
+  // 1. Rotating rays
   const rotateRays1 = useRef(new Animated.Value(0)).current
   const rotateRays2 = useRef(new Animated.Value(0)).current
 
-  // 2. 6 Morphing Floating Aurora Light Spheres Trajectories
+  // 2. Floating aurora orbs
   const orb1X = useRef(new Animated.Value(0)).current
   const orb1Y = useRef(new Animated.Value(0)).current
   const orb1Scale = useRef(new Animated.Value(1)).current
@@ -49,7 +49,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
   const orb6X = useRef(new Animated.Value(0)).current
   const orb6Y = useRef(new Animated.Value(0)).current
 
-  // 3. Concentric Ripple Pulse Rings (3 Depth Wave Rings)
+  // 3. Ripple pulse rings
   const ring1Scale = useRef(new Animated.Value(0.7)).current
   const ring1Opacity = useRef(new Animated.Value(0.6)).current
 
@@ -59,11 +59,11 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
   const ring3Scale = useRef(new Animated.Value(0.3)).current
   const ring3Opacity = useRef(new Animated.Value(0.2)).current
 
-  // 4. Cosmic Light Streaks
+  // 4. Light streaks
   const streak1X = useRef(new Animated.Value(-W * 0.5)).current
   const streak1Opacity = useRef(new Animated.Value(0)).current
 
-  // 5. High-Density Particle Matrix (16 Sparkle Nodes)
+  // 5. Particle matrix
   const particlesUp = useRef(
     Array.from({ length: 16 }).map(() => ({
       y: new Animated.Value(0),
@@ -74,7 +74,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
   ).current
 
   useEffect(() => {
-    // 144 FPS Native Ray Rotation 1 (Clockwise)
+    // Ray rotation 1
     Animated.loop(
       Animated.timing(rotateRays1, {
         toValue: 1,
@@ -84,7 +84,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       }),
     ).start()
 
-    // 144 FPS Native Ray Rotation 2 (Counter-Clockwise)
+    // Ray rotation 2
     Animated.loop(
       Animated.timing(rotateRays2, {
         toValue: 1,
@@ -94,7 +94,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       }),
     ).start()
 
-    // Cosmic Streak Animation
+    // Light streaks
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -126,7 +126,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Orb 1 Lissajous Motion
+    // Orb 1 animation
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -172,7 +172,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Orb 2 Motion
+    // Orb 2 animation
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -216,7 +216,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Orb 3 & 4 Floating Motion
+    // Orbs 3 & 4 animation
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -270,7 +270,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Orb 5 Pulse
+    // Orb 5 animation
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -286,7 +286,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Orb 6 Oscillating Aura
+    // Orb 6 animation
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -300,7 +300,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Concentric Ripple Ring 1
+    // Ripple ring 1
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -332,7 +332,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Concentric Ripple Ring 2
+    // Ripple ring 2
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -364,7 +364,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Concentric Ripple Ring 3
+    // Ripple ring 3
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -396,7 +396,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
       ]),
     ).start()
 
-    // Upward Floating Particles (16 High-Density Nodes)
+    // Floating particles
     particlesUp.forEach((p, idx) => {
       const dur = 4400 + (idx % 6) * 1000
       const delay = idx * 300
@@ -496,7 +496,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {/* Base Dynamic Gradient Backdrop */}
+      {/* Gradient backdrop */}
       <LinearGradient
         colors={getGradientColors()}
         start={{ x: 0, y: 0 }}
@@ -505,7 +505,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         pointerEvents="none"
       />
 
-      {/* Rotating 360 Ambient Energy Rays 1 (144 FPS GPU Accelerated) */}
+      {/* Energy rays 1 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -527,7 +527,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         />
       </Animated.View>
 
-      {/* Rotating 360 Ambient Energy Rays 2 (144 FPS GPU Accelerated) */}
+      {/* Energy rays 2 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -549,7 +549,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         />
       </Animated.View>
 
-      {/* Cosmic Light Streak Layer */}
+      {/* Light streaks */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -573,7 +573,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         />
       </Animated.View>
 
-      {/* Concentric Ripple Ring 1 */}
+      {/* Ripple ring 1 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -588,7 +588,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Concentric Ripple Ring 2 */}
+      {/* Ripple ring 2 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -603,7 +603,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Concentric Ripple Ring 3 */}
+      {/* Ripple ring 3 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -618,7 +618,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Floating Animated Sphere 1 */}
+      {/* Sphere 1 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -637,7 +637,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Floating Animated Sphere 2 */}
+      {/* Sphere 2 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -656,7 +656,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Floating Animated Sphere 3 */}
+      {/* Sphere 3 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -670,7 +670,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Floating Animated Sphere 4 */}
+      {/* Sphere 4 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -684,7 +684,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Floating Animated Sphere 5 */}
+      {/* Sphere 5 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -703,7 +703,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Floating Animated Sphere 6 */}
+      {/* Sphere 6 */}
       <Animated.View
         pointerEvents="none"
         renderToHardwareTextureAndroid={true}
@@ -717,7 +717,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         ]}
       />
 
-      {/* Upward Particle Matrix (16 High-Density Sparkle Nodes) */}
+      {/* Particle matrix */}
       {particlesUp.map((p, idx) => (
         <Animated.View
           pointerEvents="none"
@@ -744,7 +744,7 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
         />
       ))}
 
-      {/* Foreground Content */}
+      {/* Foreground content */}
       <View style={styles.content}>{children}</View>
     </View>
   )

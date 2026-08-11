@@ -297,7 +297,7 @@ const EmailLoginStep = ({
         </Text>
       </View>
 
-      {/* Feature Micro-Pills */}
+      {/* Feature pills */}
       <View style={st.perksRow}>
         <View style={st.perkPill}>
           <Text style={st.perkIcon}>⚡</Text>
@@ -313,7 +313,7 @@ const EmailLoginStep = ({
         </View>
       </View>
 
-      {/* Input Box Row */}
+      {/* Input row */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => inputRef.current?.focus()}
@@ -352,7 +352,7 @@ const EmailLoginStep = ({
         )}
       </TouchableOpacity>
 
-      {/* 1-Tap Domain Suggestions */}
+      {/* Domain suggestions */}
       {email.length > 0 && !email.includes('@') && (
         <View style={st.chipRow}>
           {DOMAIN_SUGGESTIONS.map(domain => (
@@ -370,7 +370,7 @@ const EmailLoginStep = ({
 
       {error ? <Text style={st.errorText}>{error}</Text> : null}
 
-      {/* CTA Button */}
+      {/* CTA button */}
       <View style={{ marginTop: 14, width: '100%' }}>
         <SapphireCTA
           label="Get OTP Code →"
@@ -380,14 +380,14 @@ const EmailLoginStep = ({
         />
       </View>
 
-      {/* Social Divider */}
+      {/* Social divider */}
       <View style={st.dividerRow}>
         <View style={st.dividerLine} />
         <Text style={st.dividerText}>or continue with</Text>
         <View style={st.dividerLine} />
       </View>
 
-      {/* Active Working Google Login Button */}
+      {/* Google login button */}
       <TouchableOpacity
         style={st.googleBtn}
         activeOpacity={0.85}
@@ -523,7 +523,7 @@ const SignUpStep = ({
         </Text>
       </View>
 
-      {/* Name Input */}
+      {/* Name input */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => nameRef.current?.focus()}
@@ -554,7 +554,7 @@ const SignUpStep = ({
         />
       </TouchableOpacity>
 
-      {/* Email Input */}
+      {/* Email input */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => emailRef.current?.focus()}
@@ -587,7 +587,7 @@ const SignUpStep = ({
         />
       </TouchableOpacity>
 
-      {/* Mobile Input */}
+      {/* Mobile input */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => mobileRef.current?.focus()}
@@ -620,7 +620,7 @@ const SignUpStep = ({
         />
       </TouchableOpacity>
 
-      {/* Password Input */}
+      {/* Password input */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => passwordRef.current?.focus()}
@@ -663,7 +663,7 @@ const SignUpStep = ({
         </TouchableOpacity>
       </TouchableOpacity>
 
-      {/* Password Strength Indicator */}
+      {/* Password strength */}
       {password.length > 0 && (
         <View style={st.strengthWrap}>
           <View style={st.strengthTrack}>
@@ -1066,7 +1066,7 @@ function Login(props: any) {
     try {
       if (dispatch) await dispatch(sendOtpAction(val))
     } catch (e) {
-      // Graceful fallback proceed to OTP
+      // Fallback to OTP
     }
     setEmail(val)
     setStep('otp')
@@ -1076,7 +1076,7 @@ function Login(props: any) {
     try {
       if (dispatch) await dispatch(sendOtpAction('googleuser@gmail.com'))
     } catch (e) {
-      // Graceful fallback proceed
+      // Fallback proceed
     }
     setEmail('googleuser@gmail.com')
     setStep('success')
@@ -1091,7 +1091,7 @@ function Login(props: any) {
     try {
       if (dispatch) await dispatch(registerAction(data))
     } catch (e) {
-      // Graceful fallback proceed
+      // Fallback proceed
     }
     setStep('success')
   }
@@ -1127,7 +1127,7 @@ function Login(props: any) {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={st.mainScrollContent}
           >
-            {/* Upper Hero Header */}
+            {/* Hero header */}
             <View style={st.heroHeader}>
               <Animated.View
                 style={[
@@ -1150,11 +1150,11 @@ function Login(props: any) {
               </View>
             </View>
 
-            {/* SLEEK FLOATING SAPPHIRE BLUE GLASS CARD */}
+            {/* Glass card */}
             <View style={st.sapphireBlueSheetCard}>
               {step === 'form' && (
                 <View style={st.tabBarRow}>
-                  {/* 144 FPS Animated Sliding Pill Indicator */}
+                  {/* Sliding tab indicator */}
                   <Animated.View
                     style={[
                       st.tabIndicatorPill,

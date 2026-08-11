@@ -329,22 +329,22 @@ const AddressScreen = () => {
   const [coords, setCoords] = useState({ latitude: 0, longitude: 0 })
   const [mapCenter, setMapCenter] = useState({ latitude: 0, longitude: 0 })
 
-  // Geolocation/GPS States
+  // GPS states
   const [isLocatingUser, setIsLocatingUser] = useState(false)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [gpsError, setGpsError] = useState(false)
 
-  // Map dragging & micro-animation states
+  // Map animation states
   const [isMapMoving, setIsMapMoving] = useState(false)
   const pinTranslateY = useRef(new Animated.Value(-18)).current
 
-  // Reverse Geocoding States
+  // Reverse geocoding states
   const [isGeocoding, setIsGeocoding] = useState(false)
   const [geocodedAddress, setGeocodedAddress] = useState<string>('')
   const [geocodedDetails, setGeocodedDetails] = useState<any>(null)
   const geocodeTimeoutRef = useRef<any>(null)
 
-  // Search Autocomplete States
+  // Search states
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -414,7 +414,7 @@ const AddressScreen = () => {
         watchIdRef.current = null
       }
 
-      // Timeout protection for slow/disabled GPS
+      // GPS timeout protection
       const gpsTimeout = setTimeout(() => {
         setIsLocatingUser(prev => {
           if (prev) {
@@ -464,7 +464,7 @@ const AddressScreen = () => {
         { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 }
       )
 
-      // Watch position
+      // Watch GPS position
       const watchId = Geolocation.watchPosition(
         position => {
           const { latitude, longitude } = position.coords
@@ -490,7 +490,7 @@ const AddressScreen = () => {
     }
   }, [loadCachedLocation])
 
-  // Initialize location on mount
+  // Initialize location
   useEffect(() => {
     const init = async () => {
       const initial = await loadCachedLocation()
@@ -514,7 +514,7 @@ const AddressScreen = () => {
     }
   }, [loadCachedLocation, fetchCurrentLocation])
 
-  // Central Pin Bounce Animations
+  // Pin bounce animations
   const handleRegionChangeStart = useCallback(() => {
     if (modalVisibleRef.current) return
     setIsMapMoving(true)
@@ -539,7 +539,7 @@ const AddressScreen = () => {
     debouncedReverseGeocode(lat, lng)
   }, [pinTranslateY])
 
-  // Reverse Geocoding
+  // Reverse geocoding
   const reverseGeocode = async (lat: number, lng: number) => {
     if (lat === 0 && lng === 0) return
     setIsGeocoding(true)
@@ -591,7 +591,7 @@ const AddressScreen = () => {
     }, 800)
   }
 
-  // Search Input handler
+  // Search input handler
   const handleSearchInputChange = (text: string) => {
     setSearchQuery(text)
     if (searchTimeoutRef.current) {
@@ -633,7 +633,7 @@ const AddressScreen = () => {
     reverseGeocode(lat, lon)
   }
 
-  // Confirm current pinpointed map location
+  // Confirm map location
   const handleConfirmMapLocation = () => {
     setEditingId(null)
     setForm({
@@ -832,9 +832,9 @@ const AddressScreen = () => {
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="#071224" translucent={false} />
 
-      {/* SAPPHIRE MAP BACKGROUND */}
+      {/* Map background */}
       <View style={s.mapBg}>
-        {/* Real Interactive Leaflet Map */}
+        {/* Leaflet Map */}
         <View style={StyleSheet.absoluteFill}>
           <MapView
             latitude={mapCenter.latitude}
@@ -898,7 +898,7 @@ const AddressScreen = () => {
           </TouchableOpacity>
         </SafeAreaView>
 
-        {/* Center Marker Overlay */}
+        {/* Center marker overlay */}
         <Animated.View
           style={[
             s.pinContainer,
@@ -913,12 +913,12 @@ const AddressScreen = () => {
         </Animated.View>
       </View>
 
-      {/* FLOATING SAPPHIRE SHEET */}
+      {/* Floating sheet */}
       <View style={s.bottomSheet}>
         <View style={s.sheetHandle} />
 
         <ScrollView contentContainerStyle={s.sheetScroll} showsVerticalScrollIndicator={false}>
-          {/* Current Pin Location Card (Blinkit UX) */}
+          {/* Location card */}
           <View style={s.currentPinCard}>
             <View style={s.currentPinLeft}>
               <View style={s.locIconBox}>
@@ -956,7 +956,7 @@ const AddressScreen = () => {
             )}
           </View>
 
-          {/* Selected Address Display */}
+          {/* Selected address */}
           {selectedAddress ? (
             <View style={s.selectedCard}>
               <View style={s.selectedLeft}>
@@ -978,7 +978,7 @@ const AddressScreen = () => {
             </View>
           ) : null}
 
-          {/* Confirm Button */}
+          {/* Confirm button */}
           <TouchableOpacity
             style={s.confirmBtn}
             onPress={handleConfirm}
@@ -987,7 +987,7 @@ const AddressScreen = () => {
             <Text style={s.confirmBtnText}>Confirm & continue →</Text>
           </TouchableOpacity>
 
-          {/* Saved Addresses List */}
+          {/* Saved addresses */}
           {addresses.length > 0 && (
             <>
               <Text style={s.sectionTitle}>SAVED ADDRESSES</Text>
@@ -1003,7 +1003,7 @@ const AddressScreen = () => {
             </>
           )}
 
-          {/* Add New Address Button */}
+          {/* Add address button */}
           <TouchableOpacity
             style={s.addNewBtn}
             onPress={() => openModal()}
@@ -1017,7 +1017,7 @@ const AddressScreen = () => {
         </ScrollView>
       </View>
 
-      {/* ULTRA-MODERN ADD / EDIT ADDRESS MODAL SHEET */}
+      {/* Add/Edit address modal */}
       <Modal
         transparent
         visible={modalVisible}
@@ -1047,7 +1047,7 @@ const AddressScreen = () => {
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingBottom: 24 }}
               >
-                {/* Address Type Selector */}
+                {/* Address type selector */}
                 <View style={f.fieldWrap}>
                   <Text style={f.fieldLabel}>ADDRESS TYPE</Text>
                   <View style={s.typeRow}>
@@ -1076,7 +1076,7 @@ const AddressScreen = () => {
                   </View>
                 </View>
 
-                {/* Receiver Type Selector */}
+                {/* Receiver type selector */}
                 <View style={f.fieldWrap}>
                   <Text style={f.fieldLabel}>RECEIVER</Text>
                   <View style={s.typeRow}>
@@ -1158,7 +1158,7 @@ const AddressScreen = () => {
                   </View>
                 </View>
 
-                {/* Default Toggle Checkbox */}
+                {/* Default checkbox */}
                 <TouchableOpacity
                   style={s.defaultToggle}
                   onPress={() => handleInputChange('isDefault', !form.isDefault)}
@@ -1170,7 +1170,7 @@ const AddressScreen = () => {
                   <Text style={s.defaultToggleText}>Set as default delivery address</Text>
                 </TouchableOpacity>
 
-                {/* Save CTA Button */}
+                {/* Save button */}
                 <TouchableOpacity
                   style={[s.saveBtn, saving && s.saveBtnDisabled]}
                   onPress={handleSave}
@@ -1191,7 +1191,7 @@ const AddressScreen = () => {
         </View>
       </Modal>
 
-      {/* LOCATION SEARCH AUTOCOMPLETE MODAL */}
+      {/* Search autocomplete modal */}
       <Modal
         visible={searchModalVisible}
         animationType="slide"

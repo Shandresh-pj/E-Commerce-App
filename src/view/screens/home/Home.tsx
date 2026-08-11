@@ -182,7 +182,7 @@ function Home({ navigation }: any) {
   const [cartItems, setCartItems] = useState<any[]>([])
   const [activeBanner, setActiveBanner] = useState(0)
 
-  // Modal Product Detail States
+  // Product detail modal states
   const [detailVisible, setDetailVisible] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailProduct, setDetailProduct] = useState<ApiProductDetail | null>(null)
@@ -208,7 +208,7 @@ function Home({ navigation }: any) {
     return () => clearInterval(hintTimer)
   }, [SEARCH_HINTS])
 
-  // Pulse animation for express delivery badge
+  // Delivery badge animation
   const pulseScale = useSharedValue(1)
 
   useEffect(() => {
@@ -234,7 +234,7 @@ function Home({ navigation }: any) {
     }, [])
   )
 
-  // Auto Carousel Banner
+  // Carousel banner
   useEffect(() => {
     const id = setInterval(() => {
       setActiveBanner((prev) => {
@@ -277,13 +277,13 @@ function Home({ navigation }: any) {
         setAddress(`${defaultAddr.label || 'Home'} — ${rest}`)
       }
 
-      // Strictly API-only Categories (filter out inactive)
+      // Fetch categories
       const fetchedCats = Array.isArray(cats)
         ? cats.filter((c: any) => c.status !== false && c.status !== 'inactive')
         : []
       setCategories(fetchedCats)
 
-      // Strictly API-only Products
+      // Fetch products
       const productItems = Array.isArray(prods)
         ? prods
         : (prods as any)?.items || []
@@ -422,7 +422,7 @@ function Home({ navigation }: any) {
         translucent={false}
       />
 
-      {/* Product Detail Modal */}
+      {/* Product detail modal */}
       <ApiProductDetailModal
         visible={detailVisible}
         onClose={() => setDetailVisible(false)}
@@ -440,7 +440,7 @@ function Home({ navigation }: any) {
         onViewCart={() => navigation.navigate('Cart')}
       />
 
-      {/* Signature Yellow Brand Header */}
+      {/* Header */}
       <LinearGradient
         colors={['#ffff00', '#ffff00']}
         start={{ x: 0, y: 0 }}
@@ -482,7 +482,7 @@ function Home({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Dynamic Search Bar */}
+        {/* Search bar */}
         <TouchableOpacity
           style={[h.searchBar, { backgroundColor: '#FFFFFF', borderColor: 'rgba(11, 27, 54, 0.18)' }]}
           activeOpacity={0.9}
@@ -508,7 +508,7 @@ function Home({ navigation }: any) {
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* Main Content */}
+      {/* Main content */}
       {loading && !refreshing ? (
         <View style={h.center}>
           <ActivityIndicator size="large" color="#0C831F" />
@@ -526,7 +526,7 @@ function Home({ navigation }: any) {
             />
           }
         >
-          {/* High Refresh Banner Carousel */}
+          {/* Banner carousel */}
           <View style={h.bannerWrapper}>
             <ScrollView
               ref={bannerRef}
@@ -574,7 +574,7 @@ function Home({ navigation }: any) {
               </LinearGradient>
             </ScrollView>
 
-            {/* Banner Dots */}
+            {/* Banner dots */}
             <View style={h.dotsRow}>
               {[0, 1].map((i) => (
                 <View
@@ -585,7 +585,7 @@ function Home({ navigation }: any) {
             </View>
           </View>
 
-          {/* Categories Grid */}
+          {/* Categories grid */}
           {categories.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
@@ -608,7 +608,7 @@ function Home({ navigation }: any) {
             </View>
           )}
 
-          {/* Trending Deals Section */}
+          {/* Trending deals */}
           {deals.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
@@ -643,7 +643,7 @@ function Home({ navigation }: any) {
             </View>
           )}
 
-          {/* Best Sellers Section */}
+          {/* Best sellers */}
           {bestsellers.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
@@ -678,7 +678,7 @@ function Home({ navigation }: any) {
             </View>
           )}
 
-          {/* Remaining All Products Section */}
+          {/* All products */}
           {remainingProds.length > 0 && (
             <View style={h.section}>
               <View style={h.sectionHeader}>
@@ -713,7 +713,7 @@ function Home({ navigation }: any) {
             </View>
           )}
 
-          {/* Empty State if API returns no items */}
+          {/* Empty state */}
           {products.length === 0 && categories.length === 0 && (
             <View style={h.emptyState}>
               <Text style={h.emptyEmoji}>📦</Text>
@@ -731,7 +731,7 @@ function Home({ navigation }: any) {
         </ScrollView>
       )}
 
-      {/* Floating Cart Footer */}
+      {/* Cart footer */}
       {cartCount > 0 && (
         <Animated.View
           entering={ZoomIn.springify()}

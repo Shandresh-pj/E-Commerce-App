@@ -1,10 +1,5 @@
 /**
- * ThemeContext.tsx
- * ─────────────────────────────────────────────────────────────
- * Provides system-aware dark / light mode with manual override.
- * • Auto-follows device color scheme via useColorScheme()
- * • User can manually toggle; choice is persisted in AsyncStorage
- * • Exposes: isDark, colors, toggleTheme, setTheme
+ * Theme Context for dark / light mode management.
  */
 import React, {
   createContext,
@@ -37,13 +32,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   const systemScheme = useColorScheme()
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system')
 
-  // Derive isDark: if mode is 'system', follow OS; else respect override
+  // Determine if dark mode is active
   const isDark =
     themeMode === 'dark' || (themeMode === 'system' && systemScheme === 'dark')
 
   const colors = getThemeColors(isDark)
 
-  // Load persisted preference on mount
+  // Load saved theme preference
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then(stored => {
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
@@ -69,16 +64,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 }
 
 /**
- * useTheme() — use this in any screen/component to get the current theme.
- *
- * @example
- * const { isDark, colors } = useTheme()
- * <View style={{ backgroundColor: colors.background }} />
+ * Hook to access current theme colors and settings.
  */
 export const useTheme = (): ThemeContextType => {
   const ctx = useContext(ThemeContext)
   if (!ctx) {
-    // Fallback so screens don't crash if used outside provider
+    // Fallback theme context
     const systemScheme = Appearance.getColorScheme()
     const isDark = systemScheme === 'dark'
     return {

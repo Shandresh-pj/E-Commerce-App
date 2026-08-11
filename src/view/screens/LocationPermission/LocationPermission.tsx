@@ -113,14 +113,14 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
   const sheetSlide = useRef(new Animated.Value(350)).current
   const sheetFade = useRef(new Animated.Value(0)).current
 
-  // Map Animation Values
+  // Map animation values
   const pulseAnim1 = useRef(new Animated.Value(0.4)).current
   const pulseAnim2 = useRef(new Animated.Value(0.4)).current
   const radarRotate = useRef(new Animated.Value(0)).current
   const pinBounce = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    // Sheet Entry Animation
+    // Sheet animation
     Animated.parallel([
       Animated.spring(sheetSlide, {
         toValue: 0,
@@ -135,7 +135,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
       }),
     ]).start()
 
-    // Continuous Ripple Pulse Rings Animation
+    // Pulse rings animation
     Animated.loop(
       Animated.parallel([
         Animated.sequence([
@@ -168,7 +168,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
       ]),
     ).start()
 
-    // Radar Beam Rotation
+    // Radar beam rotation
     Animated.loop(
       Animated.timing(radarRotate, {
         toValue: 1,
@@ -178,7 +178,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
       }),
     ).start()
 
-    // Pin Gentle Hover Bounce
+    // Pin bounce
     Animated.loop(
       Animated.sequence([
         Animated.timing(pinBounce, {
@@ -316,9 +316,9 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="#071224" translucent={false} />
 
-      {/* ULTRA-MODERN SAPPHIRE MAP BACKGROUND */}
+      {/* Map background */}
       <View style={s.mapBg}>
-        {/* Floating Top Search Bar Header */}
+        {/* Search bar header */}
         <SafeAreaView edges={['top']} style={s.searchOverlay}>
           <TouchableOpacity
             style={s.backBtn}
@@ -339,25 +339,25 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
           </TouchableOpacity>
         </SafeAreaView>
 
-        {/* Vector Map Elements & Grid */}
+        {/* Vector map elements */}
         <View style={s.gridContainer}>
-          {/* Faux Dark Roads & Avenues */}
+          {/* Map roads */}
           <View style={s.roadH1} />
           <View style={s.roadH2} />
           <View style={s.roadV1} />
           <View style={s.roadV2} />
           <View style={s.roadDiagonal} />
 
-          {/* Building Blocks */}
+          {/* Buildings */}
           <View style={s.building1} />
           <View style={s.building2} />
           <View style={s.building3} />
           <View style={s.parkArea} />
           <View style={s.riverArea} />
 
-          {/* Animated Radar Pulse Rings & Location Marker */}
+          {/* Radar marker */}
           <View style={s.pinCenterAnchor}>
-            {/* Outer Pulse Wave 1 */}
+            {/* Pulse wave 1 */}
             <Animated.View
               style={[
                 s.pulseRing,
@@ -370,7 +370,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
                 },
               ]}
             />
-            {/* Outer Pulse Wave 2 */}
+            {/* Pulse wave 2 */}
             <Animated.View
               style={[
                 s.pulseRing,
@@ -384,7 +384,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
               ]}
             />
 
-            {/* Radar Beam Sector */}
+            {/* Radar beam */}
             <Animated.View
               style={[
                 s.radarBeam,
@@ -392,31 +392,31 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
               ]}
             />
 
-            {/* Bouncing Pin Marker */}
+            {/* Bouncing pin */}
             <Animated.View
               style={[
                 s.bouncingPinWrap,
                 { transform: [{ translateY: pinBounce }] },
               ]}
             >
-              {/* Floating ETA Tag */}
+              {/* ETA tag */}
               <View style={s.etaBadge}>
                 <Text style={s.etaBadgeText}>⚡ 10-Min Delivery Zone</Text>
               </View>
 
-              {/* Pin Icon Frame */}
+              {/* Pin frame */}
               <View style={s.pinGlowFrame}>
                 <MapPinSvgIcon color="#0B1B36" size={28} />
               </View>
 
-              {/* Shadow Base Dot */}
+              {/* Shadow base dot */}
               <View style={s.pinShadowDot} />
             </Animated.View>
           </View>
         </View>
       </View>
 
-      {/* SLEEK FLOATING SAPPHIRE BLUE SHEET */}
+      {/* Floating sheet */}
       <Animated.View
         style={[
           s.bottomSheet,
@@ -429,7 +429,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
         <View style={s.sheetHandle} />
 
         <View style={s.sheetContent}>
-          {/* Header Row */}
+          {/* Header row */}
           <View style={s.locationHeader}>
             <View style={s.pinIconBox}>
               <MapPinSvgIcon color="#0B1B36" size={30} />
@@ -442,7 +442,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
             </View>
           </View>
 
-          {/* Micro Perks Badges */}
+          {/* Perks badges */}
           <View style={s.perksRow}>
             <View style={s.perkPill}>
               <Text style={s.perkIcon}>⚡</Text>
@@ -458,7 +458,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
             </View>
           </View>
 
-          {/* Primary CTA: Use Current Location */}
+          {/* Use current location button */}
           <TouchableOpacity
             style={s.primaryBtn}
             onPress={handleRequestPermission}
@@ -475,7 +475,7 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
             )}
           </TouchableOpacity>
 
-          {/* Secondary CTA: Enter Location Manually */}
+          {/* Enter location manually button */}
           <TouchableOpacity
             style={s.secondaryBtn}
             onPress={handleEnterManually}

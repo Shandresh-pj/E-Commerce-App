@@ -184,7 +184,7 @@ const ProductCard = React.memo(({
           </View>
         </TouchableOpacity>
         
-        {/* Wishlist Heart Button Overlay */}
+        {/* Wishlist overlay */}
         <TouchableOpacity
           style={[card.heartBtn, { backgroundColor: isDark ? 'rgba(7, 18, 36, 0.85)' : 'rgba(255, 255, 255, 0.9)' }]}
           onPress={() => onToggleWishlist(item.id)}
@@ -271,10 +271,10 @@ const CategoryScreen = () => {
       const cats = await fetchCategories()
       const filtered = cats.filter((c: any) => c.status !== false)
       setAllCategories(filtered)
-      // Auto-select the first category as the active rail item
+      // Select first category
       setActiveCategory((prev: any) => prev ?? filtered[0] ?? null)
     } catch {
-      // ignore — empty state handles it
+      // Ignore empty state
     }
   }
 
@@ -334,7 +334,7 @@ const CategoryScreen = () => {
   const toggleWish = useCallback(async (id: number) => {
     const isWished = wishlistProductIds.has(id)
     
-    // Optimistic UI update
+    // Optimistic update
     setWishlistProductIds(prev => {
       const next = new Set(prev)
       if (isWished) {
@@ -350,7 +350,7 @@ const CategoryScreen = () => {
       Toast.show(isWished ? 'Removed from wishlist' : 'Added to wishlist ♥', { duration: Toast.durations.SHORT })
       loadWishlist()
     } else {
-      // Revert optimistic update
+      // Revert update
       setWishlistProductIds(prev => {
         const next = new Set(prev)
         if (isWished) {
@@ -503,7 +503,7 @@ const CategoryScreen = () => {
           onViewCart={() => navigation.navigate('Cart')}
         />
 
-        {/* Pure White Premium Header */}
+        {/* Header */}
         <LinearGradient
           colors={['#FFFFFF', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
@@ -529,7 +529,7 @@ const CategoryScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Glass Filter Chips */}
+          {/* Filter chips */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -560,9 +560,9 @@ const CategoryScreen = () => {
           </ScrollView>
         </LinearGradient>
 
-        {/* Content: Sidebar + Products */}
+        {/* Sidebar and Products */}
         <View style={s.contentRow}>
-          {/* Left Category Sidebar */}
+          {/* Category sidebar */}
           <ScrollView
             style={[s.sidebar, { backgroundColor: colors.sidebar, borderRightColor: colors.sidebarBorder }]}
             showsVerticalScrollIndicator={false}
@@ -597,7 +597,7 @@ const CategoryScreen = () => {
             })}
           </ScrollView>
 
-          {/* Right Product Grid */}
+          {/* Product grid */}
           <View style={s.productArea}>
             {loadingProducts ? (
               <View style={s.center}>
@@ -629,7 +629,7 @@ const CategoryScreen = () => {
           </View>
         </View>
 
-        {/* Floating Cart Bar */}
+        {/* Cart bar */}
         {cartCount > 0 && (
           <TouchableOpacity
             style={[s.cartBar, { backgroundColor: isDark ? '#FBBF24' : '#0B1B36' }]}
@@ -650,7 +650,7 @@ const CategoryScreen = () => {
           </TouchableOpacity>
         )}
 
-        {/* Floating Wishlist Bar */}
+        {/* Wishlist bar */}
         {wishlistProductIds.size > 0 && (
           <TouchableOpacity
             style={[s.wishlistBar, { bottom: cartCount > 0 ? 142 : 78 }]}

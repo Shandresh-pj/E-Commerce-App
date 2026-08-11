@@ -34,7 +34,7 @@ local.properties
 *.keystore
 !debug.keystore
 .kotlin/
-
+/src/config/index.ts
 # node.js
 #
 node_modules/

@@ -20,7 +20,7 @@ import { getData } from '../../../shared/services/main-service';
 import Svg, { Path } from 'react-native-svg';
 import Geolocation from '@react-native-community/geolocation';
 
-// Custom SVG Reload Icon Component to replace react-native-vector-icons dependency
+// Reload icon
 const ReloadIcon = ({ color = '#000000', size = 14, style }: { color?: string; size?: number; style?: any }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={style}>
         <Path
@@ -49,7 +49,7 @@ const MapScreen = () => {
     const [isLoadingRoute, setIsLoadingRoute] = useState(false);
     const hasFetchedTodayData = useRef(false);
 
-    // "Fetch Last N Records" state
+    // Records state
     const [recordCount, setRecordCount] = useState<string>('10');
     const [isFetchingN, setIsFetchingN] = useState(false);
     const [fetchNError, setFetchNError] = useState<string | null>(null);
@@ -89,7 +89,7 @@ const MapScreen = () => {
               .filter((p: RoutePoint) => {
                   if (!p.recordedAt) return false;
                   
-                  // Filter by today's date
+                  // Filter by today
                   const getLocalDateString = () => {
                       const d = new Date();
                       const year = d.getFullYear();
@@ -110,7 +110,7 @@ const MapScreen = () => {
     }, [stats.latitude, stats.longitude]);
 
     const fetchLastNRecords = async () => {
-        // ── Validation ──────────────────────────────────────────
+        // Validation
         const trimmed = recordCount.trim();
         const parsed = parseInt(trimmed, 10);
 
@@ -128,7 +128,7 @@ const MapScreen = () => {
         }
         setFetchNError(null);
 
-        // ── API Call ─────────────────────────────────────────────
+        // API call
         try {
             setIsFetchingN(true);
 
@@ -138,14 +138,11 @@ const MapScreen = () => {
             const res: any = await getData(url);
             console.log('res', res);
 
-            // Walk the common nesting patterns the backend uses
+            // Parse response data
             let data: any =
-                res?.data?.data?.data ??   // { data: { data: { data: [...] } } }
-                res?.data?.data ??          // { data: { data: [...] } }
-                res?.data ??                // { data: [...] }
-                [];
+                res?.data?.data?.data ??                   res?.data?.data ??                          res?.data ??                                [];
 
-            // If the response envelope has a non-200 status, surface it
+            // Handle response error
             const httpStatus = res?.status ?? res?.data?.StatusCode ?? res?.data?.statusCode;
             if (httpStatus && httpStatus >= 400) {
                 const msg = res?.data?.Message ?? res?.data?.message ?? `Server error (${httpStatus})`;
@@ -181,7 +178,7 @@ const MapScreen = () => {
                 })
                 .filter((p: any) => p.latitude !== 0 && p.longitude !== 0);
 
-            // Sort by Id DESC
+            // Sort by ID descending
             const sorted = [...allPoints].sort((a: any, b: any) => {
                 if (a.id !== null && b.id !== null) {
                     return b.id - a.id;
@@ -233,7 +230,7 @@ const MapScreen = () => {
         }
     };
 
-    // Fetch initial device GPS coordinates on mount
+    // Fetch GPS coordinates
     useEffect(() => {
         const fetchInitialLocation = async () => {
             try {
@@ -251,7 +248,7 @@ const MapScreen = () => {
                     },
                     error => {
                         console.warn('getCurrentPosition error:', error);
-                        // Fallback center coordinates for simulation mode
+                        // Fallback coordinates
                         setStats({
                             latitude: 12.9716,
                             longitude: 77.5946,
@@ -276,7 +273,7 @@ const MapScreen = () => {
         };
     }, []);
 
-    // Auto-fetch route points once device coordinates are obtained
+    // Fetch route points
     useEffect(() => {
         if (!hasFetchedTodayData.current && stats.latitude !== 0 && stats.longitude !== 0) {
             hasFetchedTodayData.current = true;
@@ -304,7 +301,7 @@ const MapScreen = () => {
         return () => clearTrackingInterval();
     }, [isTracking, fetchRoutePoints, clearTrackingInterval]);
 
-    // Pause the polling interval when the screen loses focus
+    // Pause polling on blur
     useFocusEffect(
         useCallback(() => {
             return () => {
@@ -471,7 +468,7 @@ const MapScreen = () => {
                     routePoints={routePoints}
                 />
 
-                {/* Floating Status Pill */}
+                {/* Status pill */}
                 <View style={styles.statusPill}>
                     <View style={[styles.statusDot, { backgroundColor: isTracking ? THEME.COLOR.success : THEME.COLOR.danger }]} />
                     <Text style={styles.statusText}>
@@ -479,7 +476,7 @@ const MapScreen = () => {
                     </Text>
                 </View>
 
-                {/* Floating Refresh Route Pill */}
+                {/* Refresh route pill */}
                 <TouchableOpacity 
                     style={styles.refreshPill} 
                     onPress={() => fetchRoutePoints()}
@@ -496,7 +493,7 @@ const MapScreen = () => {
                     </Text>
                 </TouchableOpacity>
 
-                {/* Floating Stats Card Overlay */}
+                {/* Stats card overlay */}
                 <View style={styles.overlayCard}>
                     <Text style={styles.cardTitle}>GPS Coordinates</Text>
 
@@ -548,7 +545,7 @@ const MapScreen = () => {
                         </View>
                     )}
 
-                    {/* ── Fetch Last N Records Panel ── */}
+                    {/* Records panel */}
                     <View style={styles.fetchNPanel}>
                         <Text style={styles.fetchNTitle}>Fetch Last N Records</Text>
                         <View style={styles.fetchNRow}>
@@ -595,7 +592,7 @@ const MapScreen = () => {
                         ) : null}
                     </View>
 
-                    {/* Action Button */}
+                    {/* Action button */}
                     <TouchableOpacity
                         style={[
                             styles.controlButton,
@@ -750,8 +747,7 @@ const styles = StyleSheet.create({
         fontFamily: THEME.FONTWEIGHT.Bold,
     },
 
-    // ── Fetch Last N Records ──────────────────────────────────────
-    fetchNPanel: {
+        fetchNPanel: {
         marginTop: 16,
         paddingTop: 14,
         borderTopWidth: 1,

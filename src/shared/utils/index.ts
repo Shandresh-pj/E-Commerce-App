@@ -1,16 +1,11 @@
 
 import { format } from 'date-fns';
-//import RNHTMLtoPDF from 'react-native-html-to-pdf';
-//import { writeFile, readFile } from 'react-native-fs';
-//import XLSX from 'xlsx';
 import Defaults from '../../config'
 
 import { getData } from '../services/main-service';
 import { ConcatenationScope } from 'webpack';
 import { getAsyncData } from './storage';
 export const priceFormat = (amount: any, decimalCount: number = 2, decimal: any = ".", thousands: any = "'") => {
-  //price = parseFloat(price);
-  //return price.toFixed(2);
   try {
     decimalCount = Math.abs(decimalCount);
     decimalCount = isNaN(decimalCount) ? 2 : decimalCount;
@@ -54,30 +49,21 @@ export const getFormatedDate = (dateString: any) => {
 }
 export const getFormatedDateTime = (dateString: any) => {
   var d1 = new Date(dateString);
-  // Check if d1 is a valid date
   if (!isNaN(d1.getTime())) {
-    // Get date
     const formattedDate = d1.getDate() + "." + (d1.getMonth() + 1) + "." + d1.getFullYear();
-    // Get time
     const formattedTime = d1.getHours() + ":" + (d1.getMinutes() < 10 ? '0' : '') + d1.getMinutes();
-    // Combine date and time
     return formattedDate + ' ' + formattedTime;
   }
   return '';
 }
 export const getFormattedtimestamp = (dateString: any) => {
   var d1 = new Date(dateString);
-  // Check if d1 is a valid date
   if (!isNaN(d1.getTime())) {
-    return d1.getTime(); // Returns the timestamp in milliseconds
+    return d1.getTime();
   }
-  return 0; // or any appropriate value to indicate invalid input
+  return 0;
 }
 export const getFormatedTime = (dateString: any) => {
-  // var d1 = new Date(dateString.split('T').join(" "));
-  // if (d1.getDay() > -1) {
-  //   return ('0'+d1.getHours()).slice(-2) + ":" + ('0'+d1.getMinutes()).slice(-2);
-  // }
   var d1 = dateString.split('T')[1];
   d1 = d1.split(":");
   if (d1.length > 1) {
@@ -88,8 +74,8 @@ export const getFormatedTime = (dateString: any) => {
 export const getCurrentDate = () => {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Adding leading zero if needed
-  const day = String(currentDate.getDate()).padStart(2, '0'); // Adding leading zero if needed
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const day = String(currentDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -108,9 +94,7 @@ export const startTimer = (e: any) => {
     = getTimeRemaining(e);
   if (total >= 0) {
 
-    // update the timer
-    // check if less than 10 then we need to 
-    // add '0' at the beginning of the variable
+    // Format timer
     return (
       (hours > 9 ? hours : '0' + hours) + ':' +
       (minutes > 9 ? minutes : '0' + minutes) + ':'
@@ -123,7 +107,7 @@ export const getTimeRemaining = (e: any) => {
   const total = Date.parse(new Date().toString()) - Date.parse(e);
   const seconds = Math.floor((total / 1000) % 60);
   const minutes = Math.floor((total / 1000 / 60) % 60);
-  const hours = Math.floor((total / 1000 / 60 / 60));  //total hours return if you need hours olny use  (total hours % 24)
+  const hours = Math.floor((total / 1000 / 60 / 60)); // Total hours
   return {
     total, hours, minutes, seconds
   };
@@ -131,81 +115,6 @@ export const getTimeRemaining = (e: any) => {
 
 export const getKeyValue = <T extends object, U extends keyof T>(obj: T) => (key: U) =>
   obj[key];
-
-// export const excelReadData = async (dataT: any) => {
-
-//     var xlData = [];
-//     if (dataT.length > 0) {
-//         for (let i = 0; i < dataT.length; i++) {
-//             xlData.push({ "Buchung": format(new Date(dataT[i].date), 'dd.MM.yyyy'), "Beschreibung": dataT[i].bookingText ? dataT[i].bookingText : '', "Belastung": priceFormat(dataT[i].amount), "Gutschrift": priceFormat(dataT[i].amount), "Saldo": priceFormat(dataT[i].amount) });
-//         }
-//     }
-//     console.log(">><<<<<<<<<<<<", xlData)
-//     let result = await excelGenarate(xlData); //excel export
-//     console.log("result", result);
-//     return result;
-
-// }
-// export const pdfhtmlData = async (dataT: any) => {
-//     var pdfHtmlData: string = '';
-//     if (dataT.length > 0) {
-//         pdfHtmlData += '<table style="width:100%;"><thead><tr><th style="background:#3771c8;color:#fff;fontSize:6px;padding:6px;width:20%;border-collapse: collapse;">Buchung</th><th style="background:#3771c8;color:#fff;fontSize:6px;padding:6px;width:20%;border-collapse: collapse;">Beschreibung</th><th style="background:#3771c8;color:#fff;fontSize:6px;padding:6px;width:20%;border-collapse: collapse;text-align: right;">Belastung</th><th style="background:#3771c8;color:#fff;fontSize:6px;padding:6px;width:20%;border-collapse: collapse;text-align: right;">Gutschrift</th><th style="background:#3771c8;color:#fff;fontSize:6px;padding:6px;width:20%;border-collapse: collapse;text-align: right;">Saldo</th></tr></thead><tbody>';
-//         for (let i = 0; i < dataT.length; i++) {
-//             let pdfDate = format(new Date(dataT[i].date), 'dd.MM.yyyy');
-//             let pdfbookingText = dataT[i].bookingText ? dataT[i].bookingText : '';
-//             let pdfPrice = priceFormat(dataT[i].amount);
-//             pdfHtmlData += '<tr><td style="fontSize:8px; padding:6px;width:20%;border-bottom:1px solid #ebebeb;border-right:1px solid #ebebeb;border-collapse: collapse;">' + pdfDate + '</td><td style="fontSize:8px; padding:6px;width:20%;border-bottom:1px solid #ebebeb;border-right:1px solid #ebebeb;border-collapse: collapse;">' + pdfbookingText + '</td><td style="fontSize:8px; padding:6px;width:20%;border-bottom:1px solid #ebebeb;border-right:1px solid #ebebeb;border-collapse: collapse;text-align: right;">' + pdfPrice + '</td><td style="fontSize:8px; padding:6px;width:20%;border-bottom:1px solid #ebebeb;border-right:1px solid #ebebeb;border-collapse: collapse;text-align: right;">' + pdfPrice + '</td><td style="fontSize:8px; padding:6px;width:20%;border-bottom:1px solid #ebebeb;text-align: right;">' + pdfPrice + '</td></tr>';
-
-//         }
-//         pdfHtmlData += '</tbody></table>';
-
-
-//     }
-//     let result = await pdfGenarate(pdfHtmlData);// call pdf Genarate
-//     console.log("result", result);
-//     return result;
-// }
-// const pdfGenarate = async (pData: any) => {
-//     var returnData = "";
-//     var fileRename = 'talenthr' + format(new Date(), 'dd_MM_yyyy_HH_mm_ss');
-
-//     if (pData !== undefined && pData !== null && pData !== "") {
-//         let options = {
-//             html: pData,
-//             fileName: fileRename,
-//             directory: 'Documents',
-//         };
-//         let file = await RNHTMLtoPDF.convert(options);
-//         console.log(file.filePath);
-//         returnData = 'success';
-//     }
-//     else {
-//         returnData = 'nodata';
-//     }
-//     return returnData;
-// }
-// ExcelGenarate Function
-// const excelGenarate = async (data: any) => {
-//     var returnData = "";
-//     var fileRename = 'talenthr' + format(new Date(), 'dd_MM_yyyy_HH_mm_ss');
-//     if (data.length > 0) {
-//         var ws = XLSX.utils.json_to_sheet(data);
-
-//         var wb = XLSX.utils.book_new();
-//         XLSX.utils.book_append_sheet(wb, ws, "sample");
-
-//         const wbout = XLSX.write(wb, { type: 'binary', bookType: "xlsx" });
-//         var RNFS = require('react-native-fs');
-//         var file = RNFS.ExternalStorageDirectoryPath + '/Documents/' + fileRename + '.xlsx';
-//         console.log(file);
-//         writeFile(file, wbout, 'ascii').then((r) => {/* :) */ }).catch((e) => {/* :( */ });
-//         returnData = 'success';
-//     }
-//     else {
-//         returnData = 'nodata';
-//     }
-//     return returnData;
-// }
 
 export const getCustList = (data: any[], selectField: any) => {
   let objValue: any = {};
@@ -226,9 +135,7 @@ export function dynamicSort(property: any) {
     property = property.substr(1);
   }
   return function (a: any, b: any) {
-    /* next line works with strings and numbers, 
-     * and you may want to customize it to your needs
-     */
+    // Compare properties
     var result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
     return result * sortOrder;
   }
@@ -257,7 +164,6 @@ export const getType = (txt: string) => {
   let reg: any = /(?:\.([^.]+))?$/;
   let type: any = reg.exec(txt);
   return type[1];
-  //console.log(reg.exec("Beleg_Rechnung RE50139 - 1.pdf")[1]);
 }
 
 export const base64ToFile = (data: string, filename: string, view: boolean = false) => {
@@ -388,12 +294,7 @@ export function getApiImageById(imageId: any, companyCode: any, deviceSettings: 
   }
   return imageUrl;
 }
-//   1 = Offen (Open)
-// 2 = Vorzubereiten (prepairing)
-// 3 = In Verarbeitung (In Process)
-// 4 = Bereit (Ready)
-// 5 = Serviert/Abgeholt (Served/Collected)
-// 6 = Storniert (Canceled)
+// 1: Open, 2: Preparing, 3: In Process, 4: Ready, 5: Served, 6: Canceled
 
 export function getProductList() {
 

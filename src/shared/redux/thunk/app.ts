@@ -1,6 +1,4 @@
-/**
- * Thunks are a great place for application business logic
- */
+// App thunks for business logic
 import {splashLaunched} from '../actions/app';
 import {setData, currentData} from '../actions/otherData.action';
 import {AppDispatch, AppGetState} from '../store';
@@ -32,12 +30,7 @@ import { getAsyncData, setAsyncData } from '../../utils/storage';
 export const splashScreenLaunched = () => async (dispatch: AppDispatch) => {
   dispatch(splashLaunched());
   dispatch(setData(false, 'isLoader'));
-  /**
-   * Application launch Logic can go here, like
-   * - Validating user token
-   * - Getting data from async storage
-   * - Making an API call needed for booting app
-   */
+  // Initialization logic
 };
 
 export const getLocalGetData =
@@ -57,11 +50,6 @@ export const getLocalGetData =
           variant: 'danger',
         },
       });
-      //Alert.alert(localApiData?.data? localApiData?.data:'Something went wrong please check internet connection then try again later')
-      // dispatch({
-      //   type: SET_MESSAGE,
-      //   payload: { message: (localApiData?.data? localApiData?.data:'Something went wrong please check internet connection then try again later'), variant: 'danger' },
-      // });
     }
     dispatch(setData(false, 'isLoading'));
   };
@@ -83,8 +71,6 @@ export const runningOrderScreenLaunched =
       let allReceipts: any = await localGetData(`/Receipt/getAllReceipts`);
       console.log('allReceipts', allReceipts.data);
       runningOrders = allReceipts && allReceipts?.data ? allReceipts.data : [];
-      // dispatch(setData(runningOrders, 'runningOrderList'))
-      // dispatch(setData(false, 'isLoading'));
     }
     dispatch(setData(runningOrders, 'runningOrderList'));
     dispatch(setData(false, 'isLoading'));
@@ -126,7 +112,6 @@ export const paymentScreenLanched =
   };
 export const homeScreenLaunched =
   () => async (dispatch: AppDispatch, getState: AppGetState) => {
-    //console.log('user', getState())
     dispatch(setData(true, 'isLoading'));
     dispatch(setData(1, 'footerSlectedId'));
     const {auth} = getState();
@@ -158,12 +143,9 @@ export const homeScreenLaunched =
               'allRooms',
             ),
           );
-        //  allProduct = await getData(`/Products/getProductsAll&PageNumber=0&PageSize=0`);
-
         let categoryAll: any = await getData(
           `/Categories/getCategoriesAll&company=${auth.user.companyCode}`,
-        ); ///memoria/getMethod?url=
-        //dispatch(setData(allCategory?.data?allCategory?.data:[], 'allCategory'));
+        );
         let prodcutsAll: any = await getData(
           `/Products/getProductsAll&company=${auth.user.companyCode}`,
         );
@@ -179,10 +161,10 @@ export const homeScreenLaunched =
         let allProduct: any = {data: []};
         let productAccessTypeAll: any = {data: []};
         let productAccessoriesAll: any = {data: []};
-        allCategory.data = categoryAll?.data; //tempravari
-        allProduct.data = prodcutsAll?.data; //tempravari
-        productAccessTypeAll.data = accessoriesType?.data; //tempravari
-        productAccessoriesAll.data = accessories?.data; //tempravari
+        allCategory.data = categoryAll?.data;
+        allProduct.data = prodcutsAll?.data;
+        productAccessTypeAll.data = accessoriesType?.data;
+        productAccessoriesAll.data = accessories?.data;
 
         allCategoryWithProduct = await Promise.all(
           Array.isArray(allCategory?.data) &&
@@ -205,13 +187,11 @@ export const homeScreenLaunched =
                     productAccessoriesAll.data.filter(
                       (ac: any) => ac.productID == i.id,
                     );
-                  // accessories
                   return i;
                 }
                 return false;
               });
               category['data'] = CatProduct;
-              // category['id']=cat.id;
               return category;
             }),
         );
@@ -288,13 +268,6 @@ export const homeScreenLaunched =
       dispatch(setData(false, 'isLoading'));
     }
 
-    // dispatch(splashLaunched());
-    /**
-     * Application launch Logic can go here, like
-     * - Validating user token
-     * - Getting data from async storage
-     * - Making an API call needed for booting app
-     */
   };
 export const getOOSOrderByPage =
   (pageNumber: any, status: any = 'Offen') =>
@@ -315,7 +288,6 @@ export const getOOSOrderByPage =
 
         let key: any = Object.keys(access).join('_');
         key = (key ? '_' : '') + key;
-        // console.log('access',access)
         overViewData[data[i].products[j].product_id + key] = {
           quantity:
             data[i].products[j].quantity +
@@ -347,10 +319,8 @@ export const loaderFun =
       console.log('ID', id);
 
       if (type === 'show') {
-        //alert("type1"+type)
         dispatch(setData(true, 'isLoader'));
       } else {
-        //alert("type2"+type)
         dispatch(setData(false, 'isLoader'));
       }
     }
@@ -359,9 +329,7 @@ export const footerSelect =
   (footerSlectionId: any) => (dispatch: AppDispatch, getState: AppGetState) => {
     dispatch(setData(footerSlectionId, 'footerSlectedId'));
   };
-export const messageTrigger =
   (data: any) => (dispatch: AppDispatch, getState: AppGetState) => {
-    // alert("tttttttttttttttttttttttttttttttttttttttttttttttttttttttt            "+data);
     dispatch({
       type: SET_MESSAGE,
       payload: {message: data, variant: 'success'},
@@ -399,7 +367,6 @@ export const noteCountLaunched =
           getRequestPaymentData.data.objects != '' &&
           getRequestPaymentData.data.objects != undefined
         ) {
-          //alert(getRequestPaymentData.data.objects.length)
           dispatch(
             setData(getRequestPaymentData.data.objects.length, 'noteCount'),
           );

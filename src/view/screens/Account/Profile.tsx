@@ -235,7 +235,7 @@ const ProfileScreen = (props: any) => {
     <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={['top']}>
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.statusBarBg} translucent={false} />
 
-      {/* Pure White Premium Header */}
+      {/* Header */}
       <LinearGradient
         colors={['#FFFFFF', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
@@ -249,7 +249,7 @@ const ProfileScreen = (props: any) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scrollContent}
       >
-        {/* User Info Card */}
+        {/* User info */}
         <View style={[s.userCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
           {loading ? (
             <ActivityIndicator color={colors.accent} style={{ padding: 24 }} />
@@ -297,7 +297,7 @@ const ProfileScreen = (props: any) => {
           )}
         </View>
 
-        {/* Account Menu */}
+        {/* Account menu */}
         <Text style={[s.sectionHeader, { color: colors.textSecondary }]}>ACCOUNT</Text>
         <View style={[s.menuBox, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
           {MENU_ACCOUNT.map((item, i) => {
@@ -327,7 +327,7 @@ const ProfileScreen = (props: any) => {
         {/* Preferences */}
         <Text style={[s.sectionHeader, { color: colors.textSecondary }]}>PREFERENCES</Text>
         <View style={[s.menuBox, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-          {/* App Theme Selector */}
+          {/* Theme selector */}
           <View style={[s.menuRow, s.menuBorder, { borderBottomColor: colors.divider }]}>
             <View style={s.menuIconDot}>
               {isDark ? <MoonSvgIcon color="#FBBF24" size={18} /> : <SunSvgIcon color="#FBBF24" size={18} />}
@@ -374,7 +374,7 @@ const ProfileScreen = (props: any) => {
           </View>
         </View>
 
-        {/* Support Menu */}
+        {/* Support menu */}
         <Text style={[s.sectionHeader, { color: colors.textSecondary }]}>SUPPORT & ABOUT</Text>
         <View style={[s.menuBox, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
           {MENU_SUPPORT.map((item, i) => {
@@ -396,7 +396,7 @@ const ProfileScreen = (props: any) => {
           })}
         </View>
 
-        {/* Log Out CTA */}
+        {/* Logout CTA */}
         <TouchableOpacity
           style={s.logoutBtn}
           onPress={handleLogout}

@@ -195,7 +195,7 @@ const ApiProductDetailModal = ({
     if (!productDetail) return []
     const rawList: string[] = []
 
-    // 1. Primary image FIRST
+    // Primary image
     if (productDetail.image && typeof productDetail.image === 'string') {
       rawList.push(productDetail.image)
     }
@@ -203,7 +203,7 @@ const ApiProductDetailModal = ({
       rawList.push(productDetail.ImagePath)
     }
 
-    // 2. Secondary images array NEXT
+    // Secondary images
     if (Array.isArray(productDetail.images) && productDetail.images.length > 0) {
       productDetail.images.forEach((img: any) => {
         const u = typeof img === 'string' ? img : img?.ImagePath || img?.ImageName || img?.url
@@ -314,7 +314,7 @@ const ApiProductDetailModal = ({
           ) : (
             <React.Fragment>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
-                {/* ===== Media + floating action buttons ===== */}
+                {/* Media */}
                 <View style={[s.imageSection, { backgroundColor: TILE_COLORS[0] }]}>
                   {mediaItems.length > 0 ? (
                     <>
@@ -491,7 +491,7 @@ const ApiProductDetailModal = ({
                   </View>
                 </View>
 
-                {/* ===== Info ===== */}
+                {/* Info */}
                 <View style={s.infoSection}>
                   <View style={s.titleRow}>
                     <Text style={s.productTitle}>{productDetail.name}</Text>
@@ -515,7 +515,7 @@ const ApiProductDetailModal = ({
                   </View>
                   <Text style={s.taxNote}>Inclusive of all taxes</Text>
 
-                  {/* Pack size / variants */}
+                  {/* Pack sizes */}
                   {isVariantType && (productDetail.variants?.length ?? 0) > 0 && (
                     <View style={s.block}>
                       <Text style={s.blockTitle}>Select pack size</Text>
@@ -555,7 +555,7 @@ const ApiProductDetailModal = ({
                     </View>
                   )}
 
-                  {/* Feature cards */}
+                  {/* Features */}
                   <View style={s.featureRow}>
                     {[
                       { icon: '⚡', label: '10-min\ndelivery' },
@@ -605,7 +605,7 @@ const ApiProductDetailModal = ({
                     </View>
                   )}
 
-                  {/* Timeline / Dates */}
+                  {/* Timeline */}
                   {(productDetail.manufacture_date || productDetail.expiry_date) && (
                     <View style={s.section}>
                       <Text style={s.blockTitle}>Dates & Lifecycle</Text>
@@ -629,7 +629,7 @@ const ApiProductDetailModal = ({
                     </View>
                   )}
 
-                  {/* Stock & Barcode info */}
+                  {/* Stock info */}
                   <View style={s.section}>
                     <Text style={s.blockTitle}>Inventory & Status</Text>
                     <View style={s.inventoryCard}>
@@ -665,7 +665,7 @@ const ApiProductDetailModal = ({
                         </View>
                       </View>
 
-                      {/* Show threshold warning if stock is low */}
+                      {/* Low stock threshold warning */}
                       {stock > 0 && productDetail.low_stock_threshold != null && stock <= productDetail.low_stock_threshold && (
                         <View style={[s.thresholdWarning, stock <= (productDetail.critical_stock_threshold ?? 0) ? s.thresholdCritical : s.thresholdLow]}>
                           <Text style={[s.thresholdText, stock <= (productDetail.critical_stock_threshold ?? 0) && { color: '#C0392B' }]}>
@@ -676,7 +676,7 @@ const ApiProductDetailModal = ({
                     </View>
                   </View>
 
-                  {/* Creator Details */}
+                  {/* Creator details */}
                   {productDetail.creator && (
                     <View style={s.section}>
                       <Text style={s.blockTitle}>Seller Information</Text>
@@ -710,7 +710,7 @@ const ApiProductDetailModal = ({
                     </View>
                   )}
 
-                  {/* You might also like */}
+                  {/* Related products */}
                   {relatedList.length > 0 && (
                     <>
                       <Text style={[s.blockTitle, { marginTop: 24, marginBottom: 12 }]}>You might also like</Text>
@@ -758,7 +758,7 @@ const ApiProductDetailModal = ({
                 </View>
               </ScrollView>
 
-              {/* ===== Bottom action bar ===== */}
+              {/* Bottom action bar */}
               <View style={[s.actionBar, { paddingBottom: 12 + insets.bottom }]}>
                 <View style={s.totalBox}>
                   <Text style={s.totalLabel}>Total</Text>
@@ -811,7 +811,7 @@ const ApiProductDetailModal = ({
         </View>
       </View>
 
-      {/* Fullscreen Image Zoom Preview Modal */}
+      {/* Image zoom modal */}
       {!!fullscreenImage && (
         <Modal
           visible={!!fullscreenImage}
@@ -881,8 +881,7 @@ const s = StyleSheet.create({
 
   scrollContent: { paddingBottom: 24 },
 
-  // Media
-  imageSection: { height: 320, position: 'relative' },
+    imageSection: { height: 320, position: 'relative' },
   productImage: { height: 320, width: W },
   noImageBox: { height: 320, alignItems: 'center', justifyContent: 'center' },
   bigLetter: { fontSize: 150, fontFamily: 'DMSans-Bold', color: 'rgba(20,20,20,0.16)' },
@@ -986,8 +985,7 @@ const s = StyleSheet.create({
   deliveryBolt: { fontSize: 12 },
   deliveryPillText: { color: '#FFE000', fontFamily: 'DMSans-Bold', fontSize: 12.5 },
 
-  // Info
-  infoSection: {
+    infoSection: {
     marginTop: -16,
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 22,
@@ -1085,8 +1083,7 @@ const s = StyleSheet.create({
   },
   relatedAddTxt: { fontFamily: 'DMSans-Bold', fontSize: 11.5, color: '#0C831F' },
 
-  // Bottom bar
-  actionBar: {
+    actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
@@ -1145,8 +1142,7 @@ const s = StyleSheet.create({
   cartBtnText: { color: '#fff', fontFamily: 'DMSans-Bold', fontSize: 16 },
   cartBtnArrow: { color: '#fff', fontSize: 17 },
 
-  // New detailed view styles
-  section: {
+    section: {
     marginTop: 22,
   },
   descriptionCard: {

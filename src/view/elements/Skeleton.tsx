@@ -9,7 +9,7 @@ interface SkeletonProps {
   style?: StyleProp<ViewStyle>
 }
 
-// Single shimmering block driven by a looping opacity animation.
+// Shimmering block skeleton
 export const Skeleton = ({
   width = '100%',
   height = 14,
@@ -48,7 +48,7 @@ export const Skeleton = ({
   )
 }
 
-// Matches the ProductList card silhouette for a 2-column grid.
+// Product card skeleton
 export const ProductCardSkeleton = ({ width }: { width: number }) => (
   <View style={[styles.card, { width }]}>
     <Skeleton height={120} radius={THEME.RADIUS.medium} />
@@ -59,7 +59,7 @@ export const ProductCardSkeleton = ({ width }: { width: number }) => (
   </View>
 )
 
-// Matches a cart / wishlist list row.
+// List row skeleton
 export const ListRowSkeleton = () => (
   <View style={styles.row}>
     <Skeleton width={80} height={80} radius={THEME.RADIUS.medium} />
