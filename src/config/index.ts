@@ -11,7 +11,7 @@ const Defaults = {
   isDev: __DEV__,
   app: {
     platforms: ['ios', 'android']
-  },      
+  },
   apis: {
     api_key: 264895216548969,
     baseUrl: `http${(__DEV__) ? '' : ''}://${domain}`,
