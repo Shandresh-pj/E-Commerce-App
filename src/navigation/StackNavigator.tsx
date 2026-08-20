@@ -16,6 +16,7 @@ import {
   CardStyleInterpolators,
 } from '@react-navigation/stack';
 import splashContainer from '../view/screens/splash';
+import OnboardingScreen from '../view/screens/onboarding/OnboardingScreen';
 import loginContainer from '../view/screens/login';
 import LocationPermissionContainer from '../view/screens/LocationPermission';
 import ProfileContainer from '../view/screens/Account';
@@ -35,17 +36,18 @@ import PaymentMethodsScreen from '../view/screens/Payment/PaymentMethods';
 import CouponsScreen from '../view/screens/Coupons/Coupons';
 import NotificationsScreen from '../view/screens/Notifications/Notifications';
 import LanguageScreen from '../view/screens/Language/Language';
-import PartnerNavigator from '../view/screens/DeliveryPartner/PartnerNavigator';
-import RoleSelection from '../view/screens/RoleSelection/RoleSelection';
 import MapViewScreen from '../view/screens/Map';
-
+import WalletScreen from '../view/screens/Wallet/WalletScreen';
+import LegalScreen from '../view/screens/Legal/LegalScreen';
+import AppLogo from '../view/elements/AppLogo';
 
 const Stack = createStackNavigator();
 
 
+
 const MainStackNavigator = (props: any) => {
   const { dispatch, isLoggedIn } = props;
-  const [initialRouteName, setInitialRouteName] = useState('RoleSelection');
+  const [initialRouteName, setInitialRouteName] = useState('Splash');
   const [isLoading, setIsLoading] = useState(true);
 
 
@@ -83,7 +85,7 @@ const MainStackNavigator = (props: any) => {
       }, 2000);
     } else {
 
-      await setInitialRouteName('RoleSelection');
+      await setInitialRouteName('Splash');
       console.log(
         '*********************************************************logout================',
         parsedUser,
@@ -96,10 +98,10 @@ const MainStackNavigator = (props: any) => {
   if (isLoading) {
     return (
       <>
-        <StatusBar barStyle="light-content" backgroundColor="#141414" translucent={false} />
+        <StatusBar barStyle="light-content" backgroundColor="#0B1329" translucent={false} />
         <View style={loadingStyles.container}>
-          <Text style={loadingStyles.logo}>⚡</Text>
-          <ActivityIndicator size="large" color="#FFE000" style={{ marginTop: 24 }} />
+          <AppLogo size="lg" showText={true} theme="yellow" animated={true} />
+          <ActivityIndicator size="large" color="#FBBF24" style={{ marginTop: 24 }} />
         </View>
       </>
     );
@@ -110,8 +112,8 @@ const MainStackNavigator = (props: any) => {
     >
       <>
         <Stack.Screen
-          name="RoleSelection"
-          component={RoleSelection}
+          name="Splash"
+          component={splashContainer}
           options={{
             headerShown: false,
             transitionSpec: {
@@ -122,8 +124,8 @@ const MainStackNavigator = (props: any) => {
           }}
         />
         <Stack.Screen
-          name="Splash"
-          component={splashContainer}
+          name="Onboarding"
+          component={OnboardingScreen}
           options={{
             headerShown: false,
             transitionSpec: {
@@ -250,6 +252,19 @@ const MainStackNavigator = (props: any) => {
           },
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         })}
+      />
+
+      <Stack.Screen
+        name="Wallet"
+        component={WalletScreen}
+        options={{
+          headerShown: false,
+          transitionSpec: {
+            open: TransitionSpecs.FadeInFromBottomAndroidSpec,
+            close: TransitionSpecs.FadeOutToBottomAndroidSpec,
+          },
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
       />
 
       <Stack.Screen
@@ -384,8 +399,8 @@ const MainStackNavigator = (props: any) => {
       />
 
       <Stack.Screen
-        name="PartnerApp"
-        component={PartnerNavigator}
+        name="MapView"
+        component={MapViewScreen}
         options={{
           headerShown: false,
           transitionSpec: {
@@ -397,8 +412,8 @@ const MainStackNavigator = (props: any) => {
       />
 
       <Stack.Screen
-        name="MapView"
-        component={MapViewScreen}
+        name="Legal"
+        component={LegalScreen}
         options={{
           headerShown: false,
           transitionSpec: {
@@ -431,7 +446,7 @@ const mapDispatchToProps = (dispatch: any) => ({
 export default connect(mapStateToProps, mapDispatchToProps)(MainStackNavigator);
 
 const loadingStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#141414', justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#0B1329', justifyContent: 'center', alignItems: 'center' },
   logo: { fontSize: 52 },
 })
 

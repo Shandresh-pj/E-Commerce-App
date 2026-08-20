@@ -281,7 +281,7 @@ const MapScreen = () => {
         }
     }, [stats.latitude, stats.longitude, fetchRoutePoints]);
 
-    const trackingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const trackingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const clearTrackingInterval = useCallback(() => {
         if (trackingIntervalRef.current) {

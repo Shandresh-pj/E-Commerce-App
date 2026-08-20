@@ -473,26 +473,26 @@ export const MovingBackground: React.FC<MovingBackgroundProps> = ({
 
   const getGradientColors = () => {
     if (theme === 'dark') {
-      return ['#0B1B36', '#122B54', '#050E1E']
+      return ['#0F172A', '#1E40AF', '#020617']
     }
     if (theme === 'yellow-dark') {
-      return ['#0B1B36', '#1B365D', '#0A172C']
+      return ['#0F172A', '#1E293B', '#1E40AF']
     }
-    return ['#FBBF24', '#F59E0B', '#EAB308']
+    return ['#2563EB', '#1E40AF', '#0F172A']
   }
 
   const orb1Color =
-    theme === 'dark' ? 'rgba(37, 99, 235, 0.25)' : 'rgba(255, 255, 255, 0.75)'
+    theme === 'dark' ? 'rgba(37, 99, 235, 0.25)' : 'rgba(251, 191, 36, 0.45)'
   const orb2Color =
-    theme === 'dark' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(251, 191, 36, 0.65)'
+    theme === 'dark' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(37, 99, 235, 0.35)'
   const orb3Color =
-    theme === 'dark' ? 'rgba(30, 64, 175, 0.18)' : 'rgba(255, 255, 255, 0.55)'
+    theme === 'dark' ? 'rgba(30, 64, 175, 0.18)' : 'rgba(245, 158, 11, 0.35)'
   const orb4Color =
-    theme === 'dark' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.5)'
+    theme === 'dark' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(219, 234, 254, 0.4)'
   const orb5Color =
-    theme === 'dark' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(255, 245, 180, 0.6)'
+    theme === 'dark' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(251, 191, 36, 0.3)'
   const orb6Color =
-    theme === 'dark' ? 'rgba(251, 191, 36, 0.12)' : 'rgba(255, 255, 255, 0.65)'
+    theme === 'dark' ? 'rgba(251, 191, 36, 0.12)' : 'rgba(255, 255, 255, 0.35)'
 
   return (
     <View style={[styles.container, style]}>

@@ -15,16 +15,12 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import Defaults from '../../../config/index'
 import { fetchMyWishlist, toggleWishlist, addToApiCart } from '../../../shared/services/main-service'
 import Toast from 'react-native-root-toast'
-import LinearGradient from 'react-native-linear-gradient'
+import { useTheme } from '../../../shared/context/ThemeContext'
+import { ArrowLeftIcon, HeartIcon, CartIcon, TrashIcon } from '../../elements/SvgIcons'
 
 const { width: W } = Dimensions.get('window')
 const GUTTER = 12
 const CARD_WIDTH = (W - 32 - GUTTER) / 2
-
-const PRODUCT_BG_COLORS = [
-  '#FFE0E0', '#FFF4D6', '#E0F0FF', '#E4F6E6',
-  '#EBE4FF', '#FFE9E0', '#E0FFE8', '#F4E8FF',
-]
 
 const buildImageUrl = (img: string | undefined | null): string | null => {
   if (!img) return null
@@ -45,12 +41,12 @@ const WishCard = ({
   onRemove: (id: number) => Promise<void>
   onMove: (product: any) => Promise<void>
 }) => {
+  const { colors, isDark } = useTheme()
   const [removing, setRemoving] = useState(false)
   const [moving, setMoving] = useState(false)
   const [imgError, setImgError] = useState(false)
 
   const imageUrl = buildImageUrl(product.image || (product.images && product.images[0]))
-  const bg = PRODUCT_BG_COLORS[index % 8]
   const price = product.points || 0
 
   const handleRemove = async () => {
@@ -65,26 +61,49 @@ const WishCard = ({
   }
 
   return (
-    <View style={[s.card, { width: CARD_WIDTH }]}>
-      <View style={[s.imgBox, { backgroundColor: bg }]}>
+    <View style={[s.card, { width: CARD_WIDTH, backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+      <View style={[s.imgBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}>
         {imageUrl && !imgError ? (
           <Image source={{ uri: imageUrl }} style={s.img} resizeMode="contain" onError={() => setImgError(true)} />
         ) : (
-          <Text style={s.fallback}>{product.name ? product.name[0].toUpperCase() : '🛍️'}</Text>
+          <Text style={[s.fallback, { color: colors.textMuted }]}>{product.name ? product.name[0].toUpperCase() : '🛍️'}</Text>
         )}
-        <TouchableOpacity style={s.heartBtn} onPress={handleRemove} activeOpacity={0.8} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          {removing ? <ActivityIndicator size="small" color="#e91e63" /> : <Text style={s.heartIcon}>♥</Text>}
+        <TouchableOpacity
+          style={[s.heartBtn, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}
+          onPress={handleRemove}
+          activeOpacity={0.8}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          {removing ? (
+            <ActivityIndicator size="small" color="#EF4444" />
+          ) : (
+            <HeartIcon size={18} color="#EF4444" filled={true} />
+          )}
         </TouchableOpacity>
       </View>
 
-      <Text style={s.name} numberOfLines={2}>{product.name}</Text>
-      <Text style={s.price}>₹{price.toLocaleString('en-IN')}</Text>
+      <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={2}>{product.name}</Text>
+      <Text style={[s.price, { color: colors.textPrimary }]}>${price.toFixed(2)}</Text>
 
-      <TouchableOpacity style={s.addBtn} onPress={handleMove} disabled={moving} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={[
+          s.addBtn,
+          {
+            backgroundColor: isDark ? colors.accentGlow : colors.surfaceSecondary,
+            borderColor: colors.borderStrong,
+          },
+        ]}
+        onPress={handleMove}
+        disabled={moving}
+        activeOpacity={0.85}
+      >
         {moving ? (
-          <ActivityIndicator size="small" color="#0C831F" />
+          <ActivityIndicator size="small" color={colors.accent} />
         ) : (
-          <Text style={s.addBtnText}>Add to cart</Text>
+          <View style={s.addBtnInner}>
+            <CartIcon size={15} color={colors.accent} />
+            <Text style={[s.addBtnText, { color: colors.accent }]}>Move to Cart</Text>
+          </View>
         )}
       </TouchableOpacity>
     </View>
@@ -93,6 +112,7 @@ const WishCard = ({
 
 export default function WishListScreen() {
   const navigation = useNavigation<any>()
+  const { colors, isDark } = useTheme()
   const [loading, setLoading] = useState(true)
   const [wishlistItems, setWishlistItems] = useState<any[]>([])
 
@@ -108,10 +128,9 @@ export default function WishListScreen() {
       const dataList = await fetchMyWishlist()
       if (dataList && dataList.length >= 0) {
         const mapped = dataList.map((item: any) => {
-          // Support both nested product shape and flat shape
           const product = item.product ?? item.Product ?? item
           return {
-            wishlistId: item.id ?? item.Id,            // wishlist row id
+            wishlistId: item.id ?? item.Id,
             id: product.id ?? product.Id ?? item.product_id ?? item.ProductId,
             name: product.name ?? item.name ?? 'Product',
             points: parseFloat(product.price ?? item.price ?? '0') || 0,
@@ -145,7 +164,6 @@ export default function WishListScreen() {
     try {
       const success = await addToApiCart(product.id, 1)
       if (success) {
-        // Also remove from wishlist
         await removeItem(product.id)
         Toast.show('Moved to cart 🛒', { duration: Toast.durations.SHORT })
       } else {
@@ -158,67 +176,74 @@ export default function WishListScreen() {
   }
 
   return (
-    <LinearGradient colors={['#F4F5F0', '#FFFCE8', '#E9EDEE']} locations={[0, 0.4, 1]} style={s.root}>
-      <StatusBar backgroundColor="#F4F5F0" barStyle="dark-content" />
-      <SafeAreaView style={s.safe} edges={[]}>
-        {/* Header */}
-        <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={s.backArrow}>←</Text>
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Wishlist</Text>
-          {wishlistItems.length > 0 && (
-            <View style={s.countBadge}>
-              <Text style={s.countText}>{wishlistItems.length}</Text>
-            </View>
-          )}
-        </View>
-
-        {loading ? (
-          <View style={s.center}>
-            <ActivityIndicator size="large" color="#0C831F" />
-            <Text style={s.loadingText}>Loading wishlist…</Text>
+    <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={['top']}>
+      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.statusBarBg} />
+      
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity
+          style={[s.backBtn, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}
+          onPress={() => navigation.goBack()}
+        >
+          <ArrowLeftIcon size={20} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={[s.headerTitle, { color: colors.textPrimary }]}>Wishlist</Text>
+        {wishlistItems.length > 0 && (
+          <View style={[s.countBadge, { backgroundColor: colors.accent }]}>
+            <Text style={[s.countText, { color: colors.accentText }]}>{wishlistItems.length}</Text>
           </View>
-        ) : (
-          <FlatList
-            data={wishlistItems}
-            keyExtractor={item => item.id.toString()}
-            numColumns={2}
-            columnWrapperStyle={wishlistItems.length > 0 ? { gap: GUTTER } : undefined}
-            contentContainerStyle={s.listContent}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item, index }) => (
-              <WishCard product={item} index={index} onRemove={removeItem} onMove={moveToCart} />
-            )}
-            ListHeaderComponent={
-              wishlistItems.length > 0 ? (
-                <Text style={s.subHeading}>{wishlistItems.length} saved item{wishlistItems.length > 1 ? 's' : ''}</Text>
-              ) : null
-            }
-            ListEmptyComponent={
-              <View style={s.emptyState}>
-                <View style={s.emptyIconBox}>
-                  <Text style={{ fontSize: 44 }}>🤍</Text>
-                </View>
-                <Text style={s.emptyTitle}>Your wishlist is empty</Text>
-                <Text style={s.emptySub}>
-                  Tap the heart on any product to save it here for later.
-                </Text>
-                <TouchableOpacity style={s.emptyCtaBtn} onPress={() => navigation.navigate('Categories')} activeOpacity={0.85}>
-                  <Text style={s.emptyCtaText}>Start shopping →</Text>
-                </TouchableOpacity>
-              </View>
-            }
-          />
         )}
-      </SafeAreaView>
-    </LinearGradient>
+      </View>
+
+      {loading ? (
+        <View style={s.center}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={[s.loadingText, { color: colors.textSecondary }]}>Loading wishlist…</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={wishlistItems}
+          keyExtractor={item => item.id.toString()}
+          numColumns={2}
+          columnWrapperStyle={wishlistItems.length > 0 ? { gap: GUTTER } : undefined}
+          contentContainerStyle={s.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <WishCard product={item} index={index} onRemove={removeItem} onMove={moveToCart} />
+          )}
+          ListHeaderComponent={
+            wishlistItems.length > 0 ? (
+              <Text style={[s.subHeading, { color: colors.textSecondary }]}>
+                {wishlistItems.length} saved item{wishlistItems.length > 1 ? 's' : ''}
+              </Text>
+            ) : null
+          }
+          ListEmptyComponent={
+            <View style={s.emptyState}>
+              <View style={[s.emptyIconBox, { backgroundColor: colors.surfaceCard }]}>
+                <HeartIcon size={44} color={colors.accent} filled={false} />
+              </View>
+              <Text style={[s.emptyTitle, { color: colors.textPrimary }]}>Your wishlist is empty</Text>
+              <Text style={[s.emptySub, { color: colors.textSecondary }]}>
+                Tap the heart icon on any product to save it here for later.
+              </Text>
+              <TouchableOpacity
+                style={[s.emptyCtaBtn, { backgroundColor: colors.accent }]}
+                onPress={() => navigation.navigate('Home')}
+                activeOpacity={0.85}
+              >
+                <Text style={[s.emptyCtaText, { color: colors.accentText }]}>Start Exploring →</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      )}
+    </SafeAreaView>
   )
 }
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  safe: { flex: 1 },
 
   header: {
     flexDirection: 'row',
@@ -231,51 +256,42 @@ const s = StyleSheet.create({
   backBtn: {
     width: 42,
     height: 42,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 13,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
   },
-  backArrow: { fontSize: 18, color: '#141414' },
-  headerTitle: { flex: 1, fontFamily: 'DMSans-Bold', fontSize: 24, color: '#141414', letterSpacing: -0.4 },
+  headerTitle: { flex: 1, fontWeight: '800', fontSize: 24, letterSpacing: -0.4 },
   countBadge: {
-    backgroundColor: '#141414',
-    borderRadius: 13,
+    borderRadius: 14,
     minWidth: 28,
     height: 28,
     paddingHorizontal: 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  countText: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#FFE000' },
+  countText: { fontWeight: '800', fontSize: 13 },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 32 },
-  loadingText: { fontSize: 14, color: '#8a8a8a', fontFamily: 'DMSans-Regular' },
+  loadingText: { fontSize: 14, fontWeight: '500' },
 
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: GUTTER },
-  subHeading: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#8a8a8a', marginBottom: 12, marginTop: 2 },
+  subHeading: { fontWeight: '700', fontSize: 13, marginBottom: 12, marginTop: 2 },
 
   card: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F0F0EC',
-    borderRadius: 18,
-    padding: 9,
+    borderRadius: 20,
+    padding: 10,
   },
   imgBox: {
-    height: 120,
-    borderRadius: 14,
+    height: 130,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   img: { width: '100%', height: '100%' },
-  fallback: { fontSize: 40, fontFamily: 'DMSans-Bold', color: 'rgba(0,0,0,0.14)' },
+  fallback: { fontSize: 40, fontWeight: '800' },
   heartBtn: {
     position: 'absolute',
     top: 8,
@@ -283,69 +299,53 @@ const s = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    elevation: 3,
+    elevation: 2,
   },
-  heartIcon: { fontSize: 17, color: '#e91e63' },
 
   name: {
-    fontFamily: 'DMSans-Bold',
+    fontWeight: '700',
     fontSize: 13,
-    color: '#141414',
-    marginTop: 9,
-    lineHeight: 16,
-    height: 32,
+    marginTop: 10,
+    lineHeight: 17,
+    height: 34,
   },
-  price: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#141414', marginTop: 3 },
+  price: { fontWeight: '800', fontSize: 16, marginTop: 4 },
 
   addBtn: {
-    marginTop: 9,
+    marginTop: 10,
     height: 38,
     borderWidth: 1.5,
-    borderColor: '#0C831F',
-    backgroundColor: '#E8F7EA',
-    borderRadius: 11,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addBtnText: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#0C831F' },
+  addBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  addBtnText: { fontWeight: '700', fontSize: 12.5 },
 
-  emptyState: { alignItems: 'center', paddingTop: 90, paddingHorizontal: 32 },
+  emptyState: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },
   emptyIconBox: {
-    width: 92,
-    height: 92,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    width: 90,
+    height: 90,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 20,
   },
-  emptyTitle: { fontSize: 20, fontFamily: 'DMSans-Bold', color: '#141414', marginBottom: 8 },
+  emptyTitle: { fontSize: 20, fontWeight: '800', marginBottom: 8 },
   emptySub: {
     fontSize: 13.5,
-    fontFamily: 'DMSans-Regular',
-    color: '#8a8a8a',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 22,
+    marginBottom: 24,
     maxWidth: 260,
   },
   emptyCtaBtn: {
-    backgroundColor: '#0C831F',
-    borderRadius: 14,
-    paddingHorizontal: 30,
+    borderRadius: 16,
+    paddingHorizontal: 28,
     paddingVertical: 14,
-    shadowColor: '#0C831F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    elevation: 4,
   },
-  emptyCtaText: { fontSize: 15, fontFamily: 'DMSans-Bold', color: '#FFFFFF' },
+  emptyCtaText: { fontSize: 15, fontWeight: '800' },
 })

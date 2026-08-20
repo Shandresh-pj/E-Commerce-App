@@ -15,7 +15,9 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated'
-import { LIQUID_GLASS_THEME, scaleFont } from '../../constants/theme'
+import { scaleFont } from '../../constants/theme'
+import { useTheme } from '../../shared/context/ThemeContext'
+import { ArrowLeftIcon } from './SvgIcons'
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity)
 
@@ -32,6 +34,7 @@ export const HeaderIconButton = ({
   children,
   style,
 }: HeaderIconButtonProps) => {
+  const { colors, isDark } = useTheme()
   const scale = useSharedValue(1)
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -55,14 +58,14 @@ export const HeaderIconButton = ({
       activeOpacity={0.85}
     >
       <LinearGradient
-        colors={['rgba(255,255,255,0.85)', 'rgba(255,255,255,0.45)']}
+        colors={isDark ? ['#1E293B', '#0F172A'] : ['#FFFFFF', '#F8FAFC']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[s.iconBtn, style]}
+        style={[s.iconBtn, { borderColor: colors.border }, style]}
       >
         {children}
         {badge !== undefined && badge > 0 && (
-          <View style={s.badge}>
+          <View style={[s.badge, { backgroundColor: colors.accent }]}>
             <Text style={s.badgeText}>{badge > 99 ? '99+' : badge}</Text>
           </View>
         )}
@@ -78,13 +81,14 @@ interface AppHeaderProps {
   right?: React.ReactNode
 }
 
-const AppHeader = ({
+export const AppHeader = ({
   title,
   leftIcon = 'back',
   onLeftPress,
   right,
 }: AppHeaderProps) => {
   const navigation = useNavigation<any>()
+  const { colors, isDark } = useTheme()
 
   const handleLeft = () => {
     if (onLeftPress) return onLeftPress()
@@ -94,26 +98,26 @@ const AppHeader = ({
   return (
     <>
       <StatusBar
-        barStyle="dark-content"
+        barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent={true}
       />
-      <View style={s.headerWrapper}>
+      <View style={[s.headerWrapper, { borderColor: colors.border, backgroundColor: colors.surfaceCard }]}>
         <LinearGradient
-          colors={[
-            'rgba(255,255,255,0.88)',
-            'rgba(240,245,255,0.70)',
-            'rgba(255,255,255,0.60)',
-          ]}
+          colors={isDark ? ['#1E293B', '#0F172A'] : ['#FFFFFF', '#F8FAFC']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.header}
         >
           <View style={s.left}>
             <HeaderIconButton onPress={handleLeft}>
-              <Text style={s.leftIcon}>{leftIcon === 'menu' ? '☰' : '←'}</Text>
+              {leftIcon === 'menu' ? (
+                <Text style={{ fontSize: 18, color: colors.textPrimary }}>☰</Text>
+              ) : (
+                <ArrowLeftIcon size={20} color={colors.textPrimary} />
+              )}
             </HeaderIconButton>
-            <Text style={s.title} numberOfLines={1}>
+            <Text style={[s.title, { color: colors.textPrimary }]} numberOfLines={1}>
               {title}
             </Text>
           </View>
@@ -126,13 +130,16 @@ const AppHeader = ({
 
 const s = StyleSheet.create({
   headerWrapper: {
-    borderRadius: LIQUID_GLASS_THEME.borderRadius.lg,
+    borderRadius: 20,
     marginHorizontal: 12,
     marginTop: 6,
     overflow: 'hidden',
-    borderWidth: 1.2,
-    borderColor: LIQUID_GLASS_THEME.colors.glassBorder,
-    ...LIQUID_GLASS_THEME.shadows.liquidGlass,
+    borderWidth: 1,
+    elevation: 4,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
   header: {
     flexDirection: 'row',
@@ -142,13 +149,11 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   left: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  leftIcon: { fontSize: 18, color: LIQUID_GLASS_THEME.colors.textPrimary },
   title: {
     flex: 1,
-    color: LIQUID_GLASS_THEME.colors.textPrimary,
     fontSize: scaleFont(17),
     fontWeight: '700',
-    marginLeft: 10,
+    marginLeft: 12,
     letterSpacing: 0.2,
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -159,7 +164,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: LIQUID_GLASS_THEME.colors.glassBorder,
   },
   badge: {
     position: 'absolute',
@@ -169,13 +173,12 @@ const s = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     paddingHorizontal: 4,
-    backgroundColor: LIQUID_GLASS_THEME.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
-  badgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '700' },
+  badgeText: { color: '#0F172A', fontSize: 9, fontWeight: '800' },
 })
 
 export default AppHeader

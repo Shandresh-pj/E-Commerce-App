@@ -28,6 +28,18 @@ export const getData = async (url: string): Promise<any | void> => {
   }
 };
 
+export const getLiveData = async (url: string): Promise<any | void> => {
+  return getData(url);
+};
+
+export const getOOSData = async (url: string): Promise<any | void> => {
+  return getData(url);
+};
+
+export const localGetData = async (url: string): Promise<any | void> => {
+  return getData(url);
+};
+
 export const getPublicData = async (url: string): Promise<any | void> => {
   console.log("API_URL (public)", `${API_URL}${url}`)
   try {
@@ -256,7 +268,7 @@ export const fetchMyWishlist = async (): Promise<any[]> => {
 export const toggleWishlist = async (productId: number, isLiked: boolean): Promise<boolean> => {
   try {
     const response: any = isLiked
-      ? await deleteData(`/wishlist/${productId}`, {})
+      ? await deleteData(`/wishlist/${productId}`)
       : await postData(`/wishlist`, { product_id: productId });
 
     return !!(response && response.status);
@@ -295,7 +307,7 @@ export const addToApiCart = async (productId: number, quantity: number = 1): Pro
 // Remove item from cart
 export const removeFromApiCart = async (cartItemId: number): Promise<boolean> => {
   try {
-    const response: any = await deleteData(`/cart/${cartItemId}`, {});
+    const response: any = await deleteData(`/cart/${cartItemId}`);
     return !!(response && (response.status === 200 || response.status === 204 || response.data?.success));
   } catch (error) {
     console.log('removeFromApiCart error:', error);

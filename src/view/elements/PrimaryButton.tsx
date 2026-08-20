@@ -10,7 +10,7 @@ import {
   TextStyle,
 } from 'react-native'
 
-type Variant = 'primary' | 'success' | 'dark' | 'outline'
+type Variant = 'primary' | 'accent' | 'success' | 'dark' | 'outline'
 type Size = 'sm' | 'md'
 
 interface PrimaryButtonProps {
@@ -50,6 +50,7 @@ const PrimaryButton = ({
     s.base,
     size === 'sm' ? s.sm : s.md,
     variant === 'primary' && s.primary,
+    variant === 'accent' && s.accent,
     variant === 'success' && s.success,
     variant === 'dark' && s.dark,
     variant === 'outline' && s.outline,
@@ -57,10 +58,10 @@ const PrimaryButton = ({
   ].filter(Boolean) as ViewStyle[]
 
   const labelColor =
-    variant === 'primary'
-      ? isDisabled ? '#9a9a9a' : '#141414'
+    variant === 'accent'
+      ? isDisabled ? '#9CA3AF' : '#0F172A'
       : variant === 'outline'
-      ? isDisabled ? '#9a9a9a' : '#141414'
+      ? isDisabled ? '#9CA3AF' : '#2563EB'
       : '#FFFFFF'
 
   return (
@@ -74,7 +75,7 @@ const PrimaryButton = ({
         style={containerStyle}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={variant === 'primary' ? '#141414' : '#fff'} />
+          <ActivityIndicator size="small" color={variant === 'accent' ? '#0F172A' : '#FFFFFF'} />
         ) : (
           <>
             {leftIcon}
@@ -96,27 +97,42 @@ const s = StyleSheet.create({
     borderRadius: 14,
     gap: 8,
   },
-  md: { paddingVertical: 15, paddingHorizontal: 24 },
+  md: { paddingVertical: 14, paddingHorizontal: 24 },
   sm: { paddingVertical: 10, paddingHorizontal: 16 },
 
-  primary: { backgroundColor: '#FFE000' },
-  success: {
-    backgroundColor: '#0C831F',
-    shadowColor: '#0C831F',
+  primary: {
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  accent: {
+    backgroundColor: '#FBBF24',
+    shadowColor: '#FBBF24',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  success: {
+    backgroundColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
-  dark: { backgroundColor: '#141414' },
+  dark: { backgroundColor: '#0F172A' },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: '#141414',
+    borderColor: '#2563EB',
   },
   disabled: { opacity: 0.45 },
 
-  label: { fontSize: 15, fontFamily: 'DMSans-Bold', letterSpacing: 0.3 },
+  label: { fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
   labelSm: { fontSize: 13 },
 })
 

@@ -6,6 +6,7 @@ import PremiumTabBar from './PremiumTabBar';
 
 import homeContainer from '../view/screens/home';
 import CategoryScreen from '../view/screens/Categories/CategoryScreen';
+import WishListContainer from '../view/screens/WishList';
 import CartContainer from '../view/screens/Cart';
 import ProfileContainer from '../view/screens/Account';
 
@@ -49,6 +50,12 @@ const HomeBottomTabNavigatorContent = () => {
       />
 
       <Tab.Screen
+        name="WishList"
+        component={WishListContainer}
+        options={{ tabBarLabel: 'Wishlist' }}
+      />
+
+      <Tab.Screen
         name="Cart"
         component={CartContainer}
         options={{ tabBarLabel: 'Cart' }}
@@ -57,7 +64,7 @@ const HomeBottomTabNavigatorContent = () => {
       <Tab.Screen
         name="AccountTab"
         component={ProfileContainer}
-        options={{ tabBarLabel: 'Account' }}
+        options={{ tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>
   );

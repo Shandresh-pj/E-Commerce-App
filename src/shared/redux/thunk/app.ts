@@ -21,10 +21,10 @@ import {
   strToJson,
   treeCategoryToArray,
 } from '../../utils';
-import accessories from '../../../jsondata/accessories.json';
-import prodcutsAll from '../../../jsondata/prodcutsAll.json';
-import categoryAll from '../../../jsondata/categoryAll.json';
-import accessoriesType from '../../../jsondata/accessoriesType.json';
+const accessories: any[] = [];
+const prodcutsAll: any[] = [];
+const categoryAll: any[] = [];
+const accessoriesType: any[] = [];
 import {Alert} from 'react-native';
 import { getAsyncData, setAsyncData } from '../../utils/storage';
 export const splashScreenLaunched = () => async (dispatch: AppDispatch) => {

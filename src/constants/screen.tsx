@@ -12,8 +12,9 @@ const SCREENS = {
   MyShop: 'MyShop',
   ProfileScreen: 'ProfileScreen',
   SignUp: 'SignUp',
-  PartTake: 'PartTake'
-
+  PartTake: 'PartTake',
+  Home: "Home",
+  Wallet: "Wallet",
 };
 
 export type RootStackParamList = {

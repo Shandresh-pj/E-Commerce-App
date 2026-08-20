@@ -174,10 +174,10 @@ const PaymentMethodsScreen = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.walletLabel}>⚡ Wallet balance</Text>
-              <Text style={s.walletValue}>₹240</Text>
+              <Text style={s.walletValue}>₹1,110</Text>
             </View>
-            <TouchableOpacity style={s.walletBtn} onPress={comingSoon} activeOpacity={0.85}>
-              <Text style={s.walletBtnText}>Add money</Text>
+            <TouchableOpacity style={s.walletBtn} onPress={() => navigation.navigate('Wallet')} activeOpacity={0.85}>
+              <Text style={s.walletBtnText}>Manage Wallet</Text>
             </TouchableOpacity>
           </LinearGradient>
 

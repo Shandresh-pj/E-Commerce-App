@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,11 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  ActivityIndicator,
   Dimensions,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation, useFocusEffect } from '@react-navigation/native'
-import Defaults from '../../../config'
+  Pressable,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   fetchProductsByCategory,
   fetchProductDetail,
@@ -23,997 +22,756 @@ import {
   removeFromApiCart,
   fetchMyWishlist,
   toggleWishlist,
-} from '../../../shared/services/main-service'
-import Toast from 'react-native-root-toast'
-import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
-import { useTabBar } from '../../../shared/context/TabBarContext'
-import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal'
-import LinearGradient from 'react-native-linear-gradient'
-import Svg, { Path, Circle, Rect, Line } from 'react-native-svg'
-import { useTheme } from '../../../shared/context/ThemeContext'
+} from '../../../shared/services/main-service';
+import Toast from 'react-native-root-toast';
+import { getAsyncData, setAsyncData } from '../../../shared/utils/storage';
+import { useTabBar } from '../../../shared/context/TabBarContext';
+import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal';
+import LinearGradient from 'react-native-linear-gradient';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { useTheme } from '../../../hooks/useTheme';
+import { useResponsive } from '../../../hooks/useResponsive';
+import { SvkIcon } from '../../../design-system/icons/SvkIcon';
+import { SkeletonState } from '../../../design-system/components/SkeletonState';
+import { EmptyState } from '../../../design-system/components/EmptyState';
+import { TYPOGRAPHY } from '../../../design-system/tokens/typography';
+import { SPACING } from '../../../design-system/tokens/spacing';
+import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper';
 
-/* ── Inline SVG Icons ─────────────────────────────────────────────────── */
-const BackArrowSvgIcon = ({ color = '#0066CC', size = 20 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M19 12H5M5 12L12 19M5 12L12 5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-)
-
-const SearchSvgIcon = ({ color = '#0066CC', size = 18 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth="2" />
-    <Line x1="16.5" y1="16.5" x2="22" y2="22" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </Svg>
-)
-
-const HeartSvgIcon = ({ color = '#0066CC', size = 16 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-  </Svg>
-)
-
-const EmptyBoxSvgIcon = ({ color = '#829AB8', size = 52 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M21 16V8C21 7.44772 20.5523 7 20 7H4C3.44772 7 3 7.44772 3 8V16C3 16.5523 3.44772 17 4 17H20C20.5523 17 21 16.5523 21 16Z" stroke={color} strokeWidth="1.5" />
-    <Path d="M3 7L12 2L21 7" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-    <Path d="M12 2V7" stroke={color} strokeWidth="1.5" />
-    <Path d="M3 7L12 12L21 7" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-    <Path d="M12 12V22" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-  </Svg>
-)
-
-const CartBarSvgIcon = ({ color = '#0B1B36', size = 18 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M6 2L3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6L18 2H6Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-    <Path d="M3 6H21" stroke={color} strokeWidth="2" />
-    <Path d="M16 10C16 12.2091 14.2091 14 12 14C9.79086 14 8 12.2091 8 10" stroke={color} strokeWidth="2" strokeLinecap="round" />
-  </Svg>
-)
-
-const { width: W } = Dimensions.get('window')
-const SIDEBAR_WIDTH = 68
-const PRODUCT_AREA = W - SIDEBAR_WIDTH
-const GUTTER = 8
-const CARD_WIDTH = (PRODUCT_AREA - 12 - GUTTER) / 2
+const { width: W } = Dimensions.get('window');
+const SIDEBAR_WIDTH = 76;
 
 type ApiProduct = {
-  id: number
-  name: string
-  description: string
-  price: string
-  image: string
-  images: string[] | null
-  product_type: 'simple' | 'variant'
-  stock_in_hand: number
-  status: 'active' | 'inactive'
-  variants: any[]
-  [key: string]: any
-}
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  image: string;
+  images: string[] | null;
+  product_type: 'simple' | 'variant';
+  stock_in_hand: number;
+  status: 'active' | 'inactive';
+  variants: any[];
+  [key: string]: any;
+};
 
-type SortKey = 'default' | 'price_lh' | 'price_hl' | 'stock'
+type SortKey = 'default' | 'price_lh' | 'price_hl' | 'stock';
 
 const FILTER_CHIPS = [
-  { key: 'default', label: '↕ Sort' },
-  { key: 'filter', label: '⚙ Filter' },
-  { key: 'stock', label: 'In stock' },
-  { key: 'price_lh', label: 'Under ₹50' },
-  { key: 'price_hl', label: 'Bestseller' },
-]
+  { key: 'default', label: '↕ All' },
+  { key: 'stock', label: '⚡ In Stock' },
+  { key: 'price_lh', label: 'Price: Low' },
+  { key: 'price_hl', label: 'Price: High' },
+];
 
-const CATEGORY_COLORS = [
-  'rgba(30, 58, 100, 0.9)', 'rgba(22, 44, 80, 0.9)',
-  'rgba(15, 35, 70, 0.9)', 'rgba(20, 40, 80, 0.9)',
-  'rgba(25, 50, 90, 0.9)', 'rgba(18, 38, 75, 0.9)',
-  'rgba(28, 55, 95, 0.9)', 'rgba(12, 30, 65, 0.9)',
-]
-const CATEGORY_EMOJIS = ['🥦', '🥚', '🍿', '🥤', '🥐', '🍜', '🧴', '🍪']
-
-const PRODUCT_BG_COLORS = [
-  '#FFE0E0', '#FFF4D6', '#E0F0FF', '#E4F6E6',
-  '#EBE4FF', '#FFE9E0', '#E0FFE8', '#F4E8FF',
-]
-
-import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper'
-
-const getPriceInfo = (item: ApiProduct) => {
-  if (item.product_type === 'variant' && item.variants?.length > 0) {
-    const prices = item.variants.map((v: any) => parseFloat(v.Price)).filter((p: number) => !isNaN(p))
-    if (prices.length > 0) return { price: Math.min(...prices), isRange: new Set(prices).size > 1 }
-  }
-  return { price: parseFloat(item.price), isRange: false }
-}
-
-const getDiscountPercent = (item: ApiProduct) => {
-  const price = parseFloat(item.price) || 0
-  const mrp = parseFloat(item.mrp || item.compare_at_price) || 0
-  if (mrp > price && price > 0) {
-    return Math.round(((mrp - price) / mrp) * 100)
-  }
-  return 0
-}
+const CATEGORY_EMOJIS: Record<string, string> = {
+  Electronics: '⚡',
+  Fashion: '👗',
+  Home: '🏡',
+  Beauty: '🧴',
+  Sports: '⚽',
+  Automotive: '🚗',
+  Groceries: '🥦',
+  Beverages: '🥤',
+};
 
 const ProductCard = React.memo(({
-  item, qty, isWished, onAdd, onIncrease, onDecrease, onPress, onToggleWishlist, onBuy, index,
+  item,
+  qty,
+  isWished,
+  cardWidth,
+  onAdd,
+  onIncrease,
+  onDecrease,
+  onPress,
+  onToggleWishlist,
 }: {
-  item: ApiProduct; qty: number; isWished: boolean; index: number
-  onAdd: (id: number) => void; onIncrease: (id: number) => void
-  onDecrease: (id: number) => void; onPress: (id: number) => void
-  onToggleWishlist: (id: number) => void
-  onBuy: (id: number) => void
+  item: ApiProduct;
+  qty: number;
+  isWished: boolean;
+  cardWidth: number;
+  onAdd: (id: number) => void;
+  onIncrease: (id: number) => void;
+  onDecrease: (id: number) => void;
+  onPress: (id: number) => void;
+  onToggleWishlist: (id: number) => void;
 }) => {
-  const { isDark, colors } = useTheme()
-  const initialImg = buildImageUrl(item.image, item.name, 'product')
-  const [imgSrc, setImgSrc] = useState(initialImg)
+  const { tokens, isDark } = useTheme();
+  const initialImg = buildImageUrl(item.image, item.name, 'product');
+  const [imgSrc, setImgSrc] = useState(initialImg);
 
   useEffect(() => {
-    setImgSrc(buildImageUrl(item.image, item.name, 'product'))
-  }, [item.image, item.name])
+    setImgSrc(buildImageUrl(item.image, item.name, 'product'));
+  }, [item.image, item.name]);
 
-  const inStock = (item.stock_in_hand ?? 1) > 0
-  const { price } = getPriceInfo(item)
-  const discount = getDiscountPercent(item)
-  const mrp = parseFloat(item.mrp || item.compare_at_price) || 0
-  const bgColor = isDark ? 'rgba(30, 58, 100, 0.6)' : PRODUCT_BG_COLORS[index % 8]
+  const inStock = (item.stock_in_hand ?? 1) > 0;
+  const price = parseFloat(item.price) || 0;
+  const mrp = parseFloat(item.compare_at_price || item.mrp) || 0;
+  const discount = mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   return (
-    <View style={[card.root, { width: CARD_WIDTH, backgroundColor: isDark ? 'rgba(11, 27, 54, 0.96)' : '#FFFFFF', borderColor: isDark ? 'rgba(251, 191, 36, 0.2)' : '#E2E8F0' }]}>
+    <View
+      style={[
+        cardStyles.root,
+        {
+          width: cardWidth,
+          backgroundColor: tokens.surface.card,
+          borderColor: tokens.border.default,
+        },
+      ]}
+    >
       <View style={{ position: 'relative' }}>
-        <TouchableOpacity activeOpacity={0.85} onPress={() => onPress(item.id)}>
-          <View style={[card.imgBox, { backgroundColor: bgColor }]}>
+        <TouchableOpacity activeOpacity={0.88} onPress={() => onPress(item.id)}>
+          <View style={[cardStyles.imgBox, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}>
             {discount > 0 && (
-              <View style={card.discountBadge}>
-                <Text style={card.discountText}>{discount}% OFF</Text>
+              <View style={cardStyles.discountBadge}>
+                <Text style={cardStyles.discountText}>{discount}% OFF</Text>
               </View>
             )}
             <Image
               source={{ uri: imgSrc }}
-              style={card.img}
+              style={cardStyles.img}
               resizeMode="cover"
               onError={() => {
-                const fallback = getFallbackImage(item.name, 'product')
+                const fallback = getFallbackImage(item.name, 'product');
                 if (imgSrc !== fallback) {
-                  setImgSrc(fallback)
+                  setImgSrc(fallback);
                 }
               }}
             />
             {!inStock && (
-              <View style={card.oosOverlay}>
-                <Text style={card.oosLabel}>Out of Stock</Text>
+              <View style={cardStyles.oosOverlay}>
+                <Text style={cardStyles.oosLabel}>Out of Stock</Text>
               </View>
             )}
           </View>
         </TouchableOpacity>
-        
-        {/* Wishlist overlay */}
+
+        {/* Wishlist Toggle */}
         <TouchableOpacity
-          style={[card.heartBtn, { backgroundColor: isDark ? 'rgba(7, 18, 36, 0.85)' : 'rgba(255, 255, 255, 0.9)' }]}
+          style={[cardStyles.heartBtn, { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)' }]}
           onPress={() => onToggleWishlist(item.id)}
           activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={[card.heartIcon, isWished && card.heartIconActive]}>
-            {isWished ? '♥' : '♡'}
-          </Text>
+          <SvkIcon name={isWished ? 'heartFilled' : 'heart'} size={16} color={isWished ? '#EF4444' : tokens.content.tertiary} />
         </TouchableOpacity>
       </View>
-      <Text style={[card.name, { color: colors.textPrimary }]} numberOfLines={2}>{item.name}</Text>
-      <Text style={[card.unit, { color: colors.textSecondary }]}>{item.unit || item.weight || 'per unit'}</Text>
-      <View style={card.footer}>
-        <View>
-          <Text style={[card.price, { color: isDark ? '#FBBF24' : colors.textPrimary }]}>₹{price.toLocaleString('en-IN')}</Text>
-          {mrp > price && (
-            <Text style={[card.mrp, { color: colors.textMuted }]}>₹{mrp.toLocaleString('en-IN')}</Text>
-          )}
-        </View>
-        {inStock ? (
-          <View style={{ flexDirection: 'row', gap: 4 }}>
-            {qty === 0 ? (
-              <TouchableOpacity style={[card.addBtn, { backgroundColor: isDark ? '#FBBF24' : '#0B1B36', borderColor: isDark ? '#FBBF24' : '#0B1B36' }]} onPress={() => onAdd(item.id)} activeOpacity={0.82}>
-                <Text style={[card.addTxt, { color: isDark ? '#0B1B36' : '#FBBF24' }]}>ADD</Text>
+
+      <View style={cardStyles.body}>
+        <Text style={[cardStyles.name, { color: tokens.content.primary }]} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <Text style={[cardStyles.unit, { color: tokens.content.tertiary }]}>
+          {item.unit || item.weight || 'Official SVK Guarantee'}
+        </Text>
+
+        <View style={cardStyles.priceRow}>
+          <View>
+            <Text style={[cardStyles.price, { color: tokens.content.primary }]}>₹{price.toFixed(2)}</Text>
+            {mrp > price && <Text style={[cardStyles.mrp, { color: tokens.content.tertiary }]}>₹{mrp.toFixed(2)}</Text>}
+          </View>
+
+          {inStock && (
+            qty === 0 ? (
+              <TouchableOpacity
+                style={[cardStyles.addBtn, { backgroundColor: tokens.brand.primary }]}
+                onPress={() => onAdd(item.id)}
+                activeOpacity={0.85}
+              >
+                <Text style={cardStyles.addTxt}>ADD</Text>
               </TouchableOpacity>
             ) : (
-              <View style={[card.stepper, { backgroundColor: colors.accent }]}>
-                <TouchableOpacity style={card.stepBtn} onPress={() => onDecrease(item.id)}>
-                  <Text style={[card.stepTxt, { color: colors.accentText }]}>−</Text>
+              <View style={[cardStyles.stepper, { backgroundColor: tokens.brand.primary }]}>
+                <TouchableOpacity style={cardStyles.stepBtn} onPress={() => onDecrease(item.id)}>
+                  <Text style={cardStyles.stepTxt}>−</Text>
                 </TouchableOpacity>
-                <Text style={[card.stepQty, { color: colors.accentText }]}>{qty}</Text>
-                <TouchableOpacity style={card.stepBtn} onPress={() => onIncrease(item.id)}>
-                  <Text style={[card.stepTxt, { color: colors.accentText }]}>+</Text>
+                <Text style={cardStyles.stepQty}>{qty}</Text>
+                <TouchableOpacity style={cardStyles.stepBtn} onPress={() => onIncrease(item.id)}>
+                  <Text style={cardStyles.stepTxt}>+</Text>
                 </TouchableOpacity>
               </View>
-            )}
-            <TouchableOpacity style={[card.addBtn, { backgroundColor: '#FBBF24', borderColor: '#FBBF24' }]} onPress={() => onBuy(item.id)} activeOpacity={0.82}>
-              <Text style={[card.addTxt, { color: '#0B1B36' }]}>BUY</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={[card.notifyBtn, { borderColor: colors.accent }]}>
-            <Text style={[card.notifyTxt, { color: colors.accent }]}>NOTIFY</Text>
-          </View>
-        )}
+            )
+          )}
+        </View>
       </View>
     </View>
-  )
-})
+  );
+});
 
-const CategoryScreen = () => {
-  const { isDark, colors } = useTheme()
-  const navigation = useNavigation<any>()
-  const { showTabBar } = useTabBar()
+export const CategoryScreen = () => {
+  const { tokens, isDark } = useTheme();
+  const { width: screenWidth, gridColumns } = useResponsive();
+  const navigation = useNavigation<any>();
+  const { showTabBar } = useTabBar();
 
-  const [allCategories, setAllCategories] = useState<any[]>([])
-  const [activeCategory, setActiveCategory] = useState<any | null>(null)
-  const [products, setProducts] = useState<ApiProduct[]>([])
-  const [loadingProducts, setLoadingProducts] = useState(true)
-  const [sort, setSort] = useState<SortKey>('default')
-  const [cartItems, setCartItems] = useState<any[]>([])
-  const [wishlistProductIds, setWishlistProductIds] = useState<Set<number>>(new Set())
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [activeCategory, setActiveCategory] = useState<any | null>(null);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [sort, setSort] = useState<SortKey>('default');
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [wishlistProductIds, setWishlistProductIds] = useState<Set<number>>(new Set());
 
-  const [detailVisible, setDetailVisible] = useState(false)
-  const [detailLoading, setDetailLoading] = useState(false)
-  const [detailProduct, setDetailProduct] = useState<ApiProductDetail | null>(null)
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailProduct, setDetailProduct] = useState<ApiProductDetail | null>(null);
+
+  const productAreaWidth = screenWidth - SIDEBAR_WIDTH;
+  const cardWidth = (productAreaWidth - SPACING.md * 2 - SPACING.xs) / Math.max(1, gridColumns - 1);
 
   useFocusEffect(
     useCallback(() => {
-      showTabBar()
-      loadCategories()
-      loadCart()
-      loadWishlist()
-    }, []),
-  )
+      showTabBar();
+      loadCategories();
+      loadCart();
+      loadWishlist();
+    }, [])
+  );
 
   useEffect(() => {
-    if (activeCategory) loadProducts()
-  }, [activeCategory?.id, activeCategory?.name])
+    if (activeCategory) loadProducts();
+  }, [activeCategory?.id, activeCategory?.name]);
 
   const loadCategories = async () => {
     try {
-      const cats = await fetchCategories()
-      const filtered = cats.filter((c: any) => c.status !== false)
-      setAllCategories(filtered)
-      // Select first category
-      setActiveCategory((prev: any) => prev ?? filtered[0] ?? null)
-    } catch {
-      // Ignore empty state
+      const cats = await fetchCategories();
+      const filtered = cats.filter((c: any) => c.status !== false);
+      setAllCategories(filtered);
+      setActiveCategory((prev: any) => prev ?? filtered[0] ?? null);
+    } catch (e) {
+      console.log('loadCategories error:', e);
     }
-  }
+  };
 
   const loadProducts = async () => {
-    if (!activeCategory) return
-    setLoadingProducts(true)
+    if (!activeCategory) return;
+    setLoadingProducts(true);
     try {
-      const data = await fetchProductsByCategory(activeCategory.id, activeCategory.name)
-      setProducts(data)
+      const data = await fetchProductsByCategory(activeCategory.id, activeCategory.name);
+      setProducts(data);
     } finally {
-      setLoadingProducts(false)
+      setLoadingProducts(false);
     }
-  }
+  };
 
   const loadCart = async () => {
     try {
-      const raw = await fetchApiCart()
+      const raw = await fetchApiCart();
       if (raw) {
         const mapped = raw.map((rawItem: any) => {
-          const product = rawItem.product ?? rawItem.Product ?? rawItem
+          const product = rawItem.product ?? rawItem.Product ?? rawItem;
           return {
             cartItemId: rawItem.id ?? rawItem.Id,
             id: product.id ?? product.Id ?? rawItem.product_id ?? rawItem.ProductId,
             name: product.name ?? rawItem.name ?? 'Product',
-            image: product.image ?? rawItem.image ?? '',
-            images: product.images ?? rawItem.images ?? [],
-            unit: product.unit ?? product.weight ?? rawItem.unit ?? '',
-            points: parseFloat(product.price ?? rawItem.price ?? '0') || 0,
+            price: parseFloat(product.price ?? rawItem.price ?? '0') || 0,
             quantity: rawItem.quantity ?? rawItem.Quantity ?? 1,
-          }
-        })
-        setCartItems(mapped)
-        await setAsyncData('cart_items', mapped as any)
+          };
+        });
+        setCartItems(mapped);
       }
     } catch (e) {
-      console.log('CategoryScreen loadCart error:', e)
-      const stored = (await getAsyncData('cart_items')) || []
-      setCartItems(Array.isArray(stored) ? stored : [])
+      console.log('loadCart error:', e);
     }
-  }
+  };
 
   const loadWishlist = async () => {
     try {
-      const dataList = await fetchMyWishlist()
+      const dataList = await fetchMyWishlist();
       if (dataList) {
         const ids = dataList.map((item: any) => {
-          const product = item.product ?? item.Product ?? item
-          return product.id ?? product.Id ?? item.product_id ?? item.ProductId
-        })
-        setWishlistProductIds(new Set(ids))
+          const product = item.product ?? item.Product ?? item;
+          return product.id ?? product.Id ?? item.product_id ?? item.ProductId;
+        });
+        setWishlistProductIds(new Set(ids));
       }
     } catch (e) {
-      console.log('CategoryScreen loadWishlist error:', e)
+      console.log('loadWishlist error:', e);
     }
-  }
+  };
 
-  const toggleWish = useCallback(async (id: number) => {
-    const isWished = wishlistProductIds.has(id)
-    
-    // Optimistic update
-    setWishlistProductIds(prev => {
-      const next = new Set(prev)
-      if (isWished) {
-        next.delete(id)
-      } else {
-        next.add(id)
+  const toggleWish = useCallback(
+    async (id: number) => {
+      const isWished = wishlistProductIds.has(id);
+      setWishlistProductIds((prev) => {
+        const next = new Set(prev);
+        if (isWished) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+
+      const success = await toggleWishlist(id, isWished);
+      if (success) {
+        Toast.show(isWished ? 'Removed from Wishlist' : 'Added to Wishlist ♥', { duration: Toast.durations.SHORT });
       }
-      return next
-    })
+    },
+    [wishlistProductIds]
+  );
 
-    const success = await toggleWishlist(id, isWished)
+  const handleAddToCart = async (id: number) => {
+    const success = await addToApiCart(id, 1);
     if (success) {
-      Toast.show(isWished ? 'Removed from wishlist' : 'Added to wishlist ♥', { duration: Toast.durations.SHORT })
-      loadWishlist()
-    } else {
-      // Revert update
-      setWishlistProductIds(prev => {
-        const next = new Set(prev)
-        if (isWished) {
-          next.add(id)
-        } else {
-          next.delete(id)
-        }
-        return next
-      })
-      Toast.show('Failed to update wishlist', { duration: Toast.durations.SHORT })
+      Toast.show('Item added to Cart', { duration: Toast.durations.SHORT });
+      loadCart();
     }
-  }, [wishlistProductIds])
+  };
 
-  const openDetail = useCallback(async (id: number) => {
-    setDetailVisible(true)
-    setDetailLoading(true)
-    setDetailProduct(null)
-    const data = await fetchProductDetail(id)
-    setDetailProduct(data)
-    setDetailLoading(false)
-  }, [])
-
-  const filtered = useMemo(() => {
-    let list = [...products]
-    switch (sort) {
-      case 'price_lh': list.sort((a, b) => getPriceInfo(a).price - getPriceInfo(b).price); break
-      case 'price_hl': list.sort((a, b) => getPriceInfo(b).price - getPriceInfo(a).price); break
-      case 'stock': list.sort((a, b) => b.stock_in_hand - a.stock_in_hand); break
+  const handleQuantityIncrease = async (id: number) => {
+    const existing = cartItems.find((c) => c.id === id);
+    if (existing) {
+      await addToApiCart(id, 1);
+      loadCart();
     }
-    return list
-  }, [products, sort])
+  };
 
-  const getQty = (id: number) => cartItems.find(i => i.id === id)?.quantity || 0
-
-  const addToCart = useCallback(async (id: number) => {
-    const product = products.find(p => p.id === id)
-    if (!product) return
-    const updated = [...cartItems, { ...product, quantity: 1, points: parseFloat(product.price) || 0 }]
-    setCartItems(updated)
-    await setAsyncData('cart_items', updated as any)
-
-    const success = await addToApiCart(id, 1)
-    if (success) {
-      await loadCart()
-    } else {
-      const stored = (await getAsyncData('cart_items')) || []
-      setCartItems(Array.isArray(stored) ? stored : [])
-    }
-  }, [cartItems, products])
-
-  const handleBuy = useCallback(async (id: number) => {
-    const qty = getQty(id)
-    if (qty === 0) {
-      await addToCart(id)
-    }
-    navigation.navigate('PlaceOrder')
-  }, [cartItems, addToCart])
-
-  const increase = useCallback(async (id: number) => {
-    const updated = cartItems.map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
-    setCartItems(updated)
-    await setAsyncData('cart_items', updated as any)
-
-    const success = await addToApiCart(id, 1)
-    if (success) {
-      await loadCart()
-    } else {
-      const stored = (await getAsyncData('cart_items')) || []
-      setCartItems(Array.isArray(stored) ? stored : [])
-    }
-  }, [cartItems])
-
-  const decrease = useCallback(async (id: number) => {
-    const item = cartItems.find(i => i.id === id)
-    if (!item) return
-    const cartItemId = item.cartItemId
-
-    const updated = cartItems
-      .map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) - 1 } : i)
-      .filter(i => (i.quantity || 0) > 0)
-    setCartItems(updated)
-    await setAsyncData('cart_items', updated as any)
-
-    let success = false
-    if ((item.quantity || 1) <= 1) {
-      if (cartItemId) {
-        success = await removeFromApiCart(cartItemId)
+  const handleQuantityDecrease = async (id: number) => {
+    const existing = cartItems.find((c) => c.id === id);
+    if (existing) {
+      if (existing.quantity === 1) {
+        await removeFromApiCart(existing.cartItemId || id);
       } else {
-        const raw = await fetchApiCart()
-        const match = raw?.find((r: any) => (r.product?.id ?? r.product_id) === id)
-        if (match?.id) {
-          success = await removeFromApiCart(match.id)
-        }
+        await addToApiCart(id, -1);
       }
-    } else {
-      success = await addToApiCart(id, -1)
+      loadCart();
     }
+  };
 
-    if (success) {
-      await loadCart()
-    } else {
-      const stored = (await getAsyncData('cart_items')) || []
-      setCartItems(Array.isArray(stored) ? stored : [])
+  const openProductDetail = async (id: number) => {
+    setDetailVisible(true);
+    setDetailLoading(true);
+    try {
+      const detail = await fetchProductDetail(id);
+      if (detail) {
+        setDetailProduct(detail);
+      }
+    } finally {
+      setDetailLoading(false);
     }
-  }, [cartItems])
+  };
 
-  const cartCount = useMemo(() => cartItems.reduce((s, i) => s + (i.quantity || 1), 0), [cartItems])
-  const cartTotal = useMemo(
-    () => cartItems.reduce((s, i) => s + (i.points || 0) * (i.quantity || 1), 0),
-    [cartItems],
-  )
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+    if (sort === 'stock') {
+      result = result.filter((p) => (p.stock_in_hand ?? 1) > 0);
+    } else if (sort === 'price_lh') {
+      result.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+    } else if (sort === 'price_hl') {
+      result.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
+    }
+    return result;
+  }, [products, sort]);
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: ApiProduct; index: number }) => (
-      <ProductCard
-        item={item}
-        qty={getQty(item.id)}
-        isWished={wishlistProductIds.has(item.id)}
-        onAdd={addToCart}
-        onIncrease={increase}
-        onDecrease={decrease}
-        onPress={openDetail}
-        onToggleWishlist={toggleWish}
-        onBuy={handleBuy}
-        index={index}
-      />
-    ),
-    [cartItems, wishlistProductIds, addToCart, increase, decrease, openDetail, toggleWish, handleBuy],
-  )
+  const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalCartPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
-    <LinearGradient
-      colors={isDark ? ['#071224', '#0B1B36', '#071224'] : ['#F7F9FC', '#EEF2F7', '#F7F9FC']}
-      locations={[0, 0.5, 1]}
-      style={s.root}
-    >
-      <StatusBar backgroundColor={colors.statusBarBg} barStyle={colors.statusBarStyle} />
-      <SafeAreaView style={s.safe} edges={[]}>
-        <ApiProductDetailModal
-          visible={detailVisible}
-          onClose={() => setDetailVisible(false)}
-          productDetail={detailProduct}
-          loading={detailLoading}
-          qty={detailProduct ? getQty(detailProduct.id) : 0}
-          onAdd={addToCart}
-          onIncrease={increase}
-          onDecrease={decrease}
-          related={filtered}
-          onSelectRelated={openDetail}
-          onViewCart={() => navigation.navigate('Cart')}
-        />
+    <SafeAreaView style={[styles.container, { backgroundColor: tokens.surface.base }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-        {/* Header */}
-        <LinearGradient
-          colors={['#FFFFFF', '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.header}
-        >
-          <View style={s.headerTop}>
-            <TouchableOpacity
-              style={[s.backBtn, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}
-              onPress={() => navigation.canGoBack() && navigation.goBack()}
-              activeOpacity={0.8}
-            >
-              <BackArrowSvgIcon color="#0B1B36" size={20} />
-            </TouchableOpacity>
-            <View style={s.headerInfo}>
-              <Text style={[s.headerTitle, { color: '#0B1B36' }]} numberOfLines={1}>
-                {activeCategory?.name || 'Categories'}
-              </Text>
-              <Text style={[s.headerSub, { color: '#64748B' }]}>⚡ Delivery in 8 min</Text>
-            </View>
-            <TouchableOpacity style={[s.searchBtn, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]} onPress={() => navigation.navigate('Search')} activeOpacity={0.8}>
-              <SearchSvgIcon color="#0B1B36" size={18} />
-            </TouchableOpacity>
-          </View>
+      {/* Header Bar */}
+      <View style={[styles.header, { backgroundColor: tokens.surface.base, borderBottomColor: tokens.border.subtle }]}>
+        <View style={styles.headerTitleRow}>
+          <Text style={[styles.headerTitle, { color: tokens.content.primary }]}>Explore Categories</Text>
+          <Pressable onPress={() => navigation.navigate('Search')} style={styles.searchIconBtn}>
+            <SvkIcon name="search" size={20} color={tokens.content.primary} />
+          </Pressable>
+        </View>
+      </View>
 
-          {/* Filter chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.chipRow}
-          >
-            {FILTER_CHIPS.map(opt => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[
-                  s.chip,
-                  { backgroundColor: colors.chip, borderColor: colors.chipBorder },
-                  sort === opt.key && { backgroundColor: colors.chipActive, borderColor: colors.chipActive },
-                ]}
-                onPress={() => setSort(opt.key as SortKey)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    s.chipTxt,
-                    { color: colors.chipText },
-                    sort === opt.key && { color: colors.chipActiveText },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </LinearGradient>
-
-        {/* Sidebar and Products */}
-        <View style={s.contentRow}>
-          {/* Category sidebar */}
-          <ScrollView
-            style={[s.sidebar, { backgroundColor: colors.sidebar, borderRightColor: colors.sidebarBorder }]}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={s.sidebarContent}
-          >
-            {allCategories.map((cat, idx) => {
-              const isActive = cat.id === activeCategory?.id
-              const imageUri = cat.image ? buildImageUrl(cat.image) : null
+      {/* Main Dual-Column Body */}
+      <View style={styles.mainBody}>
+        {/* Left Category Rail Sidebar */}
+        <View style={[styles.sidebar, { backgroundColor: tokens.surface.secondary, borderRightColor: tokens.border.subtle }]}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sidebarContent}>
+            {allCategories.map((cat) => {
+              const isActive = activeCategory?.id === cat.id;
+              const emoji = CATEGORY_EMOJIS[cat.name] || '📦';
               return (
                 <TouchableOpacity
                   key={cat.id}
-                  style={[s.sidebarItem, isActive && { backgroundColor: colors.sidebarActive, borderTopLeftRadius: 16, borderBottomLeftRadius: 16 }]}
                   onPress={() => setActiveCategory(cat)}
-                  activeOpacity={0.75}
+                  style={[
+                    styles.sidebarItem,
+                    isActive && { backgroundColor: tokens.brand.primarySoft, borderColor: tokens.brand.primary },
+                  ]}
+                  activeOpacity={0.8}
                 >
-                  {isActive && <View style={[s.sidebarIndicator, { backgroundColor: colors.sidebarIndicator }]} />}
-                  <View style={[s.sidebarIcon, { backgroundColor: isDark ? CATEGORY_COLORS[idx % 8] : '#F1F5F9', borderColor: colors.sidebarIconBorder }]}>
-                    {imageUri ? (
-                      <Image source={{ uri: imageUri }} style={s.sidebarImage} resizeMode="cover" />
-                    ) : (
-                      <Text style={s.sidebarEmoji}>{CATEGORY_EMOJIS[idx % 8]}</Text>
-                    )}
-                  </View>
+                  <Text style={styles.sidebarEmoji}>{emoji}</Text>
                   <Text
-                    style={[s.sidebarLabel, { color: isActive ? colors.sidebarLabelActive : colors.sidebarLabel }]}
+                    style={[
+                      styles.sidebarLabel,
+                      { color: isActive ? tokens.brand.primary : tokens.content.primary },
+                      isActive && { fontWeight: '700' },
+                    ]}
                     numberOfLines={2}
                   >
                     {cat.name}
                   </Text>
                 </TouchableOpacity>
-              )
+              );
             })}
           </ScrollView>
-
-          {/* Product grid */}
-          <View style={s.productArea}>
-            {loadingProducts ? (
-              <View style={s.center}>
-                <ActivityIndicator size="large" color="#0C831F" />
-                <Text style={s.loadingText}>Loading products…</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={filtered}
-                keyExtractor={item => String(item.id)}
-                numColumns={2}
-                renderItem={renderItem}
-                contentContainerStyle={s.grid}
-                columnWrapperStyle={{ gap: GUTTER }}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                  <View style={s.empty}>
-                    <View style={[s.emptyIcon, { backgroundColor: colors.emptyIconBg, borderColor: colors.border }]}>
-                      <EmptyBoxSvgIcon color={colors.textSecondary} size={52} />
-                    </View>
-                    <Text style={[s.emptyTitle, { color: colors.emptyTitle }]}>Stocking up soon</Text>
-                    <Text style={[s.emptySub, { color: colors.emptySubtitle }]}>
-                      No items in {activeCategory?.name || 'this category'} right now.
-                    </Text>
-                  </View>
-                }
-              />
-            )}
-          </View>
         </View>
 
-        {/* Cart bar */}
-        {cartCount > 0 && (
-          <TouchableOpacity
-            style={[s.cartBar, { backgroundColor: isDark ? '#FBBF24' : '#0B1B36' }]}
-            onPress={() => navigation.navigate('Cart')}
-            activeOpacity={0.92}
-          >
-            <View style={s.cartBarLeft}>
-              <CartBarSvgIcon color={isDark ? '#0B1B36' : '#FBBF24'} size={18} />
-              <View>
-                <Text style={[s.cartItems, { color: isDark ? '#0B1B36' : '#FFFFFF' }]}>{cartCount} item{cartCount > 1 ? 's' : ''}</Text>
-                <Text style={[s.cartTotal, { color: isDark ? '#0B1B36' : '#FBBF24' }]}>₹{cartTotal.toLocaleString('en-IN')}</Text>
-              </View>
-            </View>
-            <View style={s.cartCta}>
-              <Text style={[s.cartCtaText, { color: isDark ? '#0B1B36' : '#FBBF24' }]}>View cart</Text>
-              <Text style={[s.cartArrow, { color: isDark ? '#0B1B36' : '#FBBF24' }]}>→</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* Wishlist bar */}
-        {wishlistProductIds.size > 0 && (
-          <TouchableOpacity
-            style={[s.wishlistBar, { bottom: cartCount > 0 ? 142 : 78 }]}
-            onPress={() => navigation.navigate('WishList')}
-            activeOpacity={0.92}
-          >
-            <View style={s.wishlistLeft}>
-              <HeartSvgIcon color="#FF6B6B" size={16} />
-              <Text style={s.wishlistText}>
-                {wishlistProductIds.size} item{wishlistProductIds.size > 1 ? 's' : ''} in wishlist
+        {/* Right Category Product Panel */}
+        <View style={styles.productPanel}>
+          {/* Active Category Header Banner */}
+          {activeCategory && (
+            <View style={styles.categoryBanner}>
+              <Text style={[styles.categoryBannerTitle, { color: tokens.content.primary }]}>
+                {activeCategory.name}
               </Text>
-            </View>
-            <View style={s.wishlistCta}>
-              <Text style={s.wishlistCtaText}>View wishlist</Text>
-              <Text style={s.wishlistArrow}>→</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      </SafeAreaView>
-    </LinearGradient>
-  )
-}
+              <Text style={[styles.categoryBannerCount, { color: tokens.content.tertiary }]}>
+                {filteredProducts.length} Live Items Available
+              </Text>
 
-const s = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1 },
+              {/* Filter Sort Rail */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRail}>
+                {FILTER_CHIPS.map((chip) => (
+                  <TouchableOpacity
+                    key={chip.key}
+                    onPress={() => setSort(chip.key as SortKey)}
+                    style={[
+                      styles.filterChip,
+                      { backgroundColor: tokens.surface.secondary, borderColor: tokens.border.default },
+                      sort === chip.key && { backgroundColor: tokens.brand.primary, borderColor: tokens.brand.primary },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        { color: tokens.content.primary },
+                        sort === chip.key && { color: '#FFFFFF', fontWeight: '700' },
+                      ]}
+                    >
+                      {chip.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
-  header: {
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    elevation: 10,
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    overflow: 'hidden',
+          {/* Product Grid / Loading / Empty */}
+          {loadingProducts ? (
+            <View style={styles.loadingGrid}>
+              {[1, 2, 3, 4].map((n) => (
+                <View key={n} style={{ width: cardWidth, marginBottom: 12 }}>
+                  <SkeletonState width="100%" height={180} radius="lg" />
+                </View>
+              ))}
+            </View>
+          ) : filteredProducts.length > 0 ? (
+            <FlatList
+              data={filteredProducts}
+              numColumns={Math.max(1, gridColumns - 1)}
+              keyExtractor={(item) => String(item.id)}
+              contentContainerStyle={styles.gridContent}
+              renderItem={({ item }) => {
+                const cartMatch = cartItems.find((c) => c.id === item.id);
+                const qty = cartMatch ? cartMatch.quantity : 0;
+                const isWished = wishlistProductIds.has(item.id);
+                return (
+                  <ProductCard
+                    item={item}
+                    qty={qty}
+                    isWished={isWished}
+                    cardWidth={cardWidth}
+                    onAdd={handleAddToCart}
+                    onIncrease={handleQuantityIncrease}
+                    onDecrease={handleQuantityDecrease}
+                    onPress={openProductDetail}
+                    onToggleWishlist={toggleWish}
+                  />
+                );
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon="bag"
+              title="Category Currently Empty"
+              subtitle="Pull down or select another category to explore our collection."
+            />
+          )}
+        </View>
+      </View>
+
+      {/* Floating Glassmorphic Cart Bar */}
+      {totalCartCount > 0 && (
+        <View style={styles.floatingCartBar}>
+          <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.floatingCartGradient}>
+            <View>
+              <Text style={styles.floatingCartQty}>{totalCartCount} Items in Cart</Text>
+              <Text style={styles.floatingCartPrice}>₹{totalCartPrice.toFixed(2)}</Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.floatingCartBtn}>
+              <Text style={styles.floatingCartBtnText}>View Cart →</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+      )}
+
+      {/* Product Detail Modal */}
+      {detailProduct && (
+        <ApiProductDetailModal
+          visible={detailVisible}
+          onClose={() => setDetailVisible(false)}
+          productDetail={detailProduct}
+          loading={detailLoading}
+          qty={cartItems.find((c) => c.id === detailProduct.id)?.quantity || 0}
+          onAdd={() => handleAddToCart(detailProduct.id)}
+          onIncrease={() => handleQuantityIncrease(detailProduct.id)}
+          onDecrease={() => handleQuantityDecrease(detailProduct.id)}
+          onViewCart={() => {
+            setDetailVisible(false);
+            navigation.navigate('Cart');
+          }}
+        />
+      )}
+    </SafeAreaView>
+  );
+};
+
+export default CategoryScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
   },
-  headerTop: {
+  header: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+  },
+  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    justifyContent: 'space-between',
   },
-  backBtn: {
-    width: 38,
-    height: 38,
-    backgroundColor: 'rgba(251, 191, 36, 0.12)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerInfo: { flex: 1 },
   headerTitle: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 19,
-    color: '#FFFFFF',
+    ...TYPOGRAPHY.headingM,
+    fontWeight: '700',
   },
-  headerSub: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 11.5,
-    color: '#FBBF24',
-    marginTop: 2,
+  searchIconBtn: {
+    padding: SPACING.xs,
   },
-  searchBtn: {
-    width: 38,
-    height: 38,
-    backgroundColor: 'rgba(251, 191, 36, 0.12)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  chipRow: { paddingHorizontal: 16, paddingBottom: 11, gap: 8 },
-  chip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-  },
-  chipActive: { backgroundColor: '#ffff00', borderColor: '#ffff00' },
-  chipTxt: { fontFamily: 'DMSans-Bold', fontSize: 12.5, color: '#829AB8' },
-  chipTxtActive: { color: '#0B1B36' },
-
-  contentRow: {
+  mainBody: {
     flex: 1,
     flexDirection: 'row',
   },
-
   sidebar: {
     width: SIDEBAR_WIDTH,
-    backgroundColor: 'rgba(7, 18, 36, 0.98)',
     borderRightWidth: 1,
-    borderRightColor: 'rgba(251, 191, 36, 0.15)',
   },
   sidebarContent: {
-    paddingVertical: 8,
-    paddingBottom: 120,
+    paddingVertical: SPACING.xs,
   },
   sidebarItem: {
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    position: 'relative',
-  },
-  sidebarItemActive: {
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-  },
-  sidebarIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: 10,
-    bottom: 10,
-    width: 3.5,
-    backgroundColor: '#FBBF24',
-    borderTopRightRadius: 4,
-    borderBottomRightRadius: 4,
-  },
-  sidebarIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
     justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.2)',
-  },
-  sidebarImage: {
-    width: 44,
-    height: 44,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
   },
   sidebarEmoji: {
     fontSize: 22,
+    marginBottom: 4,
   },
   sidebarLabel: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 9.5,
-    color: '#829AB8',
+    ...TYPOGRAPHY.caption,
     textAlign: 'center',
-    lineHeight: 11.5,
-    maxWidth: 60,
+    fontSize: 10.5,
   },
-  sidebarLabelActive: {
-    color: '#FBBF24',
-    fontWeight: '800',
-  },
-
-  productArea: {
+  productPanel: {
     flex: 1,
   },
-
-  grid: { paddingHorizontal: 8, paddingTop: 10, paddingBottom: 170, gap: GUTTER },
-
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: '#829AB8', fontFamily: 'DMSans-Regular' },
-
-  empty: { alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 20 },
-  emptyIcon: {
-    width: 84,
-    height: 84,
-    backgroundColor: 'rgba(130, 154, 184, 0.1)',
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
+  categoryBanner: {
+    padding: SPACING.sm,
+  },
+  categoryBannerTitle: {
+    ...TYPOGRAPHY.headingS,
+    fontWeight: '700',
+  },
+  categoryBannerCount: {
+    ...TYPOGRAPHY.caption,
+    marginTop: 2,
+  },
+  filterRail: {
+    marginTop: SPACING.xs,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(130, 154, 184, 0.2)',
+    marginRight: 6,
   },
-  emptyTitle: { fontFamily: 'DMSans-Bold', fontSize: 18, color: '#FFFFFF', marginTop: 18 },
-  emptySub: {
-    fontFamily: 'DMSans-Regular',
-    fontSize: 13,
-    color: '#829AB8',
-    textAlign: 'center',
-    marginTop: 5,
+  filterChipText: {
+    ...TYPOGRAPHY.caption,
   },
-
-  cartBar: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 78,
-    height: 58,
-    backgroundColor: '#FBBF24',
-    borderRadius: 18,
+  loadingGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    shadowColor: '#FBBF24',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    elevation: 12,
+    flexWrap: 'wrap',
+    padding: SPACING.sm,
+    gap: 8,
   },
-  cartBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cartItems: { fontFamily: 'DMSans-Bold', fontSize: 12.5, color: '#0B1B36' },
-  cartTotal: { fontFamily: 'DMSans-Bold', fontSize: 15.5, color: '#0B1B36' },
-  cartCta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cartCtaText: { fontFamily: 'DMSans-Bold', fontSize: 14, color: '#0B1B36' },
-  cartArrow: { fontSize: 17, color: '#0B1B36' },
-
-  wishlistBar: {
+  gridContent: {
+    padding: SPACING.sm,
+    paddingBottom: 80,
+  },
+  floatingCartBar: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    height: 52,
-    backgroundColor: 'rgba(11, 27, 54, 0.97)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.4)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    shadowColor: '#FF6B6B',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
     elevation: 8,
   },
-  wishlistLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  wishlistText: { fontFamily: 'DMSans-Bold', fontSize: 13.5, color: '#FFFFFF' },
-  wishlistCta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  wishlistCtaText: { fontFamily: 'DMSans-Bold', fontSize: 14, color: '#FBBF24' },
-  wishlistArrow: { fontSize: 16, color: '#FBBF24' },
-})
+  floatingCartGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm + 2,
+  },
+  floatingCartQty: {
+    ...TYPOGRAPHY.caption,
+    color: '#E2E8F0',
+  },
+  floatingCartPrice: {
+    ...TYPOGRAPHY.title,
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  floatingCartBtn: {
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: 14,
+  },
+  floatingCartBtnText: {
+    ...TYPOGRAPHY.caption,
+    color: '#0F172A',
+    fontWeight: '800',
+  },
+});
 
-const card = StyleSheet.create({
+const cardStyles = StyleSheet.create({
   root: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0F0EC',
     borderRadius: 16,
-    padding: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: SPACING.sm,
+    marginRight: SPACING.xs,
   },
   imgBox: {
-    height: 90,
-    borderRadius: 12,
-    justifyContent: 'center',
+    height: 120,
     alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  img: {
+    width: '80%',
+    height: '80%',
   },
   discountBadge: {
     position: 'absolute',
     top: 6,
     left: 6,
-    backgroundColor: '#141414',
-    borderRadius: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    zIndex: 1,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   discountText: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 10,
-    color: '#FFE000',
-  },
-  img: { width: '100%', height: '100%' },
-  fallback: {
-    fontSize: 32,
-    fontFamily: 'DMSans-Bold',
-    color: 'rgba(0,0,0,0.12)',
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
   },
   oosOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(244,245,240,0.82)',
-    justifyContent: 'center',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     alignItems: 'center',
-    borderRadius: 12,
+    justifyContent: 'center',
   },
-  oosLabel: { fontFamily: 'DMSans-Bold', fontSize: 11, color: '#C0392B' },
+  oosLabel: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   heartBtn: {
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
-    justifyContent: 'center',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    zIndex: 10,
+    justifyContent: 'center',
   },
-  heartIcon: {
-    fontSize: 17,
-    color: '#8E8E93',
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  heartIconActive: {
-    color: '#FF4757',
+  body: {
+    padding: SPACING.xs + 2,
   },
   name: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 12,
-    color: '#141414',
-    marginTop: 6,
-    lineHeight: 15,
-    height: 30,
+    ...TYPOGRAPHY.caption,
+    fontWeight: '600',
+    height: 32,
   },
   unit: {
-    fontFamily: 'DMSans-Medium',
-    fontSize: 10.5,
-    color: '#8a8a8a',
-    marginTop: 1,
+    ...TYPOGRAPHY.caption,
+    fontSize: 10,
+    marginVertical: 2,
   },
-  footer: {
+  priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: 4,
   },
-  price: { fontFamily: 'DMSans-Bold', fontSize: 14, color: '#141414' },
+  price: {
+    ...TYPOGRAPHY.bodyS,
+    fontWeight: '800',
+  },
   mrp: {
-    fontFamily: 'DMSans-Medium',
-    fontSize: 10,
-    color: '#9a9a9a',
+    ...TYPOGRAPHY.caption,
+    fontSize: 9.5,
     textDecorationLine: 'line-through',
   },
   addBtn: {
-    borderWidth: 1.5,
-    borderColor: '#0C831F',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
   },
-  addTxt: { fontFamily: 'DMSans-Bold', fontSize: 12, color: '#0C831F' },
+  addTxt: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0C831F',
     borderRadius: 10,
-    overflow: 'hidden',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
-  stepBtn: { width: 24, height: 28, justifyContent: 'center', alignItems: 'center' },
-  stepTxt: { color: '#fff', fontSize: 16, fontFamily: 'DMSans-Bold' },
-  stepQty: { color: '#fff', fontFamily: 'DMSans-Bold', fontSize: 13, minWidth: 12, textAlign: 'center' },
-  notifyBtn: {
-    borderWidth: 1.5,
-    borderColor: '#0C831F',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+  stepBtn: {
+    paddingHorizontal: 4,
   },
-  notifyTxt: { fontFamily: 'DMSans-Bold', fontSize: 9, color: '#0C831F' },
-})
-
-export default CategoryScreen
+  stepTxt: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  stepQty: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    marginHorizontal: 4,
+  },
+});

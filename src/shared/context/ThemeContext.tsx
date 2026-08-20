@@ -11,12 +11,14 @@ import React, {
 import { useColorScheme, Appearance } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getThemeColors, AppColors } from '../../constants/theme'
+import { LIGHT_THEME_COLORS, DARK_THEME_COLORS, ThemeColors } from '../../design-system/tokens/colors'
 
 type ThemeMode = 'system' | 'light' | 'dark'
 
 interface ThemeContextType {
   isDark: boolean
   colors: AppColors
+  tokens: ThemeColors
   themeMode: ThemeMode
   toggleTheme: () => void
   setTheme: (mode: ThemeMode) => void
@@ -32,13 +34,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   const systemScheme = useColorScheme()
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system')
 
-  // Determine if dark mode is active
   const isDark =
     themeMode === 'dark' || (themeMode === 'system' && systemScheme === 'dark')
 
   const colors = getThemeColors(isDark)
+  const tokens = isDark ? DARK_THEME_COLORS : LIGHT_THEME_COLORS
 
-  // Load saved theme preference
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then(stored => {
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
@@ -57,24 +58,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [isDark, setTheme])
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, themeMode, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ isDark, colors, tokens, themeMode, toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   )
 }
 
-/**
- * Hook to access current theme colors and settings.
- */
 export const useTheme = (): ThemeContextType => {
   const ctx = useContext(ThemeContext)
   if (!ctx) {
-    // Fallback theme context
     const systemScheme = Appearance.getColorScheme()
     const isDark = systemScheme === 'dark'
     return {
       isDark,
       colors: getThemeColors(isDark),
+      tokens: isDark ? DARK_THEME_COLORS : LIGHT_THEME_COLORS,
       themeMode: 'system',
       toggleTheme: () => {},
       setTheme: () => {},
@@ -82,3 +80,4 @@ export const useTheme = (): ThemeContextType => {
   }
   return ctx
 }
+

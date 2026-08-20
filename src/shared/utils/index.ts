@@ -1,9 +1,6 @@
 
-import { format } from 'date-fns';
 import Defaults from '../../config'
-
 import { getData } from '../services/main-service';
-import { ConcatenationScope } from 'webpack';
 import { getAsyncData } from './storage';
 export const priceFormat = (amount: any, decimalCount: number = 2, decimal: any = ".", thousands: any = "'") => {
   try {
@@ -182,11 +179,14 @@ export const base64ToFile = (data: string, filename: string, view: boolean = fal
     return data
   }
   else {
-    const downloadLink = document.createElement("a");
-    downloadLink.href = data;
-    // downloadLink.target= '_blank';
-    downloadLink.download = filename;
-    downloadLink.click();
+    const globalDoc = (globalThis as any).document;
+    if (globalDoc) {
+      const downloadLink = globalDoc.createElement("a");
+      downloadLink.href = data;
+      downloadLink.download = filename;
+      downloadLink.click();
+    }
+    return data;
   }
 
 

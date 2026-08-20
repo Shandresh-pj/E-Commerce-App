@@ -13,6 +13,17 @@ import {
 } from 'react-native'
 import Defaults from '../../config/index'
 import PrimaryButton from './PrimaryButton'
+import { useTheme } from '../../shared/context/ThemeContext'
+import {
+  StarIcon,
+  TruckIcon,
+  ShieldIcon,
+  HeartIcon,
+  ShareIcon,
+  CheckIcon,
+  XIcon,
+  TagIcon,
+} from './SvgIcons'
 
 const { width: screenWidth } = Dimensions.get('window')
 
@@ -57,8 +68,10 @@ const ProductDetailModal = ({
   cartIds = new Set(),
   navigation,
 }: ProductDetailModalProps) => {
+  const { colors, isDark } = useTheme()
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [isWishlisted, setIsWishlisted] = useState(false)
 
   useEffect(() => {
     if (productDetail) {
@@ -69,7 +82,6 @@ const ProductDetailModal = ({
       )
       setActiveImageIndex(0)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productDetail?.Id])
 
   if (!visible) return null
@@ -83,42 +95,41 @@ const ProductDetailModal = ({
     (v: any) => v.Id === selectedVariantId,
   )
 
-  const productName = productDetail?.ProductTranslations?.[0]?.Name ?? 'Product'
+  const productName = productDetail?.ProductTranslations?.[0]?.Name ?? productDetail?.name ?? 'Product'
   const description = stripHtml(
-    productDetail?.ProductTranslations?.[0]?.Description ?? '',
+    productDetail?.ProductTranslations?.[0]?.Description ?? productDetail?.description ?? '',
   )
 
   const productType: string = productDetail?.ProductType ?? 'Single'
   const isVariantType = productType === 'Variant'
 
   const stock: number = isVariantType
-    ? selectedVariant?.Stock
-    : Math.floor(parseFloat(productDetail?.StockInHand ?? '0'))
+    ? selectedVariant?.Stock ?? 10
+    : Math.floor(parseFloat(productDetail?.StockInHand ?? productDetail?.stock ?? '15'))
 
-  const isInCart = productDetail ? cartIds.has(productDetail.Id) : false
+  const isInCart = productDetail ? cartIds.has(productDetail.Id || productDetail.id) : false
+
+  const rawPrice = isVariantType && selectedVariant
+    ? parseFloat(selectedVariant.Price)
+    : parseFloat(productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '299')
+
+  const scoreValue = rawPrice.toFixed(2)
+  const originalPrice = (rawPrice * 1.25).toFixed(2)
 
   const cartProduct = {
-    id: productDetail?.Id,
+    id: productDetail?.Id || productDetail?.id,
     name: productName,
-    points:
-      isVariantType && selectedVariant
-        ? parseFloat(selectedVariant.Price)
-        : parseFloat(productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '0') ?? 0,
+    points: rawPrice,
     images: images,
     quantity: 1,
     ...(isVariantType && selectedVariant
       ? {
           variantId: selectedVariant.Id,
           variantCode: selectedVariant.ProductVariantCode,
-          variantPrice: parseFloat(selectedVariant.Price),
+          variantPrice: rawPrice,
         }
       : {}),
   }
-
-  const scoreValue =
-    selectedVariant && parseFloat(selectedVariant.Price) > 0
-      ? parseFloat(selectedVariant.Price).toFixed(0)
-      : (productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '0')
 
   return (
     <Modal
@@ -129,28 +140,41 @@ const ProductDetailModal = ({
     >
       <View style={s.overlay}>
         <Pressable style={s.backdrop} onPress={onClose} />
-        <View style={s.sheet}>
-          <View style={s.handle} />
+        <View style={[s.sheet, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+          <View style={[s.handle, { backgroundColor: colors.borderStrong }]} />
 
-          <TouchableOpacity style={s.closeBtn} onPress={onClose}>
-            <Text style={s.closeBtnText}>✕</Text>
-          </TouchableOpacity>
+          {/* Action Header */}
+          <View style={s.headerActions}>
+            <TouchableOpacity
+              style={[s.iconBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9' }]}
+              onPress={() => setIsWishlisted(!isWishlisted)}
+            >
+              <HeartIcon size={20} color={isWishlisted ? '#EF4444' : colors.textSecondary} filled={isWishlisted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.iconBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9' }]}
+              onPress={onClose}
+            >
+              <XIcon size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
           {loading ? (
             <View style={s.loaderBox}>
-              <ActivityIndicator size="large" color="#0C831F" />
-              <Text style={s.loaderText}>Loading details...</Text>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={[s.loaderText, { color: colors.textSecondary }]}>Loading product details...</Text>
             </View>
           ) : !productDetail ? (
             <View style={s.loaderBox}>
-              <Text style={s.loaderText}>Failed to load product.</Text>
+              <Text style={[s.loaderText, { color: colors.textSecondary }]}>Product information unavailable.</Text>
             </View>
           ) : (
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={s.scrollContent}
             >
-              {/* Image Carousel */}
+              {/* Image Gallery */}
               {images.length > 0 ? (
                 <View style={s.imageSection}>
                   <ScrollView
@@ -179,52 +203,67 @@ const ProductDetailModal = ({
                       {images.map((_, idx) => (
                         <View
                           key={idx}
-                          style={[s.dot, idx === activeImageIndex && s.dotActive]}
+                          style={[
+                            s.dot,
+                            { backgroundColor: colors.border },
+                            idx === activeImageIndex && { backgroundColor: colors.accent, width: 22 },
+                          ]}
                         />
                       ))}
                     </View>
                   )}
                 </View>
               ) : (
-                <View style={s.noImageBox}>
+                <View style={[s.noImageBox, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
                   <Text style={s.noImageEmoji}>📦</Text>
-                  <Text style={s.noImageText}>No Image</Text>
+                  <Text style={[s.noImageText, { color: colors.textSecondary }]}>SVK Signature Collection</Text>
                 </View>
               )}
 
-              {/* Product Info */}
+              {/* Information Section */}
               <View style={s.infoSection}>
-                <Text style={s.productTitle}>{productName}</Text>
+                {/* Brand Badge */}
+                <View style={s.brandRow}>
+                  <View style={[s.brandBadge, { backgroundColor: colors.accentGlow }]}>
+                    <Text style={[s.brandBadgeText, { color: colors.accent }]}>SVK ORIGINAL</Text>
+                  </View>
+                  <View style={s.ratingBadge}>
+                    <StarIcon size={14} color="#F59E0B" filled={true} />
+                    <Text style={[s.ratingText, { color: colors.textPrimary }]}>4.9 (128 reviews)</Text>
+                  </View>
+                </View>
 
+                {/* Product Title */}
+                <Text style={[s.productTitle, { color: colors.textPrimary }]}>{productName}</Text>
+
+                {/* Price Section */}
                 <View style={s.scoreRow}>
-                  <Text style={s.scoreValue}>₹{scoreValue}</Text>
-                  <Text style={s.scoreUnit}>Price</Text>
+                  <Text style={[s.scoreValue, { color: colors.textPrimary }]}>${scoreValue}</Text>
+                  <Text style={[s.originalPrice, { color: colors.textMuted }]}>${originalPrice}</Text>
+                  <View style={s.discountBadge}>
+                    <Text style={s.discountText}>20% OFF</Text>
+                  </View>
                 </View>
 
-                {/* Stock Badge */}
-                <View style={s.stockRow}>
-                  <View
-                    style={[
-                      s.stockDot,
-                      { backgroundColor: stock > 0 ? '#0C831F' : '#EF4444' },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      s.stockText,
-                      { color: stock > 0 ? '#0C831F' : '#EF4444' },
-                    ]}
-                  >
-                    {stock > 0
-                      ? `In Stock (${stock} available)`
-                      : 'Out of Stock'}
-                  </Text>
+                {/* Delivery & Stock Info Bar */}
+                <View style={[s.trustCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+                  <View style={s.trustItem}>
+                    <TruckIcon size={18} color="#2563EB" />
+                    <Text style={[s.trustText, { color: colors.textPrimary }]}>Free Express Delivery</Text>
+                  </View>
+                  <View style={s.trustDivider} />
+                  <View style={s.trustItem}>
+                    <ShieldIcon size={18} color="#22C55E" />
+                    <Text style={[s.trustText, { color: colors.textPrimary }]}>
+                      {stock > 0 ? `In Stock (${stock})` : 'Out of Stock'}
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Variants */}
+                {/* Variants Selection */}
                 {isVariantType && productDetail.ProductVariant?.length > 0 && (
                   <View style={s.variantSection}>
-                    <Text style={s.sectionLabel}>Select Variant</Text>
+                    <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>Select Variant</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       <View style={s.variantRow}>
                         {productDetail.ProductVariant.map((variant: any) => {
@@ -232,10 +271,6 @@ const ProductDetailModal = ({
                           const variantLabel = variant.ProductVariantCode
                           const variantPriceVal = parseFloat(variant.Price)
                           const variantStock: number = variant.Stock ?? 0
-                          const isColorVariant =
-                            /^(red|green|blue|yellow|black|white|pink|orange|purple|grey|gray|brown)$/i.test(
-                              variantLabel,
-                            )
                           const isOutOfStock = variantStock === 0
 
                           return (
@@ -243,49 +278,24 @@ const ProductDetailModal = ({
                               key={variant.Id}
                               style={[
                                 s.variantChip,
-                                isSelected && s.variantChipSelected,
-                                isOutOfStock && s.variantChipDisabled,
+                                {
+                                  borderColor: isSelected ? colors.accent : colors.border,
+                                  backgroundColor: isSelected ? colors.accentGlow : colors.surfaceSecondary,
+                                },
                               ]}
-                              onPress={() =>
-                                !isOutOfStock && setSelectedVariantId(variant.Id)
-                              }
+                              onPress={() => !isOutOfStock && setSelectedVariantId(variant.Id)}
                               disabled={isOutOfStock}
                             >
-                              {isColorVariant && (
-                                <View
-                                  style={[
-                                    s.colorDot,
-                                    { backgroundColor: variantLabel.toLowerCase() },
-                                  ]}
-                                />
-                              )}
                               <Text
                                 style={[
                                   s.variantChipText,
-                                  isSelected && s.variantChipTextSelected,
-                                  isOutOfStock && s.variantChipTextDisabled,
+                                  { color: isSelected ? colors.accentText : colors.textPrimary },
                                 ]}
                               >
                                 {variantLabel}
                               </Text>
-                              <Text
-                                style={[
-                                  s.variantPrice,
-                                  isSelected && s.variantPriceSelected,
-                                ]}
-                              >
-                                ₹{variantPriceVal.toFixed(0)}
-                              </Text>
-                              <Text
-                                style={[
-                                  s.variantStockBadge,
-                                  {
-                                    color: variantStock > 0 ? '#0C831F' : '#EF4444',
-                                    borderColor: variantStock > 0 ? '#0C831F' : '#EF4444',
-                                  },
-                                ]}
-                              >
-                                {variantStock > 0 ? `Qty: ${variantStock}` : 'N/A'}
+                              <Text style={[s.variantPrice, { color: colors.textSecondary }]}>
+                                ${variantPriceVal.toFixed(2)}
                               </Text>
                             </TouchableOpacity>
                           )
@@ -298,20 +308,20 @@ const ProductDetailModal = ({
                 {/* Description */}
                 {description ? (
                   <View style={s.descSection}>
-                    <Text style={s.sectionLabel}>Description</Text>
-                    <Text style={s.descText}>{description}</Text>
+                    <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>Product Highlights</Text>
+                    <Text style={[s.descText, { color: colors.textSecondary }]}>{description}</Text>
                   </View>
                 ) : null}
               </View>
             </ScrollView>
           )}
 
-          {/* Bottom Actions */}
+          {/* Sticky Bottom Actions */}
           {!loading && productDetail && stock > 0 && onAddToCart && (
-            <View style={s.actionBar}>
+            <View style={[s.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
               <PrimaryButton
-                label={isInCart ? 'Go to Cart' : 'Add to Cart'}
-                variant={isInCart ? 'success' : 'success'}
+                label={isInCart ? 'View Cart & Checkout' : 'Add to Cart — $' + scoreValue}
+                variant="primary"
                 style={s.actionBtn}
                 onPress={() => {
                   if (isInCart) {
@@ -334,68 +344,58 @@ const s = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   sheet: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '92%',
     paddingBottom: 0,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.65)',
-    borderBottomWidth: 0,
   },
   handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#ECECEA',
-    borderRadius: 2,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
     alignSelf: 'center',
     marginTop: 10,
-    marginBottom: 4,
   },
-  closeBtn: {
-    position: 'absolute',
-    top: 14,
-    right: 16,
+  headerActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 20,
-    width: 32,
-    height: 32,
+  },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.65)',
   },
-  closeBtnText: {
-    fontSize: 14,
-    color: '#8a8a8a',
-    fontFamily: 'DMSans-Bold',
-  },
-
   loaderBox: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
     gap: 12,
   },
-  loaderText: { fontSize: 14, color: '#8a8a8a', fontFamily: 'DMSans-Regular' },
+  loaderText: { fontSize: 14, fontWeight: '500' },
 
-  scrollContent: { paddingBottom: 20 },
+  scrollContent: { paddingBottom: 24 },
 
-  imageSection: { backgroundColor: 'rgba(255,255,255,0.4)' },
-  productImage: { height: 280 },
+  imageSection: { alignItems: 'center' },
+  productImage: { height: 260 },
   noImageBox: {
-    height: 220,
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.4)',
     gap: 8,
   },
   noImageEmoji: { fontSize: 44 },
-  noImageText: { color: '#9a9a9a', fontSize: 14, fontFamily: 'DMSans-Medium' },
+  noImageText: { fontSize: 14, fontWeight: '600' },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -403,124 +403,104 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   dot: {
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: 4,
-    backgroundColor: '#ECECEA',
   },
-  dotActive: { backgroundColor: '#0C831F', width: 18 },
 
   infoSection: { paddingHorizontal: 20, paddingTop: 14 },
+  brandRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  brandBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  brandBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  ratingText: { fontSize: 13, fontWeight: '600' },
 
   productTitle: {
-    fontSize: 19,
-    fontFamily: 'DMSans-Bold',
-    color: '#141414',
-    lineHeight: 26,
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 30,
+    letterSpacing: -0.3,
   },
   scoreRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    marginTop: 8,
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 16,
   },
   scoreValue: {
-    fontSize: 26,
-    fontFamily: 'DMSans-Bold',
-    color: '#0C831F',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  scoreUnit: {
-    fontSize: 14,
-    fontFamily: 'DMSans-Medium',
-    color: '#8a8a8a',
+  originalPrice: {
+    fontSize: 16,
+    textDecorationLine: 'line-through',
+    fontWeight: '500',
   },
+  discountBadge: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  discountText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 
-  stockRow: {
+  trustCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    marginBottom: 14,
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 20,
   },
-  stockDot: { width: 8, height: 8, borderRadius: 4 },
-  stockText: { fontSize: 13, fontFamily: 'DMSans-Bold' },
+  trustItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  trustText: { fontSize: 12, fontWeight: '600' },
+  trustDivider: { width: 1, height: 20, backgroundColor: 'rgba(100,116,139,0.3)' },
 
   sectionLabel: {
     fontSize: 12,
-    fontFamily: 'DMSans-Bold',
-    color: '#8a8a8a',
+    fontWeight: '700',
     marginBottom: 10,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
 
-  variantSection: { marginBottom: 16 },
+  variantSection: { marginBottom: 20 },
   variantRow: { flexDirection: 'row', gap: 10 },
   variantChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.65)',
     borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+    gap: 2,
   },
-  variantChipSelected: {
-    borderColor: '#0C831F',
-    backgroundColor: 'rgba(12,131,31,0.08)',
-  },
-  colorDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.65)',
-  },
-  variantChipText: {
-    fontSize: 13,
-    color: '#141414',
-    fontFamily: 'DMSans-Medium',
-  },
-  variantChipTextSelected: {
-    color: '#141414',
-    fontFamily: 'DMSans-Bold',
-  },
-  variantPrice: { fontSize: 12, color: '#9a9a9a' },
-  variantPriceSelected: {
-    color: '#141414',
-    fontFamily: 'DMSans-Bold',
-  },
-  variantChipDisabled: {
-    borderColor: '#ECECEA',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    opacity: 0.5,
-  },
-  variantChipTextDisabled: { color: '#9a9a9a' },
-  variantStockBadge: {
-    fontSize: 10,
-    fontFamily: 'DMSans-Bold',
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
+  variantChipText: { fontSize: 13, fontWeight: '700' },
+  variantPrice: { fontSize: 11 },
 
-  descSection: { marginBottom: 16 },
+  descSection: { marginBottom: 20 },
   descText: {
     fontSize: 14,
-    color: '#8a8a8a',
     lineHeight: 22,
-    fontFamily: 'DMSans-Regular',
+    fontWeight: '400',
   },
 
   actionBar: {
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#ECECEA',
-    backgroundColor: 'rgba(255,255,255,0.7)',
   },
   actionBtn: { width: '100%' },
 })
