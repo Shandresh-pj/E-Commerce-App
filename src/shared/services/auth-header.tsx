@@ -1,28 +1,35 @@
 import { getAsyncData } from '../utils/storage';
 
-import AuthService from "./auth.service";
-
-var jwtDecode = require('jwt-decode');
-export async  function  authHeader() {
-  const user = await getAsyncData('user');
-
-  if (user && user.accessToken) {
-    return { Authorization: 'Bearer ' + user.accessToken };
-  } else {
-    return {};
-  }
+export async function authHeader() {
+  try {
+    const user = await getAsyncData('user');
+    const tok = user?.accessToken ?? user?.token ?? user?.user?.accessToken ?? user?.user?.token ?? '';
+    if (tok && typeof tok === 'string' && tok.trim().length > 0) {
+      const formattedToken = tok.startsWith('Bearer ') ? tok : 'Bearer ' + tok;
+      return { Authorization: formattedToken };
+    }
+  } catch (e) {}
+  return { Authorization: '' };
 }
 
-
-export async function authHeaderNew() {  
-const user =await getAsyncData('user');
-console.log('useruseruser',user)
-  if (user && user.token) {
-    const formattedToken = user.token.startsWith('Bearer ') ? user.token : 'Bearer ' + user.token;
-    return {
-      Authorization: formattedToken,
-    };
-  } else {
-    return { Authorization: ''};
-  } 
-}  
+export async function authHeaderNew() {
+  try {
+    const user = await getAsyncData('user');
+    const tok =
+      user?.token ??
+      user?.accessToken ??
+      user?.jwt ??
+      user?.user?.token ??
+      user?.user?.accessToken ??
+      '';
+    if (tok && typeof tok === 'string' && tok.trim().length > 0) {
+      const formattedToken = tok.startsWith('Bearer ') ? tok : 'Bearer ' + tok;
+      return {
+        Authorization: formattedToken,
+      };
+    }
+  } catch (e) {
+    console.log('authHeaderNew error:', e);
+  }
+  return { Authorization: '' };
+}

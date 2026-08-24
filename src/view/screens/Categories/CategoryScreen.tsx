@@ -37,6 +37,7 @@ import { EmptyState } from '../../../design-system/components/EmptyState';
 import { TYPOGRAPHY } from '../../../design-system/tokens/typography';
 import { SPACING } from '../../../design-system/tokens/spacing';
 import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper';
+import { BlurhashImage } from '../../../design-system/components/BlurhashImage';
 
 const { width: W } = Dimensions.get('window');
 const SIDEBAR_WIDTH = 76;
@@ -128,7 +129,8 @@ const ProductCard = React.memo(({
                 <Text style={cardStyles.discountText}>{discount}% OFF</Text>
               </View>
             )}
-            <Image
+            <BlurhashImage
+              category={item.name}
               source={{ uri: imgSrc }}
               style={cardStyles.img}
               resizeMode="cover"
@@ -219,20 +221,7 @@ export const CategoryScreen = () => {
   const productAreaWidth = screenWidth - SIDEBAR_WIDTH;
   const cardWidth = (productAreaWidth - SPACING.md * 2 - SPACING.xs) / Math.max(1, gridColumns - 1);
 
-  useFocusEffect(
-    useCallback(() => {
-      showTabBar();
-      loadCategories();
-      loadCart();
-      loadWishlist();
-    }, [])
-  );
-
-  useEffect(() => {
-    if (activeCategory) loadProducts();
-  }, [activeCategory?.id, activeCategory?.name]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const cats = await fetchCategories();
       const filtered = cats.filter((c: any) => c.status !== false);
@@ -241,9 +230,55 @@ export const CategoryScreen = () => {
     } catch (e) {
       console.log('loadCategories error:', e);
     }
-  };
+  }, []);
 
-  const loadProducts = async () => {
+  const loadCart = useCallback(async () => {
+    try {
+      const raw = await fetchApiCart();
+      if (raw) {
+        const mapped = raw.map((rawItem: any) => {
+          const product = rawItem.product ?? rawItem.Product ?? rawItem;
+          const prodId = Number(product.id ?? product.Id ?? rawItem.product_id ?? rawItem.ProductId ?? rawItem.id);
+          return {
+            cartItemId: rawItem.id ?? rawItem.Id,
+            id: prodId,
+            name: product.name ?? rawItem.name ?? 'Product',
+            price: parseFloat(product.price ?? rawItem.price ?? '0') || 0,
+            quantity: Number(rawItem.quantity ?? rawItem.Quantity ?? 1),
+          };
+        });
+        setCartItems(mapped);
+      }
+    } catch (e) {
+      console.log('loadCart error:', e);
+    }
+  }, []);
+
+  const loadWishlist = useCallback(async () => {
+    try {
+      const dataList = await fetchMyWishlist();
+      if (dataList) {
+        const ids = dataList.map((item: any) => {
+          const product = item.product ?? item.Product ?? item;
+          return Number(product.id ?? product.Id ?? item.product_id ?? item.ProductId ?? item.id);
+        });
+        setWishlistProductIds(new Set(ids));
+      }
+    } catch (e) {
+      console.log('loadWishlist error:', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      showTabBar();
+      loadCategories();
+      loadCart();
+      loadWishlist();
+    }, [showTabBar, loadCategories, loadCart, loadWishlist])
+  );
+
+  const loadProducts = useCallback(async () => {
     if (!activeCategory) return;
     setLoadingProducts(true);
     try {
@@ -252,55 +287,24 @@ export const CategoryScreen = () => {
     } finally {
       setLoadingProducts(false);
     }
-  };
+  }, [activeCategory]);
 
-  const loadCart = async () => {
-    try {
-      const raw = await fetchApiCart();
-      if (raw) {
-        const mapped = raw.map((rawItem: any) => {
-          const product = rawItem.product ?? rawItem.Product ?? rawItem;
-          return {
-            cartItemId: rawItem.id ?? rawItem.Id,
-            id: product.id ?? product.Id ?? rawItem.product_id ?? rawItem.ProductId,
-            name: product.name ?? rawItem.name ?? 'Product',
-            price: parseFloat(product.price ?? rawItem.price ?? '0') || 0,
-            quantity: rawItem.quantity ?? rawItem.Quantity ?? 1,
-          };
-        });
-        setCartItems(mapped);
-      }
-    } catch (e) {
-      console.log('loadCart error:', e);
-    }
-  };
-
-  const loadWishlist = async () => {
-    try {
-      const dataList = await fetchMyWishlist();
-      if (dataList) {
-        const ids = dataList.map((item: any) => {
-          const product = item.product ?? item.Product ?? item;
-          return product.id ?? product.Id ?? item.product_id ?? item.ProductId;
-        });
-        setWishlistProductIds(new Set(ids));
-      }
-    } catch (e) {
-      console.log('loadWishlist error:', e);
-    }
-  };
+  useEffect(() => {
+    if (activeCategory) loadProducts();
+  }, [activeCategory, loadProducts]);
 
   const toggleWish = useCallback(
     async (id: number) => {
-      const isWished = wishlistProductIds.has(id);
+      const targetId = Number(id);
+      const isWished = wishlistProductIds.has(targetId);
       setWishlistProductIds((prev) => {
         const next = new Set(prev);
-        if (isWished) next.delete(id);
-        else next.add(id);
+        if (isWished) next.delete(targetId);
+        else next.add(targetId);
         return next;
       });
 
-      const success = await toggleWishlist(id, isWished);
+      const success = await toggleWishlist(targetId, isWished);
       if (success) {
         Toast.show(isWished ? 'Removed from Wishlist' : 'Added to Wishlist ♥', { duration: Toast.durations.SHORT });
       }
@@ -309,7 +313,8 @@ export const CategoryScreen = () => {
   );
 
   const handleAddToCart = async (id: number) => {
-    const success = await addToApiCart(id, 1);
+    const targetId = Number(id);
+    const success = await addToApiCart(targetId, 1);
     if (success) {
       Toast.show('Item added to Cart', { duration: Toast.durations.SHORT });
       loadCart();
@@ -317,20 +322,22 @@ export const CategoryScreen = () => {
   };
 
   const handleQuantityIncrease = async (id: number) => {
-    const existing = cartItems.find((c) => c.id === id);
+    const targetId = Number(id);
+    const existing = cartItems.find((c) => Number(c.id) === targetId);
     if (existing) {
-      await addToApiCart(id, 1);
+      await addToApiCart(targetId, 1);
       loadCart();
     }
   };
 
   const handleQuantityDecrease = async (id: number) => {
-    const existing = cartItems.find((c) => c.id === id);
+    const targetId = Number(id);
+    const existing = cartItems.find((c) => Number(c.id) === targetId);
     if (existing) {
       if (existing.quantity === 1) {
-        await removeFromApiCart(existing.cartItemId || id);
+        await removeFromApiCart(existing.cartItemId || targetId);
       } else {
-        await addToApiCart(id, -1);
+        await addToApiCart(targetId, -1);
       }
       loadCart();
     }

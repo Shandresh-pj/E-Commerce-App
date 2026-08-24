@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   AccessibilityInfo,
   useWindowDimensions,
+  Pressable,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -141,11 +142,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
         <View style={styles.bgCanvas}>
           {/* Soft atmospheric blue glow */}
           <Animated.View style={[styles.atmosphericGlow, animatedGlowStyle]}>
-            <Svg width={W * 1.5} height={W * 1.5} viewBox="0 0 400 400">
+            <Svg width={W * 1.6} height={W * 1.6} viewBox="0 0 400 400">
               <Defs>
                 <RadialGradient id="blueAtmosphere" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0%" stopColor="#2563EB" stopOpacity="0.35" />
-                  <Stop offset="50%" stopColor="#1E40AF" stopOpacity="0.15" />
+                  <Stop offset="0%" stopColor="#2563EB" stopOpacity="0.4" />
+                  <Stop offset="50%" stopColor="#1E40AF" stopOpacity="0.18" />
                   <Stop offset="100%" stopColor="#0B1329" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
@@ -155,19 +156,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 
           {/* Flowing tech network geometry lines */}
           <Animated.View style={[styles.networkContainer, animatedOrbitStyle]}>
-            <Svg width={Math.min(W * 1.3, 500)} height={Math.min(W * 1.3, 500)} viewBox="0 0 400 400">
+            <Svg width={Math.min(W * 1.4, 520)} height={Math.min(W * 1.4, 520)} viewBox="0 0 400 400">
               <Defs>
                 <SvgLinearGradient id="lineGrad1" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3" />
-                  <Stop offset="100%" stopColor="#FBBF24" stopOpacity="0.1" />
+                  <Stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
+                  <Stop offset="100%" stopColor="#FBBF24" stopOpacity="0.15" />
                 </SvgLinearGradient>
               </Defs>
-              <Circle cx="200" cy="200" r="160" stroke="url(#lineGrad1)" strokeWidth="1" strokeDasharray="6 8" fill="none" />
-              <Circle cx="200" cy="200" r="110" stroke="rgba(59, 130, 246, 0.2)" strokeWidth="1" fill="none" />
-              <Path d="M 60 200 Q 200 40 340 200 Q 200 360 60 200 Z" stroke="rgba(251, 191, 36, 0.15)" strokeWidth="1" fill="none" />
-              <Circle cx="200" cy="40" r="4" fill="#FBBF24" opacity="0.8" />
-              <Circle cx="340" cy="200" r="3.5" fill="#3B82F6" opacity="0.7" />
-              <Circle cx="90" cy="200" r="3" fill="#60A5FA" opacity="0.6" />
+              <Circle cx="200" cy="200" r="160" stroke="url(#lineGrad1)" strokeWidth="1.2" strokeDasharray="6 8" fill="none" />
+              <Circle cx="200" cy="200" r="110" stroke="rgba(59, 130, 246, 0.25)" strokeWidth="1" fill="none" />
+              <Path d="M 60 200 Q 200 40 340 200 Q 200 360 60 200 Z" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1" fill="none" />
+              <Circle cx="200" cy="40" r="4.5" fill="#FBBF24" opacity="0.9" />
+              <Circle cx="340" cy="200" r="4" fill="#3B82F6" opacity="0.8" />
+              <Circle cx="90" cy="200" r="3.5" fill="#60A5FA" opacity="0.7" />
             </Svg>
           </Animated.View>
         </View>
@@ -190,7 +191,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
           <Text style={styles.taglineText}>Shop Smart. Live Better.</Text>
           <View style={styles.accentDivider}>
             <View style={styles.dividerLine} />
-            <View style={styles.goldDot} />
+            <Text style={{ color: '#FBBF24', fontSize: 10, marginHorizontal: 6 }}>✦</Text>
             <View style={styles.dividerLine} />
           </View>
         </Animated.View>
@@ -206,21 +207,31 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
           <View style={styles.chipItem}>
             <Text style={styles.chipText}>💳 SVK Wallet</Text>
           </View>
+          <View style={styles.chipItem}>
+            <Text style={styles.chipText}>🚚 8-Min Express</Text>
+          </View>
+        </Animated.View>
+
+        {/* Floating Trust Banner */}
+        <Animated.View style={[styles.trustBanner, animatedChipsStyle]}>
+          <Text style={styles.trustText}>✨ 100% Authentic Warranty & Official Distributors</Text>
         </Animated.View>
       </View>
 
       {/* Bottom CTA Actions */}
       <Animated.View style={[styles.bottomSection, isTablet && styles.bottomSectionTablet, animatedCtaStyle]}>
         {/* Primary CTA: Get Started */}
-        <TouchableOpacity
-          activeOpacity={0.88}
+        <Pressable
           accessibilityRole="button"
           accessibilityLabel="Get Started with SVK E-COM"
           onPress={() => navigation.navigate('Onboarding')}
-          style={styles.primaryButton}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+          ]}
         >
           <LinearGradient
-            colors={['#2563EB', '#1D4ED8']}
+            colors={['#2563EB', '#1D4ED8', '#1E40AF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.primaryGradient}
@@ -236,7 +247,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
               />
             </Svg>
           </LinearGradient>
-        </TouchableOpacity>
+        </Pressable>
 
         {/* Secondary Action: Sign In */}
         <TouchableOpacity
@@ -263,7 +274,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B1329',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: '12%',
+    paddingTop: '14%',
     paddingBottom: 44,
   },
   bgCanvas: {
@@ -287,7 +298,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contentTablet: {
-    maxWidth: 540,
+    maxWidth: 500,
     alignSelf: 'center',
   },
   logoSection: {
@@ -299,7 +310,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   brandTitle: {
-    fontSize: 34,
+    fontSize: 36,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: 1.5,
@@ -327,22 +338,15 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(251, 191, 36, 0.3)',
   },
-  goldDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FBBF24',
-    marginHorizontal: 8,
-  },
   chipsContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 28,
+    marginTop: 26,
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
   chipItem: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+    backgroundColor: 'rgba(30, 41, 59, 0.75)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.12)',
     paddingHorizontal: 14,
@@ -354,12 +358,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  trustBanner: {
+    marginTop: 20,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  trustText: {
+    color: '#FBBF24',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
   bottomSection: {
     width: '100%',
     alignItems: 'center',
   },
   bottomSectionTablet: {
-    maxWidth: 540,
+    maxWidth: 500,
     alignSelf: 'center',
   },
   primaryButton: {

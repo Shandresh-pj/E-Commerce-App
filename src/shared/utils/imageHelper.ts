@@ -51,90 +51,21 @@ export const getFallbackImage = (name: string = '', type: 'category' | 'product'
 }
 
 export const buildImageUrl = (img?: string, name?: string, type: 'category' | 'product' = 'product'): string => {
-  if (!img || typeof img !== 'string' || img.trim() === '') {
+  if (!img || typeof img !== 'string' || img.trim() === '' || img === 'undefined' || img === 'null') {
     return getFallbackImage(name, type)
   }
-  const cleaned = img.replace(/\\/g, '/').replace(/^\/+/, '')
-  if (cleaned.startsWith('http')) {
+  let cleaned = img.replace(/\\/g, '/').trim()
+  if (cleaned.startsWith('data:image')) {
     return cleaned
   }
-  return `${Defaults.apis.baseUrl}/${cleaned}`
+  if (cleaned.startsWith('//')) {
+    return `https:${cleaned}`
+  }
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    return cleaned
+  }
+  cleaned = cleaned.replace(/^\/+/, '')
+  const baseUrl = (Defaults?.apis?.baseUrl || '').replace(/\/+$/, '')
+  return baseUrl ? `${baseUrl}/${cleaned}` : cleaned
 }
 
-export const DEFAULT_CATEGORIES = [
-  { id: 101, name: 'Fresh Fruits', image: CATEGORY_FALLBACKS.fruit, status: true },
-  { id: 102, name: 'Vegetables', image: CATEGORY_FALLBACKS.vegetable, status: true },
-  { id: 103, name: 'Milk & Dairy', image: CATEGORY_FALLBACKS.milk, status: true },
-  { id: 104, name: 'Snacks & Munchies', image: CATEGORY_FALLBACKS.snack, status: true },
-  { id: 105, name: 'Cold Drinks', image: CATEGORY_FALLBACKS.drink, status: true },
-  { id: 106, name: 'Bakery & Bread', image: CATEGORY_FALLBACKS.bread, status: true },
-]
-
-export const DEFAULT_PRODUCTS = [
-  {
-    id: 201,
-    name: 'Kashmir Red Apples',
-    price: '199',
-    mrp: '249',
-    unit: '1 kg',
-    image: PRODUCT_FALLBACKS.apple,
-    status: 'active',
-    category: 'Fresh Fruits',
-    stock_in_hand: 50,
-  },
-  {
-    id: 202,
-    name: 'Farm Fresh Organic Milk',
-    price: '34',
-    mrp: '40',
-    unit: '500 ml',
-    image: PRODUCT_FALLBACKS.milk,
-    status: 'active',
-    category: 'Milk & Dairy',
-    stock_in_hand: 100,
-  },
-  {
-    id: 203,
-    name: 'Whole Wheat Brown Bread',
-    price: '45',
-    mrp: '55',
-    unit: '400 g',
-    image: PRODUCT_FALLBACKS.bread,
-    status: 'active',
-    category: 'Bakery & Bread',
-    stock_in_hand: 30,
-  },
-  {
-    id: 204,
-    name: 'Crispy Potato Wafers',
-    price: '20',
-    mrp: '25',
-    unit: '100 g',
-    image: PRODUCT_FALLBACKS.chip,
-    status: 'active',
-    category: 'Snacks & Munchies',
-    stock_in_hand: 80,
-  },
-  {
-    id: 205,
-    name: 'Fresh Farm White Eggs',
-    price: '72',
-    mrp: '85',
-    unit: '6 pcs',
-    image: PRODUCT_FALLBACKS.egg,
-    status: 'active',
-    category: 'Milk & Dairy',
-    stock_in_hand: 40,
-  },
-  {
-    id: 206,
-    name: 'Chilled Sparkling Cola',
-    price: '40',
-    mrp: '45',
-    unit: '750 ml',
-    image: PRODUCT_FALLBACKS.coke,
-    status: 'active',
-    category: 'Cold Drinks',
-    stock_in_hand: 60,
-  },
-]

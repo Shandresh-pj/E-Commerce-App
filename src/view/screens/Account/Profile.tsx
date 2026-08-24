@@ -10,6 +10,7 @@ import {
   Image,
   Switch,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
 import { Surface } from '../../../design-system/surfaces/Surface';
 import { SvkIcon } from '../../../design-system/icons/SvkIcon';
@@ -22,6 +23,7 @@ import { fetchMyProfile } from '../../../shared/services/main-service';
 import authService from '../../../shared/services/auth.service';
 
 export const ProfileScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const { tokens, isDark, toggleTheme } = useTheme();
   const [user, setUser] = useState<any>({
     name: 'SVK Member',
@@ -94,7 +96,15 @@ export const ProfileScreen = ({ navigation }: any) => {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: tokens.surface.base }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top, 12),
+            paddingBottom: insets.bottom + 110,
+          },
+        ]}
+      >
         {/* Profile Identity Header Card */}
         <Surface variant="card" radius="xl" elevation="medium" style={styles.profileCard}>
           <Image

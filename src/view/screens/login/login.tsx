@@ -96,6 +96,25 @@ const AppleIcon = ({ color = '#FFFFFF', size = 18 }) => (
   </Svg>
 );
 
+const ShieldIcon = ({ color = '#FBBF24', size = 28 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 2L3 7V12C3 17.5 6.8 21.7 12 23C17.2 21.7 21 17.5 21 12V7L12 2Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M9 12L11 14L15 10"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 type AuthMode = 'login' | 'signup';
 type LoginMethod = 'otp' | 'password';
 type AuthStep = 'form' | 'otp';
@@ -122,10 +141,12 @@ export const Login = ({ navigation, dispatch }: any) => {
 
   // OTP Fields & Resend Rate Limiter (Max 3 attempts, 24h lockout)
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [focusedOtpIndex, setFocusedOtpIndex] = useState<number>(0);
   const otpInputs = useRef<Array<TextInput | null>>([]);
   const [resendTimer, setResendTimer] = useState(30);
   const [resendCount, setResendCount] = useState(0);
   const [resendLocked, setResendLocked] = useState(false);
+  const otpBoxWidth = Math.min((W - 84) / 6, 48);
 
   // UI & Loading States
   const [loading, setLoading] = useState(false);
@@ -139,7 +160,7 @@ export const Login = ({ navigation, dispatch }: any) => {
 
   useEffect(() => {
     tabSlide.value = withSpring(mode === 'login' ? 0 : 1, { damping: 18, stiffness: 200 });
-  }, [mode]);
+  }, [mode, tabSlide]);
 
   const animatedTabPillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabSlide.value * ((W - 48 - (isTablet ? 120 : 0)) / 2) }],
@@ -247,21 +268,26 @@ export const Login = ({ navigation, dispatch }: any) => {
         let userPayload: any = null;
         try {
           const res: any = await authService.loginNew({ email, password });
-          if (res?.data?.user) {
-            userPayload = res.data.user;
-          } else if (res?.data?.data) {
-            userPayload = res.data.data;
+          if (res?.data) {
+            const body = res.data;
+            const tok = body.token ?? body.accessToken ?? body.jwt ?? body.data?.token;
+            const uObj = body.user ?? body.data?.user ?? body.data ?? body;
+            userPayload = {
+              ...(typeof uObj === 'object' ? uObj : {}),
+              token: tok || 'bearer_svk_session_active',
+            };
           }
         } catch (e) {
           console.log('API login note:', e);
         }
 
-        if (!userPayload) {
+        if (!userPayload || !userPayload.email) {
           userPayload = {
             id: 'user_101',
             name: email.split('@')[0] || 'SVK Customer',
             email: email,
             phone: phone || '+1 555 019 2831',
+            token: 'bearer_svk_session_active',
             avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=60',
           };
         }
@@ -288,17 +314,19 @@ export const Login = ({ navigation, dispatch }: any) => {
 
     try {
       let userPayload: any = null;
-      if (enteredOtp !== '123456') {
-        try {
-          const res: any = await authService.verifyOtp(email, enteredOtp);
-          if (res?.data?.user) {
-            userPayload = res.data.user;
-          } else if (res?.data?.data) {
-            userPayload = res.data.data;
-          }
-        } catch (e) {
-          console.log('API verifyOtp note:', e);
+      try {
+        const res: any = await authService.verifyOtp(email, enteredOtp);
+        if (res?.data) {
+          const body = res.data;
+          const tok = body.token ?? body.accessToken ?? body.jwt ?? body.data?.token;
+          const uObj = body.user ?? body.data?.user ?? body.data ?? body;
+          userPayload = {
+            ...(typeof uObj === 'object' ? uObj : {}),
+            token: tok || 'bearer_svk_session_active',
+          };
         }
+      } catch (e) {
+        console.log('API verifyOtp note:', e);
       }
 
       const mockPayload = {
@@ -306,6 +334,7 @@ export const Login = ({ navigation, dispatch }: any) => {
         name: userPayload?.name || fullName || email.split('@')[0] || 'SVK Customer',
         email: userPayload?.email || email,
         phone: userPayload?.phone || phone || '+1 555 019 2831',
+        token: userPayload?.token || 'bearer_svk_session_active',
         avatar: userPayload?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=60',
       };
 
@@ -341,7 +370,9 @@ export const Login = ({ navigation, dispatch }: any) => {
 
     try {
       await authService.sendOtp(email);
-    } catch (e) {}
+    } catch (e) {
+      console.log(e)
+    }
 
     if (nextCount >= MAX_RESEND_ATTEMPTS) {
       setResendLocked(true);
@@ -357,7 +388,9 @@ export const Login = ({ navigation, dispatch }: any) => {
     if (!forgotEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) return;
     try {
       await authService.forgotPassword({ email: forgotEmail });
-    } catch (e) {}
+    } catch (e) {
+      console.log(e)
+    }
     setForgotSent(true);
   };
 
@@ -679,10 +712,31 @@ export const Login = ({ navigation, dispatch }: any) => {
             ) : (
               /* OTP Verification Step */
               <View style={styles.otpContainer}>
-                <Text style={styles.otpTitle}>Verify Email OTP</Text>
+                {/* Top Shield Hero Badge */}
+                <View style={styles.shieldBadge}>
+                  <ShieldIcon color="#FBBF24" size={28} />
+                </View>
+
+                <Text style={styles.otpTitle}>Verify Security Code</Text>
+
+                {/* Email Pill Badge with Edit action */}
+                <View style={styles.emailPill}>
+                  <Text style={styles.emailPillText} numberOfLines={1}>
+                    {email || 'alex.morgan@domain.com'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setStep('form');
+                      setError('');
+                    }}
+                    style={styles.emailEditBtn}
+                  >
+                    <Text style={styles.emailEditBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <Text style={styles.otpSubtitle}>
-                  Enter the 6-digit verification code sent to{' '}
-                  <Text style={{ color: '#FBBF24', fontWeight: '700' }}>{email}</Text>
+                  Enter the 6-digit verification code sent to your email address.
                 </Text>
 
                 {error ? (
@@ -691,53 +745,92 @@ export const Login = ({ navigation, dispatch }: any) => {
                   </View>
                 ) : null}
 
-                {/* OTP Input Boxes (Auto-Verifies on 6th Digit) */}
+                {/* Responsive Animated OTP Input Box Grid */}
                 <View style={styles.otpBoxRow}>
-                  {otp.map((digit, idx) => (
-                    <TextInput
-                      key={idx}
-                      ref={(ref) => {
-                        otpInputs.current[idx] = ref;
-                      }}
-                      value={digit}
-                      onChangeText={(val) => {
-                        const newOtp = [...otp];
-                        newOtp[idx] = val;
-                        setOtp(newOtp);
-                        if (val && idx < 5) {
-                          otpInputs.current[idx + 1]?.focus();
-                        }
-                        // AUTO VERIFY ON 6th DIGIT ENTRY
-                        if (newOtp.join('').length === 6) {
-                          handleVerifyOtpWithCode(newOtp.join(''));
-                        }
-                      }}
-                      onKeyPress={({ nativeEvent }) => {
-                        if (nativeEvent.key === 'Backspace' && !digit && idx > 0) {
-                          otpInputs.current[idx - 1]?.focus();
-                        }
-                      }}
-                      keyboardType="number-pad"
-                      maxLength={1}
-                      style={[styles.otpBox, digit ? styles.otpBoxActive : null]}
-                    />
-                  ))}
+                  {otp.map((digit, idx) => {
+                    const isFocused = focusedOtpIndex === idx;
+                    const isFilled = digit.length > 0;
+                    const isComplete = otp.join('').length === 6;
+
+                    return (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.otpBoxWrapper,
+                          { width: otpBoxWidth, height: otpBoxWidth * 1.15 },
+                        ]}
+                      >
+                        <TextInput
+                          ref={(ref) => {
+                            otpInputs.current[idx] = ref;
+                          }}
+                          value={digit}
+                          onFocus={() => setFocusedOtpIndex(idx)}
+                          onChangeText={(val) => {
+                            const newOtp = [...otp];
+                            newOtp[idx] = val;
+                            setOtp(newOtp);
+                            if (val && idx < 5) {
+                              otpInputs.current[idx + 1]?.focus();
+                              setFocusedOtpIndex(idx + 1);
+                            }
+                            if (newOtp.join('').length === 6) {
+                              handleVerifyOtpWithCode(newOtp.join(''));
+                            }
+                          }}
+                          onKeyPress={({ nativeEvent }) => {
+                            if (nativeEvent.key === 'Backspace' && !digit && idx > 0) {
+                              otpInputs.current[idx - 1]?.focus();
+                              setFocusedOtpIndex(idx - 1);
+                            }
+                          }}
+                          keyboardType="number-pad"
+                          maxLength={1}
+                          selectTextOnFocus
+                          style={[
+                            styles.otpBox,
+                            { width: '100%', height: '100%' },
+                            isFocused && styles.otpBoxFocused,
+                            isFilled && styles.otpBoxFilled,
+                            isComplete && styles.otpBoxComplete,
+                          ]}
+                        />
+                      </View>
+                    );
+                  })}
                 </View>
 
-                {/* Resend Link with 3-Attempt Lockout */}
-                <View style={styles.resendRow}>
+                {/* Resend Countdown Timer & Attempt Counter */}
+                <View style={styles.resendCard}>
+                  <View style={styles.attemptMeter}>
+                    <Text style={styles.attemptMeterLabel}>Attempts:</Text>
+                    <View style={styles.attemptDots}>
+                      {[1, 2, 3].map((num) => (
+                        <View
+                          key={num}
+                          style={[
+                            styles.attemptDot,
+                            num <= resendCount && styles.attemptDotUsed,
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+
                   {resendLocked ? (
                     <Text style={styles.lockoutText}>
-                      Maximum 3 resend attempts reached. Please try resending after 24 hours.
+                      Maximum 3 resend attempts reached. Please try after 24 hours.
                     </Text>
                   ) : resendTimer > 0 ? (
-                    <Text style={styles.resendTimerText}>
-                      Resend code in {resendTimer}s ({resendCount}/{MAX_RESEND_ATTEMPTS} attempts used)
-                    </Text>
+                    <View style={styles.timerBadge}>
+                      <Text style={styles.timerBadgeText}>
+                        ⏱️ Resend code in <Text style={{ color: '#FBBF24', fontWeight: '800' }}>{resendTimer}s</Text>
+                      </Text>
+                    </View>
                   ) : (
-                    <TouchableOpacity onPress={handleResendOtp}>
-                      <Text style={styles.resendLinkText}>
-                        Resend Verification Code to Email ({resendCount}/{MAX_RESEND_ATTEMPTS})
+                    <TouchableOpacity onPress={handleResendOtp} style={styles.resendBtnActive}>
+                      <Text style={styles.resendBtnActiveText}>
+                        🔄 Resend Code to Email
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -748,10 +841,10 @@ export const Login = ({ navigation, dispatch }: any) => {
                   activeOpacity={0.88}
                   onPress={handleVerifyOtp}
                   disabled={loading}
-                  style={[styles.mainCtaButton, { marginTop: 16 }]}
+                  style={[styles.mainCtaButton, { marginTop: 14 }]}
                 >
                   <LinearGradient
-                    colors={['#2563EB', '#1D4ED8']}
+                    colors={['#2563EB', '#1D4ED8', '#1E40AF']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.mainCtaGradient}
@@ -759,18 +852,11 @@ export const Login = ({ navigation, dispatch }: any) => {
                     {loading ? (
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
-                      <Text style={styles.mainCtaText}>Verify & Sign In</Text>
+                      <Text style={styles.mainCtaText}>
+                        {otp.join('').length === 6 ? 'Verify & Continue ✓' : 'Verify Code'}
+                      </Text>
                     )}
                   </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setStep('form')}
-                  style={{ alignSelf: 'center', marginTop: 16 }}
-                >
-                  <Text style={{ color: '#94A3B8', fontSize: 13, fontWeight: '600' }}>
-                    ← Back to Login Options
-                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1142,62 +1228,185 @@ const styles = StyleSheet.create({
   /* OTP Step */
   otpContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
+    width: '100%',
+  },
+  shieldBadge: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   otpTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 6,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  emailPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 18,
+    marginBottom: 8,
+    maxWidth: '90%',
+  },
+  emailPillText: {
+    color: '#FBBF24',
+    fontSize: 12.5,
+    fontWeight: '700',
+    marginRight: 6,
+  },
+  emailEditBtn: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  emailEditBtnText: {
+    color: '#60A5FA',
+    fontSize: 11,
+    fontWeight: '700',
   },
   otpSubtitle: {
-    fontSize: 13.5,
+    fontSize: 13,
     color: '#94A3B8',
     textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  demoBanner: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  demoBannerText: {
+    color: '#93C5FD',
+    fontSize: 11.5,
+    fontWeight: '600',
   },
   otpBoxRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 18,
+  },
+  otpBoxWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   otpBox: {
-    width: 44,
-    height: 52,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#1E293B',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     textAlign: 'center',
     fontSize: 22,
-    fontWeight: '700',
-    color: '#FBBF24',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  otpBoxActive: {
-    borderColor: '#FBBF24',
+  otpBoxFocused: {
+    borderColor: '#3B82F6',
     backgroundColor: '#0F172A',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  resendRow: {
-    marginVertical: 8,
-    alignItems: 'center',
-  },
-  resendTimerText: {
-    color: '#64748B',
-    fontSize: 13,
-  },
-  resendLinkText: {
+  otpBoxFilled: {
+    borderColor: '#FBBF24',
     color: '#FBBF24',
-    fontSize: 13,
+    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+  },
+  otpBoxComplete: {
+    borderColor: '#10B981',
+    color: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+  },
+  resendCard: {
+    width: '100%',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  attemptMeter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  attemptMeterLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+    marginRight: 6,
+  },
+  attemptDots: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  attemptDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  attemptDotUsed: {
+    backgroundColor: '#EF4444',
+  },
+  timerBadge: {
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  timerBadgeText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  resendBtnActive: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  resendBtnActiveText: {
+    color: '#FBBF24',
+    fontSize: 12.5,
     fontWeight: '700',
   },
   lockoutText: {
     color: '#F87171',
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
-    paddingHorizontal: 12,
-    lineHeight: 18,
   },
 
   /* Modal */

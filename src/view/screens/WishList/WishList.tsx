@@ -10,13 +10,14 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import Defaults from '../../../config/index'
 import { fetchMyWishlist, toggleWishlist, addToApiCart } from '../../../shared/services/main-service'
 import Toast from 'react-native-root-toast'
 import { useTheme } from '../../../shared/context/ThemeContext'
 import { ArrowLeftIcon, HeartIcon, CartIcon, TrashIcon } from '../../elements/SvgIcons'
+import { BlurhashImage } from '../../../design-system/components/BlurhashImage'
 
 const { width: W } = Dimensions.get('window')
 const GUTTER = 12
@@ -64,7 +65,13 @@ const WishCard = ({
     <View style={[s.card, { width: CARD_WIDTH, backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
       <View style={[s.imgBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}>
         {imageUrl && !imgError ? (
-          <Image source={{ uri: imageUrl }} style={s.img} resizeMode="contain" onError={() => setImgError(true)} />
+          <BlurhashImage
+            category={product.name}
+            source={{ uri: imageUrl }}
+            style={s.img}
+            resizeMode="contain"
+            onError={() => setImgError(true)}
+          />
         ) : (
           <Text style={[s.fallback, { color: colors.textMuted }]}>{product.name ? product.name[0].toUpperCase() : '🛍️'}</Text>
         )}
@@ -83,7 +90,7 @@ const WishCard = ({
       </View>
 
       <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={2}>{product.name}</Text>
-      <Text style={[s.price, { color: colors.textPrimary }]}>${price.toFixed(2)}</Text>
+      <Text style={[s.price, { color: colors.textPrimary }]}>₹{price.toFixed(2)}</Text>
 
       <TouchableOpacity
         style={[
@@ -111,6 +118,7 @@ const WishCard = ({
 }
 
 export default function WishListScreen() {
+  const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
   const { colors, isDark } = useTheme()
   const [loading, setLoading] = useState(true)

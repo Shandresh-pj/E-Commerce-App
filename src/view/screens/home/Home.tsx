@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   FlatList,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { Surface } from '../../../design-system/surfaces/Surface';
@@ -21,12 +22,14 @@ import { SkeletonState } from '../../../design-system/components/SkeletonState';
 import { EmptyState } from '../../../design-system/components/EmptyState';
 import { AttractiveProductCard } from '../../elements/AttractiveProductCard';
 import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal';
-import { fetchAllProducts, fetchCategories, addToApiCart } from '../../../shared/services/main-service';
+import { fetchAllProducts, fetchCategories, addToApiCart, fetchApiCart, removeFromApiCart } from '../../../shared/services/main-service';
 import { TYPOGRAPHY } from '../../../design-system/tokens/typography';
 import { SPACING } from '../../../design-system/tokens/spacing';
+import { buildImageUrl } from '../../../shared/utils/imageHelper';
 import Toast from 'react-native-root-toast';
 
 export const HomeScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const { tokens, isDark } = useTheme();
   const { gridColumns } = useResponsive();
 
@@ -34,8 +37,25 @@ export const HomeScreen = ({ navigation }: any) => {
   const [refreshing, setRefreshing] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<ApiProductDetail | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const loadCart = useCallback(async () => {
+    try {
+      const raw = await fetchApiCart();
+      if (raw) {
+        const mapped = raw.map((rawItem: any) => {
+          const product = rawItem.product ?? rawItem.Product ?? rawItem;
+          return {
+            id: Number(product.id ?? product.Id ?? rawItem.product_id ?? rawItem.ProductId ?? rawItem.id),
+            quantity: Number(rawItem.quantity ?? rawItem.Quantity ?? 1),
+          };
+        });
+        setCartItems(mapped);
+      }
+    } catch (e) {}
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -47,12 +67,13 @@ export const HomeScreen = ({ navigation }: any) => {
       const catRes: any = await fetchCategories();
       const catList = Array.isArray(catRes) ? catRes : catRes?.data || [];
       setCategories(catList);
+      await loadCart();
     } catch (e) {
       console.log('Error loading home API data:', e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadCart]);
 
   useEffect(() => {
     loadData();
@@ -65,16 +86,20 @@ export const HomeScreen = ({ navigation }: any) => {
   };
 
   const handleProductPress = (prod: any) => {
+    const rawImg = prod.image || prod.imageUrl || prod.ImagePath || '';
+    const nameStr = prod.name || prod.title || 'Product Detail';
     const formattedDetail: any = {
       id: Number(prod.id || prod._id || 1),
-      name: prod.name || prod.title || 'Product Detail',
+      name: nameStr,
       price: parseFloat(prod.price) || 0,
-      regular_price: parseFloat(prod.originalPrice || prod.compare_at_price || prod.price) || 0,
+      regular_price: parseFloat(prod.originalPrice || prod.compare_at_price || prod.mrp || prod.price) || 0,
       description: prod.description || 'Authentic product with official SVK warranty.',
-      image: prod.image || prod.imageUrl || '',
-      images: [prod.image || prod.imageUrl || ''],
+      image: buildImageUrl(rawImg, nameStr),
+      images: Array.isArray(prod.images) && prod.images.length > 0
+        ? prod.images.map((im: any) => buildImageUrl(typeof im === 'string' ? im : im?.url || im?.ImagePath, nameStr))
+        : [buildImageUrl(rawImg, nameStr)],
       barcode: prod.barcode || 'SVK-PROD-001',
-      category: prod.category || 'Electronics',
+      category: prod.category || prod.category_name || 'General',
       product_type: prod.product_type || 'simple',
       stock_in_hand: prod.stock_in_hand ?? 50,
       status: 'active',
@@ -84,12 +109,32 @@ export const HomeScreen = ({ navigation }: any) => {
     setModalVisible(true);
   };
 
-  const handleAddToCart = async (prodId: number) => {
-    const success = await addToApiCart(prodId, 1);
-    if (success) {
-      Toast.show('Item added to Cart', { duration: Toast.durations.SHORT });
+  const handleAddToCart = async (prodId: number, productObj?: any) => {
+    await addToApiCart(prodId, 1, productObj);
+    Toast.show('Item added to Cart 🛒', { duration: Toast.durations.SHORT });
+    await loadCart();
+  };
+
+  const handleQuantityIncrease = async (prodId: number) => {
+    await addToApiCart(prodId, 1, selectedProduct);
+    await loadCart();
+  };
+
+  const handleQuantityDecrease = async (prodId: number) => {
+    const existing = cartItems.find((c) => Number(c.id) === Number(prodId));
+    if (existing) {
+      if (existing.quantity <= 1) {
+        await removeFromApiCart(prodId);
+      } else {
+        await addToApiCart(prodId, -1, selectedProduct);
+      }
+      await loadCart();
     }
   };
+
+  const currentSelectedQty = selectedProduct
+    ? (cartItems.find((c) => Number(c.id) === Number(selectedProduct.id))?.quantity ?? 0)
+    : 0;
 
   const heroCampaign = {
     title: 'SVK Flagship Clearance',
@@ -103,7 +148,13 @@ export const HomeScreen = ({ navigation }: any) => {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top, 12),
+            paddingBottom: insets.bottom + 110,
+          },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header */}
@@ -168,38 +219,43 @@ export const HomeScreen = ({ navigation }: any) => {
         </Surface>
 
         {/* Dynamic Categories Rail from API */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: tokens.content.primary }]}>
-            Explore Categories
-          </Text>
-          <Pressable onPress={() => navigation.navigate('Categories')}>
-            <Text style={[styles.seeAll, { color: tokens.brand.primary }]}>See All</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRail}>
-          {(categories.length > 0 ? categories : [
-            { id: 1, name: 'Electronics' },
-            { id: 2, name: 'Fashion' },
-            { id: 3, name: 'Home' },
-            { id: 4, name: 'Beauty' },
-            { id: 5, name: 'Sports' },
-            { id: 6, name: 'Automotive' },
-          ]).map((cat: any, idx: number) => (
-            <Pressable
-              key={cat.id || idx}
-              onPress={() => navigation.navigate('Categories', { categoryId: cat.id, categoryName: cat.name })}
-              style={[styles.categoryChip, { backgroundColor: tokens.surface.secondary }]}
-            >
-              <View style={[styles.categoryIconCircle, { backgroundColor: tokens.brand.primarySoft }]}>
-                <SvkIcon name="categories" size={20} color={tokens.brand.primary} />
+        {loading ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRail}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <View key={n} style={{ marginRight: SPACING.xs, marginVertical: 4 }}>
+                <SkeletonState width={110} height={36} radius="xl" />
               </View>
-              <Text style={[styles.categoryText, { color: tokens.content.primary }]}>
-                {cat.name || cat.CategoryName || cat.title || 'Category'}
+            ))}
+          </ScrollView>
+        ) : categories.length > 0 ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: tokens.content.primary }]}>
+                Explore Categories
               </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+              <Pressable onPress={() => navigation.navigate('Categories')}>
+                <Text style={[styles.seeAll, { color: tokens.brand.primary }]}>See All</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRail}>
+              {categories.map((cat: any, idx: number) => (
+                <Pressable
+                  key={cat.id || cat._id || idx}
+                  onPress={() => navigation.navigate('Categories', { categoryId: cat.id, categoryName: cat.name || cat.CategoryName })}
+                  style={[styles.categoryChip, { backgroundColor: tokens.surface.secondary }]}
+                >
+                  <View style={[styles.categoryIconCircle, { backgroundColor: tokens.brand.primarySoft }]}>
+                    <SvkIcon name="categories" size={16} color={tokens.brand.primary} />
+                  </View>
+                  <Text style={[styles.categoryText, { color: tokens.content.primary }]}>
+                    {cat.name || cat.CategoryName || cat.title || 'Category'}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
 
         {/* Flash Deals API Section */}
         <View style={styles.sectionHeader}>
@@ -214,9 +270,13 @@ export const HomeScreen = ({ navigation }: any) => {
         </View>
 
         {loading ? (
-          <View style={{ paddingVertical: 20 }}>
-            <SkeletonState width={170} height={200} radius="lg" />
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 10 }}>
+            {[1, 2, 3, 4].map((n) => (
+              <View key={n} style={{ width: 155, marginRight: 10 }}>
+                <SkeletonState width={155} height={190} radius="lg" />
+              </View>
+            ))}
+          </ScrollView>
         ) : products.length > 0 ? (
           <FlatList
             data={products.slice(0, 8)}
@@ -228,12 +288,13 @@ export const HomeScreen = ({ navigation }: any) => {
                 id={item.id}
                 title={item.name || item.title || 'Product'}
                 price={parseFloat(item.price) || 0}
-                originalPrice={parseFloat(item.compare_at_price || item.mrp) || (parseFloat(item.price) * 1.25)}
+                originalPrice={parseFloat(item.compare_at_price || item.mrp || item.originalPrice)}
                 discount={item.discount ? String(item.discount) : undefined}
-                imageUrl={item.image || item.imageUrl}
+                imageUrl={item.image || item.imageUrl || item.ImagePath}
+                category={item.category || item.category_name}
                 onPress={() => handleProductPress(item)}
                 onAddToCart={() => handleAddToCart(Number(item.id))}
-                style={{ width: 170 }}
+                style={{ width: 155 }}
               />
             )}
           />
@@ -242,7 +303,7 @@ export const HomeScreen = ({ navigation }: any) => {
         )}
 
         {/* Recommended Products Grid from API */}
-        <View style={[styles.sectionHeader, { marginTop: SPACING.xl }]}>
+        <View style={[styles.sectionHeader, { marginTop: SPACING.lg }]}>
           <Text style={[styles.sectionTitle, { color: tokens.content.primary }]}>
             Recommended For You
           </Text>
@@ -252,7 +313,7 @@ export const HomeScreen = ({ navigation }: any) => {
           <View style={styles.gridContainer}>
             {[1, 2, 3, 4].map((n) => (
               <View key={n} style={{ width: `${100 / gridColumns}%`, padding: 4 }}>
-                <SkeletonState width="100%" height={220} radius="lg" />
+                <SkeletonState width="100%" height={200} radius="lg" />
               </View>
             ))}
           </View>
@@ -264,9 +325,10 @@ export const HomeScreen = ({ navigation }: any) => {
                   id={item.id}
                   title={item.name || item.title || 'Product'}
                   price={parseFloat(item.price) || 0}
-                  originalPrice={parseFloat(item.compare_at_price || item.mrp)}
+                  originalPrice={parseFloat(item.compare_at_price || item.mrp || item.originalPrice)}
                   discount={item.discount ? String(item.discount) : undefined}
-                  imageUrl={item.image || item.imageUrl}
+                  imageUrl={item.image || item.imageUrl || item.ImagePath}
+                  category={item.category || item.category_name}
                   onPress={() => handleProductPress(item)}
                   onAddToCart={() => handleAddToCart(Number(item.id))}
                 />
@@ -285,10 +347,10 @@ export const HomeScreen = ({ navigation }: any) => {
           onClose={() => setModalVisible(false)}
           productDetail={selectedProduct}
           loading={false}
-          qty={1}
-          onAdd={() => handleAddToCart(selectedProduct.id)}
-          onIncrease={() => {}}
-          onDecrease={() => {}}
+          qty={currentSelectedQty}
+          onAdd={() => handleAddToCart(selectedProduct.id, selectedProduct)}
+          onIncrease={() => handleQuantityIncrease(selectedProduct.id)}
+          onDecrease={() => handleQuantityDecrease(selectedProduct.id)}
           onViewCart={() => {
             setModalVisible(false);
             navigation.navigate('Cart');
