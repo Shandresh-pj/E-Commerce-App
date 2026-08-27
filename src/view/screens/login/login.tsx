@@ -122,6 +122,25 @@ type AuthStep = 'form' | 'otp';
 const DOMAIN_SUGGESTIONS = ['@gmail.com', '@outlook.com', '@yahoo.com', '@icloud.com'];
 const MAX_RESEND_ATTEMPTS = 3;
 
+const getAuthenticatedUser = (response: any, fallbackEmail: string) => {
+  const body = response?.data?.response ?? response?.data ?? {};
+  const token =
+    body.token ??
+    body.accessToken ??
+    body.jwt ??
+    body.data?.token ??
+    body.data?.accessToken;
+  const user = body.user ?? body.data?.user ?? body.data ?? body;
+
+  if (body.success === false || !user || typeof user !== 'object') return null;
+
+  return {
+    ...user,
+    email: user.email || fallbackEmail,
+    ...(token ? { token } : {}),
+  };
+};
+
 export const Login = ({ navigation, dispatch }: any) => {
   const { isDark } = useTheme();
   const { isTablet } = useResponsive();
@@ -257,9 +276,14 @@ export const Login = ({ navigation, dispatch }: any) => {
         setResendTimer(30);
       } else if (loginMethod === 'otp') {
         try {
-          await authService.sendOtp(email);
+          const response: any = await authService.sendOtp(email);
+          if (response?.data?.success === false) {
+            throw new Error(response.data.message || 'Unable to send OTP');
+          }
         } catch (e) {
           console.log('API sendOtp note:', e);
+          setError((e as any)?.response?.data?.message || (e as Error)?.message || 'Unable to send OTP');
+          return;
         }
         setStep('otp');
         setResendTimer(30);
@@ -268,28 +292,16 @@ export const Login = ({ navigation, dispatch }: any) => {
         let userPayload: any = null;
         try {
           const res: any = await authService.loginNew({ email, password });
-          if (res?.data) {
-            const body = res.data;
-            const tok = body.token ?? body.accessToken ?? body.jwt ?? body.data?.token;
-            const uObj = body.user ?? body.data?.user ?? body.data ?? body;
-            userPayload = {
-              ...(typeof uObj === 'object' ? uObj : {}),
-              token: tok || 'bearer_svk_session_active',
-            };
-          }
+          userPayload = getAuthenticatedUser(res, email);
         } catch (e) {
           console.log('API login note:', e);
+          setError((e as any)?.response?.data?.message || (e as Error)?.message || 'Invalid email or password');
+          return;
         }
 
-        if (!userPayload || !userPayload.email) {
-          userPayload = {
-            id: 'user_101',
-            name: email.split('@')[0] || 'SVK Customer',
-            email: email,
-            phone: phone || '+1 555 019 2831',
-            token: 'bearer_svk_session_active',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=60',
-          };
+        if (!userPayload) {
+          setError('Login failed. Please check your credentials and try again.');
+          return;
         }
 
         await setAsyncData('user', userPayload);
@@ -316,31 +328,21 @@ export const Login = ({ navigation, dispatch }: any) => {
       let userPayload: any = null;
       try {
         const res: any = await authService.verifyOtp(email, enteredOtp);
-        if (res?.data) {
-          const body = res.data;
-          const tok = body.token ?? body.accessToken ?? body.jwt ?? body.data?.token;
-          const uObj = body.user ?? body.data?.user ?? body.data ?? body;
-          userPayload = {
-            ...(typeof uObj === 'object' ? uObj : {}),
-            token: tok || 'bearer_svk_session_active',
-          };
-        }
+        userPayload = getAuthenticatedUser(res, email);
       } catch (e) {
         console.log('API verifyOtp note:', e);
+        setError((e as any)?.response?.data?.message || (e as Error)?.message || 'Invalid OTP');
+        return;
       }
 
-      const mockPayload = {
-        id: userPayload?.id || 'user_102',
-        name: userPayload?.name || fullName || email.split('@')[0] || 'SVK Customer',
-        email: userPayload?.email || email,
-        phone: userPayload?.phone || phone || '+1 555 019 2831',
-        token: userPayload?.token || 'bearer_svk_session_active',
-        avatar: userPayload?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=60',
-      };
+      if (!userPayload) {
+        setError('OTP verification failed. Please try again.');
+        return;
+      }
 
-      await setAsyncData('user', mockPayload);
+      await setAsyncData('user', userPayload);
       if (dispatch) {
-        dispatch({ type: LOGIN_SUCCESS, payload: { user: mockPayload } });
+        dispatch({ type: LOGIN_SUCCESS, payload: { user: userPayload } });
       }
       Toast.show('OTP Verified Successfully!', { duration: Toast.durations.SHORT });
       navigation.replace('Home');

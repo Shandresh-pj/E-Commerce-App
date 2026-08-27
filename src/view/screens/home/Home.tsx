@@ -12,6 +12,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { Surface } from '../../../design-system/surfaces/Surface';
@@ -26,6 +27,7 @@ import { fetchAllProducts, fetchCategories, addToApiCart, fetchApiCart, removeFr
 import { TYPOGRAPHY } from '../../../design-system/tokens/typography';
 import { SPACING } from '../../../design-system/tokens/spacing';
 import { buildImageUrl } from '../../../shared/utils/imageHelper';
+import { getAsyncData } from '../../../shared/utils/storage';
 import Toast from 'react-native-root-toast';
 
 export const HomeScreen = ({ navigation }: any) => {
@@ -143,6 +145,34 @@ export const HomeScreen = ({ navigation }: any) => {
     bannerUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
   };
 
+  const [deliveryLocation, setDeliveryLocation] = useState<string>('Select Delivery Location');
+
+  const loadDeliveryAddress = useCallback(async () => {
+    try {
+      const stored = await getAsyncData('selected_delivery_address');
+      if (stored) {
+        if (stored.isCurrentLocation) {
+          const locStr = stored.city
+            ? `${stored.line1 ? stored.line1.split(',')[0] + ', ' : ''}${stored.city}`
+            : stored.fullAddress || 'Current Location';
+          setDeliveryLocation(locStr);
+        } else if (stored.city || stored.line1) {
+          setDeliveryLocation(`${stored.label || 'Saved'}: ${stored.city || stored.line1}`);
+        } else if (stored.fullAddress) {
+          setDeliveryLocation(stored.fullAddress);
+        }
+      }
+    } catch (e) {
+      console.warn('Error loading delivery location in Home:', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDeliveryAddress();
+    }, [loadDeliveryAddress])
+  );
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: tokens.surface.base }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -159,14 +189,21 @@ export const HomeScreen = ({ navigation }: any) => {
       >
         {/* Header */}
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1, marginRight: 12 }}>
             <Text style={[styles.greeting, { color: tokens.content.secondary }]}>
               Hello, Member 👋
             </Text>
-            <Pressable onPress={() => navigation.navigate('MapView')} style={styles.locationRow}>
+            <Pressable
+              onPress={() => navigation.navigate('Addresses')}
+              style={styles.locationRow}
+              activeOpacity={0.8}
+            >
               <SvkIcon name="mapPin" size={14} color={tokens.brand.primary} />
-              <Text style={[styles.locationText, { color: tokens.content.primary }]}>
-                New York, USA
+              <Text
+                style={[styles.locationText, { color: tokens.content.primary }]}
+                numberOfLines={1}
+              >
+                {deliveryLocation}
               </Text>
               <SvkIcon name="chevronDown" size={12} color={tokens.content.tertiary} />
             </Pressable>

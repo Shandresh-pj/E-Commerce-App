@@ -29,6 +29,7 @@ import {
 import { MapView } from '../../elements/MapView'
 import Geolocation from '@react-native-community/geolocation'
 import { getAsyncData, setAsyncData } from '../../../shared/utils/storage'
+import { getLiveCurrentLocation } from '../../../shared/utils/locationService'
 
 const { width: W, height: H } = Dimensions.get('window')
 const isSmallDevice = W < 360
@@ -133,6 +134,27 @@ const PinSvgIcon = ({ color = '#FBBF24', size = 16 }) => (
       strokeWidth="2"
     />
     <Circle cx="12" cy="9" r="2.5" fill={color} />
+  </Svg>
+)
+
+const GpsTargetSvgIcon = ({ color = '#FBBF24', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth="2" />
+    <Circle cx="12" cy="12" r="3" fill={color} />
+    <Path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+)
+
+const CheckCircleSvgIcon = ({ color = '#FBBF24', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" fill={color} />
+    <Path d="M8 12L11 15L16 9" stroke="#0B1B36" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+)
+
+const EmptyRadioSvgIcon = ({ color = '#829AB8', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
   </Svg>
 )
 
@@ -248,11 +270,13 @@ const GlassField = ({
 /* -------------------------------------------------------------------------- */
 const SavedAddressCard = ({
   address,
+  isSelected,
   onSelect,
   onEdit,
   onDelete,
 }: {
   address: Address
+  isSelected: boolean
   onSelect: () => void
   onEdit: () => void
   onDelete: () => void
@@ -262,45 +286,69 @@ const SavedAddressCard = ({
     .join(', ')
 
   return (
-    <View style={s.savedCard}>
-      <TouchableOpacity
-        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-        onPress={onSelect}
-        activeOpacity={0.8}
-      >
-        <View style={s.savedIconBox}>
-          {address.label === 'Home' ? (
-            <HomeSvgIcon color="#FBBF24" size={20} />
-          ) : address.label === 'Work' ? (
-            <WorkSvgIcon color="#FBBF24" size={20} />
-          ) : (
-            <PinSvgIcon color="#FBBF24" size={20} />
-          )}
-        </View>
+    <TouchableOpacity
+      style={[s.savedCard, isSelected && s.savedCardActive]}
+      onPress={onSelect}
+      activeOpacity={0.85}
+    >
+      <View style={s.savedIconBox}>
+        {address.label === 'Home' ? (
+          <HomeSvgIcon color="#FBBF24" size={20} />
+        ) : address.label === 'Work' ? (
+          <WorkSvgIcon color="#FBBF24" size={20} />
+        ) : (
+          <PinSvgIcon color="#FBBF24" size={20} />
+        )}
+      </View>
 
-        <View style={s.savedInfo}>
+      <View style={s.savedInfo}>
+        <View style={s.savedHeaderRow}>
           <Text style={s.savedLabel}>
             {address.label}
             {address.name ? ` (${address.name})` : ''}
           </Text>
-          <Text style={s.savedAddress} numberOfLines={2}>
-            {fullAddress}
-          </Text>
-          {address.phone ? (
-            <Text style={s.savedPhoneText}>📞 {address.phone}</Text>
-          ) : null}
+          {isSelected && (
+            <View style={s.selectedBadge}>
+              <Text style={s.selectedBadgeText}>✓ Selected</Text>
+            </View>
+          )}
         </View>
-      </TouchableOpacity>
+        <Text style={s.savedAddress} numberOfLines={2}>
+          {fullAddress}
+        </Text>
+        {address.phone ? (
+          <Text style={s.savedPhoneText}>📞 {address.phone}</Text>
+        ) : null}
+      </View>
 
       <View style={s.actionCol}>
-        <TouchableOpacity style={s.miniActionBtn} onPress={onEdit} activeOpacity={0.75}>
-          <EditSvgIcon color="#FBBF24" size={15} />
+        {isSelected ? (
+          <CheckCircleSvgIcon color="#FBBF24" size={20} />
+        ) : (
+          <EmptyRadioSvgIcon color="#829AB8" size={20} />
+        )}
+        <TouchableOpacity
+          style={s.miniActionBtn}
+          onPress={(e) => {
+            e.stopPropagation?.()
+            onEdit()
+          }}
+          activeOpacity={0.75}
+        >
+          <EditSvgIcon color="#FBBF24" size={14} />
         </TouchableOpacity>
-        <TouchableOpacity style={s.miniActionBtn} onPress={onDelete} activeOpacity={0.75}>
-          <TrashSvgIcon color="#FF6B6B" size={15} />
+        <TouchableOpacity
+          style={s.miniActionBtn}
+          onPress={(e) => {
+            e.stopPropagation?.()
+            onDelete()
+          }}
+          activeOpacity={0.75}
+        >
+          <TrashSvgIcon color="#FF6B6B" size={14} />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
@@ -316,10 +364,14 @@ const AddressScreen = () => {
   useEffect(() => {
     modalVisibleRef.current = modalVisible
   }, [modalVisible])
+
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm())
   const [saving, setSaving] = useState(false)
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null)
+
+  // Selection mode: 'current' (GPS/pin on map) or 'saved' (saved address id)
+  const [selectedType, setSelectedType] = useState<'current' | 'saved'>('current')
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null)
 
   const [profileName, setProfileName] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
@@ -351,6 +403,8 @@ const AddressScreen = () => {
   const [searchModalVisible, setSearchModalVisible] = useState(false)
   const searchTimeoutRef = useRef<any>(null)
 
+  const slideAnim = useRef(new Animated.Value(H)).current
+
   const saveCachedLocation = async (lat: number, lng: number) => {
     try {
       await setAsyncData('last_location_coords', { latitude: lat, longitude: lng } as any)
@@ -370,108 +424,150 @@ const AddressScreen = () => {
     } catch (err) {
       console.warn('Error reading cached location:', err)
     }
-    // Fallback
-    setCoords({ latitude: 12.9716, longitude: 77.5946 })
-    setMapCenter({ latitude: 12.9716, longitude: 77.5946 })
-    return { latitude: 12.9716, longitude: 77.5946 }
+    // Fallback: Bangalore default coords
+    const fallback = { latitude: 12.9716, longitude: 77.5946 }
+    setCoords(fallback)
+    setMapCenter(fallback)
+    return fallback
   }, [])
 
-  const fetchCurrentLocation = useCallback(async () => {
+  // Reverse geocoding with robust fallbacks
+  const reverseGeocode = async (lat: number, lng: number) => {
+    if (!lat || !lng || (lat === 0 && lng === 0)) return
+    setIsGeocoding(true)
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'FutureBelieveECommerceApp/1.0',
+            'Accept-Language': 'en',
+          },
+        }
+      )
+      const data = await response.json()
+      if (data && (data.address || data.display_name)) {
+        const a = data.address || {}
+        const houseNumber = a.house_number || a.building_number || ''
+        const street =
+          a.road ||
+          a.street ||
+          a.neighbourhood ||
+          a.suburb ||
+          a.residential ||
+          a.amenity ||
+          a.commercial ||
+          a.building ||
+          ''
+        const line1 =
+          houseNumber && street
+            ? `${houseNumber}, ${street}`
+            : street || (data.display_name ? data.display_name.split(',')[0] : 'Current Location')
+        const city =
+          a.city ||
+          a.town ||
+          a.village ||
+          a.city_district ||
+          a.state_district ||
+          a.county ||
+          a.municipality ||
+          'City'
+        const state = a.state || ''
+        const pincode = a.postcode || ''
+        const displayName = data.display_name || `${line1}, ${city}`
+
+        setGeocodedAddress(displayName)
+        setGeocodedDetails({
+          line1,
+          city,
+          state,
+          pincode,
+          displayName,
+        })
+      } else {
+        setGeocodedAddress('Selected Map Location')
+        setGeocodedDetails({
+          line1: 'Selected Map Location',
+          city: 'City',
+          state: '',
+          pincode: '',
+          displayName: 'Selected Map Location',
+        })
+      }
+    } catch (error) {
+      console.warn('Geocoding error:', error)
+      setGeocodedAddress('Location pinpointed')
+      setGeocodedDetails((prev: any) => prev || {
+        line1: 'Current Location',
+        city: 'City',
+        state: '',
+        pincode: '',
+        displayName: 'Current Location',
+      })
+    } finally {
+      setIsGeocoding(false)
+    }
+  }
+
+  const debouncedReverseGeocode = (lat: number, lng: number) => {
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current)
+    }
+    setIsGeocoding(true)
+    setGeocodedAddress('Locating...')
+    geocodeTimeoutRef.current = setTimeout(() => {
+      reverseGeocode(lat, lng)
+    }, 600)
+  }
+
+  // Request Location Permission, Enable GPS, and fetch coordinates
+  const fetchCurrentLocation = useCallback(async (autoSelect = true) => {
     setIsLocatingUser(true)
     setPermissionDenied(false)
     setGpsError(false)
 
     try {
-      if (Platform.OS === 'android') {
-        const fineGranted = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        )
-        const coarseGranted = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
-        )
-        if (!fineGranted && !coarseGranted) {
-          const status = await PermissionsAndroid.requestMultiple([
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-          ])
-          const fg = status[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION]
-          const cg = status[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION]
-          if (fg !== PermissionsAndroid.RESULTS.GRANTED && cg !== PermissionsAndroid.RESULTS.GRANTED) {
-            setPermissionDenied(true)
-            setIsLocatingUser(false)
-            await loadCachedLocation()
-            return
-          }
-        }
-      } else if (Platform.OS === 'ios') {
-        if (typeof Geolocation.requestAuthorization === 'function') {
-          Geolocation.requestAuthorization()
-        }
+      const result = await getLiveCurrentLocation()
+
+      if (result.permissionDenied) {
+        setPermissionDenied(true)
+        setIsLocatingUser(false)
+        await loadCachedLocation()
+        return
       }
 
+      if (!result.success || !result.coords) {
+        setGpsError(true)
+        setIsLocatingUser(false)
+        await loadCachedLocation()
+        return
+      }
+
+      const { latitude, longitude } = result.coords
+      setCoords({ latitude, longitude })
+      setMapCenter({ latitude, longitude })
+      saveCachedLocation(latitude, longitude)
+      setIsLocatingUser(false)
+      setGpsError(false)
+      setPermissionDenied(false)
+
+      if (autoSelect) {
+        setSelectedType('current')
+      }
+      reverseGeocode(latitude, longitude)
+
+      // Watch GPS position in background
       if (watchIdRef.current !== null) {
         Geolocation.clearWatch(watchIdRef.current)
         watchIdRef.current = null
       }
-
-      // GPS timeout protection
-      const gpsTimeout = setTimeout(() => {
-        setIsLocatingUser(prev => {
-          if (prev) {
-            setGpsError(true)
-            loadCachedLocation()
-          }
-          return false
-        })
-      }, 8000)
-
-      Geolocation.getCurrentPosition(
-        position => {
-          clearTimeout(gpsTimeout)
-          const { latitude, longitude } = position.coords
-          setCoords({ latitude, longitude })
-          setMapCenter({ latitude, longitude })
-          saveCachedLocation(latitude, longitude)
-          setIsLocatingUser(false)
-          setGpsError(false)
-          setPermissionDenied(false)
-          reverseGeocode(latitude, longitude)
-        },
-        error => {
-          console.warn('High accuracy location failed, trying low accuracy...', error)
-          Geolocation.getCurrentPosition(
-            position => {
-              clearTimeout(gpsTimeout)
-              const { latitude, longitude } = position.coords
-              setCoords({ latitude, longitude })
-              setMapCenter({ latitude, longitude })
-              saveCachedLocation(latitude, longitude)
-              setIsLocatingUser(false)
-              setGpsError(false)
-              setPermissionDenied(false)
-              reverseGeocode(latitude, longitude)
-            },
-            err2 => {
-              clearTimeout(gpsTimeout)
-              console.warn('Low accuracy location failed as well', err2)
-              setGpsError(true)
-              setIsLocatingUser(false)
-              loadCachedLocation()
-            },
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 10000 }
-          )
-        },
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 }
-      )
-
-      // Watch GPS position
       const watchId = Geolocation.watchPosition(
-        position => {
-          const { latitude, longitude } = position.coords
-          setCoords({ latitude, longitude })
-          saveCachedLocation(latitude, longitude)
+        (position) => {
+          const { latitude: wLat, longitude: wLng } = position.coords
+          setCoords({ latitude: wLat, longitude: wLng })
+          saveCachedLocation(wLat, wLng)
         },
-        error => {
+        (error) => {
           console.warn('AddressScreen watch geolocation error:', error)
         },
         {
@@ -490,14 +586,20 @@ const AddressScreen = () => {
     }
   }, [loadCachedLocation])
 
-  // Initialize location
+  // Select Current Location button action
+  const handleSelectCurrentLocation = () => {
+    setSelectedType('current')
+    fetchCurrentLocation(true)
+  }
+
+  // Initialize
   useEffect(() => {
     const init = async () => {
       const initial = await loadCachedLocation()
       if (initial && initial.latitude !== 0) {
         reverseGeocode(initial.latitude, initial.longitude)
       }
-      fetchCurrentLocation()
+      fetchCurrentLocation(false)
     }
     init()
 
@@ -525,71 +627,22 @@ const AddressScreen = () => {
     }).start()
   }, [pinTranslateY])
 
-  const handleRegionChangeComplete = useCallback((lat: number, lng: number) => {
-    if (modalVisibleRef.current) return
-    setIsMapMoving(false)
-    Animated.spring(pinTranslateY, {
-      toValue: -18,
-      friction: 4,
-      tension: 40,
-      useNativeDriver: true,
-    }).start()
+  const handleRegionChangeComplete = useCallback(
+    (lat: number, lng: number) => {
+      if (modalVisibleRef.current) return
+      setIsMapMoving(false)
+      Animated.spring(pinTranslateY, {
+        toValue: -18,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: true,
+      }).start()
 
-    setMapCenter({ latitude: lat, longitude: lng })
-    debouncedReverseGeocode(lat, lng)
-  }, [pinTranslateY])
-
-  // Reverse geocoding
-  const reverseGeocode = async (lat: number, lng: number) => {
-    if (lat === 0 && lng === 0) return
-    setIsGeocoding(true)
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'FutureBelieveECommerceApp/1.0',
-          },
-        }
-      )
-      const data = await response.json()
-      if (data && data.address) {
-        const addressObj = data.address
-        const road = addressObj.road || addressObj.suburb || addressObj.neighbourhood || addressObj.industrial || ''
-        const city = addressObj.city || addressObj.town || addressObj.village || addressObj.state_district || addressObj.county || ''
-        const state = addressObj.state || ''
-        const pincode = addressObj.postcode || ''
-        const displayName = data.display_name || ''
-
-        setGeocodedAddress(displayName)
-        setGeocodedDetails({
-          line1: road,
-          city,
-          state,
-          pincode,
-        })
-      } else {
-        setGeocodedAddress('Unknown Location')
-        setGeocodedDetails(null)
-      }
-    } catch (error) {
-      console.warn('Geocoding error:', error)
-      setGeocodedAddress('Location pinpointed')
-    } finally {
-      setIsGeocoding(false)
-    }
-  }
-
-  const debouncedReverseGeocode = (lat: number, lng: number) => {
-    if (geocodeTimeoutRef.current) {
-      clearTimeout(geocodeTimeoutRef.current)
-    }
-    setIsGeocoding(true)
-    setGeocodedAddress('Locating...')
-    geocodeTimeoutRef.current = setTimeout(() => {
-      reverseGeocode(lat, lng)
-    }, 800)
-  }
+      setMapCenter({ latitude: lat, longitude: lng })
+      debouncedReverseGeocode(lat, lng)
+    },
+    [pinTranslateY]
+  )
 
   // Search input handler
   const handleSearchInputChange = (text: string) => {
@@ -629,26 +682,27 @@ const AddressScreen = () => {
     const lat = Number(item.lat)
     const lon = Number(item.lon)
     setMapCenter({ latitude: lat, longitude: lon })
+    setSelectedType('current')
     setSearchModalVisible(false)
     reverseGeocode(lat, lon)
   }
 
-  // Confirm map location
-  const handleConfirmMapLocation = () => {
+  // Open modal to save current pinned location as a permanent address
+  const handleSaveCurrentMapLocation = () => {
     setEditingId(null)
     setForm({
       label: 'Home',
       name: profileName,
       phone: profilePhone,
-      line1: geocodedDetails?.line1 || '',
-      city: geocodedDetails?.city || '',
+      line1: geocodedDetails?.line1 || (geocodedAddress ? geocodedAddress.split(',')[0] : 'Current Location'),
+      city: geocodedDetails?.city || 'City',
       state: geocodedDetails?.state || '',
       pincode: geocodedDetails?.pincode || '',
       isDefault: addresses.length === 0,
       receiverType: 'myself',
     })
     setReceiverType('myself')
-    
+
     setModalVisible(true)
     Animated.spring(slideAnim, {
       toValue: 0,
@@ -658,14 +712,12 @@ const AddressScreen = () => {
     }).start()
   }
 
-  const slideAnim = useRef(new Animated.Value(H)).current
-
   const loadAddresses = useCallback(async () => {
     setLoading(true)
     try {
       const res = await getData('/address')
       const data: any[] = res?.data?.data || []
-      const mapped = data.map(a => ({
+      const mapped: Address[] = data.map((a) => ({
         id: String(a.id),
         label: a.label as AddressType,
         name: a.name || '',
@@ -678,14 +730,12 @@ const AddressScreen = () => {
         receiverType: (a.receiverType || a.receiver_type || 'myself') as 'myself' | 'other',
       }))
       setAddresses(mapped)
-      const defaultAddr = mapped.find(a => a.isDefault) || mapped[0] || null
-      if (defaultAddr && !selectedAddress) setSelectedAddress(defaultAddr)
     } catch (e) {
       console.log('Address fetch error:', e)
     } finally {
       setLoading(false)
     }
-  }, [selectedAddress])
+  }, [])
 
   const loadProfile = useCallback(async () => {
     try {
@@ -706,7 +756,7 @@ const AddressScreen = () => {
     useCallback(() => {
       loadAddresses()
       loadProfile()
-    }, [loadAddresses, loadProfile]),
+    }, [loadAddresses, loadProfile])
   )
 
   const openModal = (addr?: Address) => {
@@ -730,6 +780,10 @@ const AddressScreen = () => {
         ...emptyForm(),
         name: profileName,
         phone: profilePhone,
+        line1: geocodedDetails?.line1 || '',
+        city: geocodedDetails?.city || '',
+        state: geocodedDetails?.state || '',
+        pincode: geocodedDetails?.pincode || '',
       })
       setReceiverType('myself')
     }
@@ -756,7 +810,7 @@ const AddressScreen = () => {
 
   const handleReceiverTypeChange = (type: 'myself' | 'other') => {
     setReceiverType(type)
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       receiverType: type,
       name: type === 'myself' ? profileName : '',
@@ -765,7 +819,7 @@ const AddressScreen = () => {
   }
 
   const handleInputChange = useCallback((key: keyof FormState, val: any) => {
-    setForm(prev => ({ ...prev, [key]: val }))
+    setForm((prev) => ({ ...prev, [key]: val }))
   }, [])
 
   const handleSave = async () => {
@@ -790,7 +844,12 @@ const AddressScreen = () => {
       if (editingId) {
         await putData(`/address/${editingId}`, payload)
       } else {
-        await postData('/address', payload)
+        const res = await postData('/address', payload)
+        const newId = res?.data?.data?.id || res?.data?.id
+        if (newId) {
+          setSelectedSavedId(String(newId))
+          setSelectedType('saved')
+        }
       }
       await loadAddresses()
       closeModal()
@@ -811,7 +870,10 @@ const AddressScreen = () => {
         onPress: async () => {
           try {
             await deleteData(`/address/${id}`)
-            if (selectedAddress?.id === id) setSelectedAddress(null)
+            if (selectedSavedId === id) {
+              setSelectedSavedId(null)
+              setSelectedType('current')
+            }
             loadAddresses()
           } catch (e) {
             console.log('Delete address error:', e)
@@ -821,12 +883,46 @@ const AddressScreen = () => {
     ])
   }
 
-  const handleConfirm = () => {
-    if (!selectedAddress && addresses.length > 0) {
-      setSelectedAddress(addresses[0])
+  // Confirm selection and return
+  const handleConfirm = async () => {
+    try {
+      if (selectedType === 'current') {
+        const currentAddrPayload = {
+          isCurrentLocation: true,
+          label: 'Current Location',
+          name: profileName || 'Current Location',
+          phone: profilePhone || '',
+          line1: geocodedDetails?.line1 || (geocodedAddress ? geocodedAddress.split(',')[0] : 'Current Location'),
+          city: geocodedDetails?.city || 'City',
+          state: geocodedDetails?.state || '',
+          pincode: geocodedDetails?.pincode || '',
+          fullAddress: geocodedAddress || 'Current Location',
+          latitude: mapCenter.latitude || coords.latitude,
+          longitude: mapCenter.longitude || coords.longitude,
+        }
+        await setAsyncData('selected_delivery_address', currentAddrPayload)
+        await setAsyncData('last_location_coords', {
+          latitude: mapCenter.latitude || coords.latitude,
+          longitude: mapCenter.longitude || coords.longitude,
+        })
+      } else {
+        const chosen = addresses.find((a) => a.id === selectedSavedId) || addresses[0]
+        if (chosen) {
+          await setAsyncData('selected_delivery_address', {
+            ...chosen,
+            isCurrentLocation: false,
+            fullAddress: [chosen.line1, chosen.city, chosen.pincode].filter(Boolean).join(', '),
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('Error saving selected delivery address:', e)
     }
     navigation.goBack()
   }
+
+  const isCurrentSelected = selectedType === 'current'
+  const activeSavedAddress = selectedType === 'saved' ? addresses.find((a) => a.id === selectedSavedId) : null
 
   return (
     <View style={s.root}>
@@ -842,20 +938,21 @@ const AddressScreen = () => {
             userLatitude={coords.latitude}
             userLongitude={coords.longitude}
             showRecenter={!modalVisible}
-            recenterBottom={H * 0.58 + 16}
+            recenterBottom={H * 0.52 + 16}
             showMapType={!modalVisible}
-            mapTypeBottom={H * 0.58 + 66}
+            mapTypeBottom={H * 0.52 + 66}
             onRegionChangeStart={modalVisible ? undefined : handleRegionChangeStart}
             onRegionChangeComplete={modalVisible ? undefined : handleRegionChangeComplete}
+            onRecenter={() => fetchCurrentLocation(true)}
           />
         </View>
 
         {permissionDenied && (
           <View style={s.errorBanner}>
             <Text style={s.errorBannerText}>
-              🔒 Location permission denied. Please allow permission to locate automatically.
+              🔒 Location permission denied. Allow permission to auto-detect location.
             </Text>
-            <TouchableOpacity style={s.errorBannerBtn} onPress={fetchCurrentLocation}>
+            <TouchableOpacity style={s.errorBannerBtn} onPress={() => fetchCurrentLocation(true)}>
               <Text style={s.errorBannerBtnText}>Grant</Text>
             </TouchableOpacity>
           </View>
@@ -864,9 +961,9 @@ const AddressScreen = () => {
         {gpsError && (
           <View style={s.errorBanner}>
             <Text style={s.errorBannerText}>
-              ⚠️ GPS request failed or disabled. Check GPS settings.
+              ⚠️ GPS signal unavailable. Pan map to select or check GPS.
             </Text>
-            <TouchableOpacity style={s.errorBannerBtn} onPress={fetchCurrentLocation}>
+            <TouchableOpacity style={s.errorBannerBtn} onPress={() => fetchCurrentLocation(true)}>
               <Text style={s.errorBannerBtnText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -879,6 +976,7 @@ const AddressScreen = () => {
           </View>
         )}
 
+        {/* Top Header */}
         <SafeAreaView edges={['top']} style={s.searchOverlay}>
           <TouchableOpacity
             style={s.backBtn}
@@ -902,7 +1000,7 @@ const AddressScreen = () => {
         <Animated.View
           style={[
             s.pinContainer,
-            { transform: [{ translateY: pinTranslateY }] }
+            { transform: [{ translateY: pinTranslateY }] },
           ]}
           pointerEvents="none"
         >
@@ -913,19 +1011,54 @@ const AddressScreen = () => {
         </Animated.View>
       </View>
 
-      {/* Floating sheet */}
+      {/* Floating Bottom Sheet */}
       <View style={s.bottomSheet}>
         <View style={s.sheetHandle} />
 
         <ScrollView contentContainerStyle={s.sheetScroll} showsVerticalScrollIndicator={false}>
-          {/* Location card */}
-          <View style={s.currentPinCard}>
+          {/* Quick GPS Action Bar */}
+          <TouchableOpacity
+            style={s.gpsQuickBtn}
+            onPress={handleSelectCurrentLocation}
+            activeOpacity={0.85}
+          >
+            <View style={s.gpsIconBox}>
+              <GpsTargetSvgIcon color="#0B1B36" size={18} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.gpsQuickTitle}>Use My Current Location</Text>
+              <Text style={s.gpsQuickSubtitle}>
+                {isLocatingUser ? 'Fetching live GPS...' : 'Auto-detect delivery address via GPS'}
+              </Text>
+            </View>
+            {isLocatingUser ? (
+              <ActivityIndicator size="small" color="#FBBF24" />
+            ) : isCurrentSelected ? (
+              <CheckCircleSvgIcon color="#FBBF24" size={20} />
+            ) : (
+              <EmptyRadioSvgIcon color="#829AB8" size={20} />
+            )}
+          </TouchableOpacity>
+
+          {/* Current Pin / Location Card */}
+          <TouchableOpacity
+            style={[s.currentPinCard, isCurrentSelected && s.currentPinCardActive]}
+            onPress={() => setSelectedType('current')}
+            activeOpacity={0.9}
+          >
             <View style={s.currentPinLeft}>
-              <View style={s.locIconBox}>
+              <View style={[s.locIconBox, isCurrentSelected && s.locIconBoxActive]}>
                 <Text style={{ fontSize: 18 }}>📍</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.currentPinTitle}>Selected Delivery Location</Text>
+                <View style={s.pinTitleRow}>
+                  <Text style={s.currentPinTitle}>Pinned Delivery Location</Text>
+                  {isCurrentSelected && (
+                    <View style={s.selectedBadge}>
+                      <Text style={s.selectedBadgeText}>✓ Delivering Here</Text>
+                    </View>
+                  )}
+                </View>
                 {isMapMoving ? (
                   <Text style={s.currentPinAddrText}>Moving map...</Text>
                 ) : isGeocoding ? (
@@ -945,57 +1078,64 @@ const AddressScreen = () => {
               </View>
             </View>
 
-            {!isMapMoving && !isGeocoding && geocodedAddress && (
+            <View style={s.currentPinActions}>
               <TouchableOpacity
-                style={s.confirmLocationBtn}
-                onPress={handleConfirmMapLocation}
-                activeOpacity={0.85}
+                style={s.saveAsAddressBtn}
+                onPress={handleSaveCurrentMapLocation}
+                activeOpacity={0.8}
               >
-                <Text style={s.confirmLocationBtnText}>Confirm Location ➔</Text>
+                <Text style={s.saveAsAddressBtnText}>+ Save to Address Book</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          </TouchableOpacity>
 
-          {/* Selected address */}
-          {selectedAddress ? (
-            <View style={s.selectedCard}>
-              <View style={s.selectedLeft}>
-                <PinSvgIcon color="#FBBF24" size={20} />
-                <View style={s.selectedInfo}>
-                  <Text style={s.selectedTitle}>
-                    {selectedAddress.label} {selectedAddress.name ? `• ${selectedAddress.name}` : ''}
-                  </Text>
-                  <Text style={s.selectedAddress} numberOfLines={2}>
-                    {[selectedAddress.line1, selectedAddress.city, selectedAddress.pincode]
+          {/* Active Selection Summary Card */}
+          <View style={s.selectedSummaryCard}>
+            <View style={s.selectedLeft}>
+              <PinSvgIcon color="#FBBF24" size={20} />
+              <View style={s.selectedInfo}>
+                <Text style={s.selectedTitle}>
+                  {isCurrentSelected
+                    ? '📍 Delivering to Current / Pin Location'
+                    : `🏠 Delivering to ${activeSavedAddress?.label || 'Saved Address'} ${activeSavedAddress?.name ? `(${activeSavedAddress.name})` : ''
+                    }`}
+                </Text>
+                <Text style={s.selectedAddress} numberOfLines={2}>
+                  {isCurrentSelected
+                    ? geocodedAddress || 'Locating...'
+                    : [activeSavedAddress?.line1, activeSavedAddress?.city, activeSavedAddress?.pincode]
                       .filter(Boolean)
                       .join(', ')}
-                  </Text>
-                </View>
-              </View>
-              <View style={s.etaBadge}>
-                <Text style={s.etaText}>⚡ 8 MIN</Text>
+                </Text>
               </View>
             </View>
-          ) : null}
+            <View style={s.etaBadge}>
+              <Text style={s.etaText}>⚡ 10 MIN</Text>
+            </View>
+          </View>
 
-          {/* Confirm button */}
+          {/* Confirm Delivery Button */}
           <TouchableOpacity
             style={s.confirmBtn}
             onPress={handleConfirm}
             activeOpacity={0.85}
           >
-            <Text style={s.confirmBtnText}>Confirm & continue →</Text>
+            <Text style={s.confirmBtnText}>Confirm Delivery Location →</Text>
           </TouchableOpacity>
 
-          {/* Saved addresses */}
+          {/* Saved Addresses Section */}
           {addresses.length > 0 && (
             <>
               <Text style={s.sectionTitle}>SAVED ADDRESSES</Text>
-              {addresses.map(addr => (
+              {addresses.map((addr) => (
                 <SavedAddressCard
                   key={addr.id}
                   address={addr}
-                  onSelect={() => setSelectedAddress(addr)}
+                  isSelected={selectedType === 'saved' && selectedSavedId === addr.id}
+                  onSelect={() => {
+                    setSelectedType('saved')
+                    setSelectedSavedId(addr.id)
+                  }}
                   onEdit={() => openModal(addr)}
                   onDelete={() => handleDeleteAddress(addr.id)}
                 />
@@ -1003,7 +1143,7 @@ const AddressScreen = () => {
             </>
           )}
 
-          {/* Add address button */}
+          {/* Add New Address Button */}
           <TouchableOpacity
             style={s.addNewBtn}
             onPress={() => openModal()}
@@ -1017,7 +1157,7 @@ const AddressScreen = () => {
         </ScrollView>
       </View>
 
-      {/* Add/Edit address modal */}
+      {/* Add / Edit Address Modal */}
       <Modal
         transparent
         visible={modalVisible}
@@ -1047,11 +1187,11 @@ const AddressScreen = () => {
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingBottom: 24 }}
               >
-                {/* Address type selector */}
+                {/* Address Type */}
                 <View style={f.fieldWrap}>
                   <Text style={f.fieldLabel}>ADDRESS TYPE</Text>
                   <View style={s.typeRow}>
-                    {ADDRESS_TYPES.map(t => {
+                    {ADDRESS_TYPES.map((t) => {
                       const isActive = form.label === t
                       return (
                         <TouchableOpacity
@@ -1076,7 +1216,7 @@ const AddressScreen = () => {
                   </View>
                 </View>
 
-                {/* Receiver type selector */}
+                {/* Receiver Type */}
                 <View style={f.fieldWrap}>
                   <Text style={f.fieldLabel}>RECEIVER</Text>
                   <View style={s.typeRow}>
@@ -1128,7 +1268,7 @@ const AddressScreen = () => {
                   label="ADDRESS LINE 1 *"
                   value={form.line1}
                   onChange={(v: string) => handleInputChange('line1', v)}
-                  placeholder="House / Flat / Block"
+                  placeholder="House / Flat / Block / Street"
                   autoComplete="street-address"
                   textContentType="streetAddressLine1"
                 />
@@ -1314,12 +1454,6 @@ const s = StyleSheet.create({
     color: '#829AB8',
   },
 
-  gridContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
-  roadH: { position: 'absolute', top: '40%', left: 0, right: 0, height: 16, backgroundColor: '#102446' },
-  roadV: { position: 'absolute', left: '50%', top: 0, bottom: 0, width: 16, backgroundColor: '#102446' },
-  building1: { position: 'absolute', top: '20%', left: '20%', width: 70, height: 60, backgroundColor: '#0A1830', borderRadius: 8 },
-  building2: { position: 'absolute', bottom: '30%', right: '20%', width: 80, height: 70, backgroundColor: '#0A1830', borderRadius: 8 },
-
   pinContainer: {
     position: 'absolute',
     top: 0,
@@ -1343,14 +1477,14 @@ const s = StyleSheet.create({
   },
 
   bottomSheet: {
-    backgroundColor: 'rgba(11, 27, 54, 0.96)',
+    backgroundColor: 'rgba(11, 27, 54, 0.98)',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     borderTopWidth: 1.5,
     borderLeftWidth: 1.5,
     borderRightWidth: 1.5,
     borderColor: 'rgba(251, 191, 36, 0.35)',
-    maxHeight: H * 0.58,
+    maxHeight: H * 0.54,
     shadowColor: '#002B66',
     shadowOffset: { width: 0, height: -12 },
     shadowOpacity: 0.45,
@@ -1372,15 +1506,131 @@ const s = StyleSheet.create({
     paddingBottom: 32,
   },
 
-  selectedCard: {
+  /* GPS QUICK BUTTON */
+  gpsQuickBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(251, 191, 36, 0.45)',
+    padding: 12,
+    marginBottom: 12,
+    gap: 12,
+  },
+  gpsIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#FBBF24',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gpsQuickTitle: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 13.5,
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  gpsQuickSubtitle: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 11,
+    color: '#FBBF24',
+  },
+
+  /* PIN CARD */
+  currentPinCard: {
     backgroundColor: '#162C50',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#264878',
+    padding: 14,
+    marginBottom: 12,
+  },
+  currentPinCardActive: {
+    borderColor: '#FBBF24',
+    backgroundColor: '#1A335E',
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  currentPinLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  locIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+  },
+  locIconBoxActive: {
+    backgroundColor: 'rgba(251, 191, 36, 0.25)',
+    borderColor: '#FBBF24',
+  },
+  pinTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 3,
+  },
+  currentPinTitle: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 13.5,
+    color: '#FBBF24',
+  },
+  selectedBadge: {
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  selectedBadgeText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 10,
+    color: '#0B1B36',
+  },
+  currentPinAddrText: {
+    fontFamily: 'DMSans-Regular',
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 17,
+  },
+  currentPinActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingTop: 8,
+  },
+  saveAsAddressBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  saveAsAddressBtnText: {
+    fontFamily: 'DMSans-Bold',
+    fontSize: 12,
+    color: '#FBBF24',
+  },
+
+  /* SELECTED SUMMARY CARD */
+  selectedSummaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F2242',
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#FBBF24',
     padding: 14,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   selectedLeft: {
     flex: 1,
@@ -1391,37 +1641,38 @@ const s = StyleSheet.create({
   selectedInfo: { flex: 1 },
   selectedTitle: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#FFFFFF',
     marginBottom: 3,
   },
   selectedAddress: {
     fontFamily: 'DMSans-Regular',
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#94A3B8',
-    lineHeight: 17,
+    lineHeight: 16,
   },
   etaBadge: {
     backgroundColor: 'rgba(251, 191, 36, 0.15)',
     borderWidth: 1,
     borderColor: '#FBBF24',
     borderRadius: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
   },
   etaText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#FBBF24',
   },
 
+  /* CONFIRM BUTTON */
   confirmBtn: {
     backgroundColor: '#FBBF24',
     borderRadius: 16,
-    height: 52,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
     shadowColor: '#FBBF24',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
@@ -1430,7 +1681,7 @@ const s = StyleSheet.create({
   },
   confirmBtnText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 15.5,
+    fontSize: 15,
     color: '#0B1B36',
   },
 
@@ -1443,21 +1694,26 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
 
+  /* SAVED CARD */
   savedCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#162C50',
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#264878',
-    padding: 14,
+    padding: 12,
     marginBottom: 10,
     gap: 12,
   },
+  savedCardActive: {
+    borderColor: '#FBBF24',
+    backgroundColor: '#1A335E',
+  },
   savedIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: 'rgba(251, 191, 36, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(251, 191, 36, 0.25)',
@@ -1465,23 +1721,44 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   savedInfo: { flex: 1 },
+  savedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
   savedLabel: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#FFFFFF',
-    marginBottom: 3,
   },
   savedAddress: {
     fontFamily: 'DMSans-Regular',
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#94A3B8',
-    lineHeight: 17,
+    lineHeight: 16,
   },
   savedPhoneText: {
     fontSize: 11,
     color: '#FBBF24',
     marginTop: 2,
     fontFamily: 'DMSans-Medium',
+  },
+
+  actionCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  miniActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#18345C',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   addNewBtn: {
@@ -1491,26 +1768,26 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(251, 191, 36, 0.35)',
     backgroundColor: '#162C50',
-    padding: 14,
+    padding: 12,
     marginTop: 4,
     gap: 12,
   },
   addNewIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#FBBF24',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addNewPlus: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 20,
+    fontSize: 18,
     color: '#0B1B36',
   },
   addNewText: {
     fontFamily: 'DMSans-Bold',
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#FFFFFF',
   },
 
@@ -1656,80 +1933,6 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  actionCol: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginLeft: 'auto',
-  },
-  miniActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: '#18345C',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  currentPinCard: {
-    backgroundColor: '#162C50',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(251, 191, 36, 0.35)',
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#002B66',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  currentPinLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 12,
-  },
-  locIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(251, 191, 36, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-  },
-  currentPinTitle: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 14.5,
-    color: '#FBBF24',
-    marginBottom: 4,
-  },
-  currentPinAddrText: {
-    fontFamily: 'DMSans-Medium',
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 18,
-  },
-  confirmLocationBtn: {
-    backgroundColor: '#FBBF24',
-    borderRadius: 14,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FBBF24',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  confirmLocationBtnText: {
-    fontFamily: 'DMSans-Bold',
-    fontSize: 14,
-    color: '#0B1B36',
-  },
   errorBanner: {
     position: 'absolute',
     top: Platform.OS === 'android' ? 70 : 100,

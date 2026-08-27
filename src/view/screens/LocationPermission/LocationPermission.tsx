@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DeviceInfo from 'react-native-device-info'
 import Svg, { Path, Circle, Rect } from 'react-native-svg'
+import { requestLocationPermission, ensureLocationEnabled, getLiveCurrentLocation } from '../../../shared/utils/locationService'
 
 const { width: W, height: H } = Dimensions.get('window')
 const isSmallDevice = W < 360
@@ -259,39 +260,10 @@ export default function LocationPermission({ navigation }: LocationPermissionPro
   const handleRequestPermission = async () => {
     setLoading(true)
     try {
-      let permissionGranted = false
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission Required',
-            message:
-              'This app needs access to your location to find nearby stores, show accurate delivery times, and customize your feed.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        )
-        permissionGranted = granted === PermissionsAndroid.RESULTS.GRANTED
-      } else {
-        permissionGranted = true
-      }
-
+      const permissionGranted = await requestLocationPermission()
       if (permissionGranted) {
-        if (Platform.OS === 'android') {
-          try {
-            const { LocationEnabler } = NativeModules
-            if (LocationEnabler) {
-              await LocationEnabler.showLocationSettings()
-            }
-            navigateToHome()
-          } catch (err: any) {
-            console.warn('In-screen GPS enable cancelled or failed:', err.message)
-            navigateToHome()
-          }
-        } else {
-          navigateToHome()
-        }
+        await ensureLocationEnabled()
+        navigateToHome()
       } else {
         navigateToHome()
       }

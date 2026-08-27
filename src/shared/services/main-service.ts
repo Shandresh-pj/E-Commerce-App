@@ -700,8 +700,9 @@ axios.interceptors.response.use(
     try {
       const url = response?.config?.url || '';
       const isPublicEndpoint = url.includes('/products') || url.includes('/categories');
+      const isAuthEndpoint = url.includes('/Auth/') || url.includes('/auth/');
       const msg = response?.data?.message;
-      if (!isPublicEndpoint && msg && typeof msg === 'string' && msg.toLowerCase().includes('token')) {
+      if (!isPublicEndpoint && !isAuthEndpoint && msg && typeof msg === 'string' && msg.toLowerCase().includes('token')) {
         authService.logout();
         Alert.alert('Session expired', 'Your session has expired. Please login again.', [
           {
@@ -722,7 +723,8 @@ axios.interceptors.response.use(
   function (error) {
     const url = error?.config?.url || '';
     const isPublicEndpoint = url.includes('/products') || url.includes('/categories');
-    if (!isPublicEndpoint && error && error.response && error.response.status === 401) {
+    const isAuthEndpoint = url.includes('/Auth/') || url.includes('/auth/');
+    if (!isPublicEndpoint && !isAuthEndpoint && error && error.response && error.response.status === 401) {
       try {
         authService.logout();
       } catch (e) {

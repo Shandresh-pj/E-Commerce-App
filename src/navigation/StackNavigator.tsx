@@ -55,44 +55,42 @@ const MainStackNavigator = (props: any) => {
     getInitialRouteName();
   }, []);
   const getInitialRouteName = async () => {
-    const intropage = await AsyncStorage.getItem('intropage');
-    const user = await AsyncStorage.getItem('user');
-    const parsedUser = await JSON.parse(user || '{}');
-    const hasUser = (await Object.keys(parsedUser).length) !== 0;
+    try {
+      let parsedUser = await getAsyncData('user');
+      // Fallback in case raw key 'user' was used in previous sessions
+      if (!parsedUser || (typeof parsedUser === 'object' && Object.keys(parsedUser).length === 0)) {
+        const rawUser = await AsyncStorage.getItem('user');
+        if (rawUser) {
+          try {
+            parsedUser = JSON.parse(rawUser);
+          } catch (_) {}
+        }
+      }
 
-    let deviceSettings = await getAsyncData('deviceSettings');
+      const hasUser = parsedUser && typeof parsedUser === 'object' && Object.keys(parsedUser).length > 0;
 
-    console.log(
-      '*********************************************************hasUser================',
-      hasUser,
-      user,
-      intropage,
-    );
-
-    if (hasUser) {
-      await setInitialRouteName('Home');
       console.log(
-        '*********************************************************login================',
+        '*********************************************************hasUser================',
+        hasUser,
         parsedUser,
       );
-      AsyncStorage.setItem('user', JSON.stringify(parsedUser));
-      dispatch({
-        type: LOGIN_SUCCESS,
-        payload: { user: parsedUser, noRedirect: true },
-      });
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-    } else {
 
-      await setInitialRouteName('Splash');
-      console.log(
-        '*********************************************************logout================',
-        parsedUser,
-      );
+      if (hasUser) {
+        setInitialRouteName('Home');
+        dispatch({
+          type: LOGIN_SUCCESS,
+          payload: { user: parsedUser, noRedirect: true },
+        });
+      } else {
+        setInitialRouteName('Splash');
+      }
+    } catch (e) {
+      console.log('Auth check error:', e);
+      setInitialRouteName('Splash');
+    } finally {
       setTimeout(() => {
         setIsLoading(false);
-      }, 2000);
+      }, 1200);
     }
   };
   if (isLoading) {

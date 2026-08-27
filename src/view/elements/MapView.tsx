@@ -25,6 +25,7 @@ interface MapViewProps {
   mapTypeBottom?: number;
   onRegionChangeStart?: () => void;
   onRegionChangeComplete?: (latitude: number, longitude: number) => void;
+  onRecenter?: () => void;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
@@ -40,6 +41,7 @@ export const MapView: React.FC<MapViewProps> = ({
   mapTypeBottom,
   onRegionChangeStart,
   onRegionChangeComplete,
+  onRecenter,
 }) => {
   const webViewRef = useRef<WebView>(null);
   const [isWebViewReady, setIsWebViewReady] = useState(false);
@@ -391,6 +393,9 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   const handleRecenter = () => {
+    if (onRecenter) {
+      onRecenter();
+    }
     if (isWebViewReady) {
       const injectCode = `
         if (typeof recenterMap === 'function') {
