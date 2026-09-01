@@ -11,7 +11,7 @@ import {
   Dimensions,
   Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   fetchProductsByCategory,
@@ -201,6 +201,7 @@ const ProductCard = React.memo(({
 });
 
 export const CategoryScreen = () => {
+  const insets = useSafeAreaInsets();
   const { tokens, isDark } = useTheme();
   const { width: screenWidth, gridColumns } = useResponsive();
   const navigation = useNavigation<any>();
@@ -505,7 +506,7 @@ export const CategoryScreen = () => {
 
       {/* Floating Glassmorphic Cart Bar */}
       {totalCartCount > 0 && (
-        <View style={styles.floatingCartBar}>
+        <View style={[styles.floatingCartBar, { bottom: Math.max(insets.bottom + 76, 86) }]}>
           <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.floatingCartGradient}>
             <View>
               <Text style={styles.floatingCartQty}>{totalCartCount} Items in Cart</Text>
@@ -625,7 +626,7 @@ const styles = StyleSheet.create({
   },
   gridContent: {
     padding: SPACING.sm,
-    paddingBottom: 80,
+    paddingBottom: 150,
   },
   floatingCartBar: {
     position: 'absolute',
@@ -671,63 +672,85 @@ const styles = StyleSheet.create({
 
 const cardStyles = StyleSheet.create({
   root: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: 1.5,
     overflow: 'hidden',
-    marginBottom: SPACING.sm,
-    marginRight: SPACING.xs,
+    marginBottom: SPACING.xs,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   imgBox: {
-    height: 120,
+    height: 124,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    overflow: 'hidden',
   },
   img: {
-    width: '80%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
   },
   discountBadge: {
     position: 'absolute',
     top: 6,
     left: 6,
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: '#F6C453',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 8,
+    shadowColor: '#F6C453',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   discountText: {
-    color: '#FFFFFF',
+    color: '#050816',
     fontSize: 9.5,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 0.3,
   },
   oosOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: 'rgba(5, 8, 22, 0.82)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   oosLabel: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   heartBtn: {
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   body: {
-    padding: SPACING.xs + 2,
+    padding: 10,
   },
   name: {
     ...TYPOGRAPHY.caption,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 16,
     height: 32,
   },
   unit: {
@@ -743,7 +766,7 @@ const cardStyles = StyleSheet.create({
   },
   price: {
     ...TYPOGRAPHY.bodyS,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   mrp: {
     ...TYPOGRAPHY.caption,
@@ -752,33 +775,38 @@ const cardStyles = StyleSheet.create({
   },
   addBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   addTxt: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
   stepBtn: {
     paddingHorizontal: 4,
   },
   stepTxt: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '900',
   },
   stepQty: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '900',
     marginHorizontal: 4,
   },
 });

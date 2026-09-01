@@ -42,11 +42,11 @@ export const HeaderIconButton = ({
   }))
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.88, { damping: 12, stiffness: 220 })
+    scale.value = withSpring(0.92, { damping: 14, stiffness: 240 })
   }
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 12, stiffness: 180 })
+    scale.value = withSpring(1, { damping: 14, stiffness: 200 })
   }
 
   return (
@@ -58,10 +58,10 @@ export const HeaderIconButton = ({
       activeOpacity={0.85}
     >
       <LinearGradient
-        colors={isDark ? ['#1E293B', '#0F172A'] : ['#FFFFFF', '#F8FAFC']}
+        colors={isDark ? ['rgba(17, 29, 52, 0.90)', 'rgba(8, 17, 38, 0.95)'] : ['rgba(255, 255, 255, 0.95)', 'rgba(238, 243, 250, 0.95)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[s.iconBtn, { borderColor: colors.border }, style]}
+        style={[s.iconBtn, { borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.70)' }, style]}
       >
         {children}
         {badge !== undefined && badge > 0 && (
@@ -102,9 +102,9 @@ export const AppHeader = ({
         backgroundColor="transparent"
         translucent={true}
       />
-      <View style={[s.headerWrapper, { borderColor: colors.border, backgroundColor: colors.surfaceCard }]}>
+      <View style={[s.headerWrapper, { borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.65)' }]}>
         <LinearGradient
-          colors={isDark ? ['#1E293B', '#0F172A'] : ['#FFFFFF', '#F8FAFC']}
+          colors={isDark ? ['rgba(17, 29, 52, 0.88)', 'rgba(8, 17, 38, 0.92)'] : ['rgba(255, 255, 255, 0.90)', 'rgba(238, 243, 250, 0.90)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.header}
@@ -130,31 +130,32 @@ export const AppHeader = ({
 
 const s = StyleSheet.create({
   headerWrapper: {
-    borderRadius: 20,
-    marginHorizontal: 12,
-    marginTop: 6,
+    borderRadius: 22,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
     overflow: 'hidden',
-    borderWidth: 1,
-    elevation: 4,
+    borderWidth: 1.5,
+    elevation: 8,
     shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   left: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   title: {
     flex: 1,
     fontSize: scaleFont(17),
-    fontWeight: '700',
+    fontWeight: '800',
     marginLeft: 12,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn: {
@@ -167,8 +168,8 @@ const s = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -3,
+    right: -3,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -178,7 +179,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
-  badgeText: { color: '#0F172A', fontSize: 9, fontWeight: '800' },
+  badgeText: { color: '#050816', fontSize: 9, fontWeight: '800' },
 })
 
 export default AppHeader

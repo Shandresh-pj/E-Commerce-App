@@ -1,7 +1,13 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { THEME } from '../assets/styles/theme'
 import PrimaryButton from './PrimaryButton'
+import { useTheme } from '../../shared/context/ThemeContext'
+import {
+  EmptyCartIllustration,
+  EmptyWishlistIllustration,
+  NoOrdersIllustration,
+  NoResultsIllustration,
+} from './SvgIllustrations'
 
 interface EmptyStateProps {
   icon?: React.ReactNode
@@ -17,54 +23,67 @@ const EmptyState = ({
   subtitle,
   ctaLabel,
   onCtaPress,
-}: EmptyStateProps) => (
-  <View style={styles.container}>
-    {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
-    <Text style={styles.title}>{title}</Text>
-    {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-    {ctaLabel && onCtaPress ? (
-      <PrimaryButton
-        label={ctaLabel}
-        onPress={onCtaPress}
-        style={styles.cta}
-      />
-    ) : null}
-  </View>
-)
+}: EmptyStateProps) => {
+  const { isDark, colors } = useTheme()
+
+  const lower = title.toLowerCase()
+  let illustration = icon
+
+  if (!illustration) {
+    if (lower.includes('wishlist') || lower.includes('favorite')) {
+      illustration = <EmptyWishlistIllustration size={150} isDark={isDark} />
+    } else if (lower.includes('order')) {
+      illustration = <NoOrdersIllustration size={150} isDark={isDark} />
+    } else if (lower.includes('search') || lower.includes('found')) {
+      illustration = <NoResultsIllustration size={150} isDark={isDark} />
+    } else {
+      illustration = <EmptyCartIllustration size={150} isDark={isDark} />
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      {illustration ? <View style={styles.iconWrap}>{illustration}</View> : null}
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+      {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
+      {ctaLabel && onCtaPress ? (
+        <PrimaryButton
+          label={ctaLabel}
+          onPress={onCtaPress}
+          style={styles.cta}
+        />
+      ) : null}
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: THEME.SPACING.xxxl,
-    paddingTop: 80,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
   },
   iconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: THEME.COLOR.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.SPACING.xl,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 18,
-    fontFamily: THEME.FONTWEIGHT.Bold,
-    color: THEME.COLOR.textPrimary,
+    fontSize: 19,
+    fontWeight: '800',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    fontFamily: THEME.FONTWEIGHT.Regular,
-    color: THEME.COLOR.textSecondary,
+    fontSize: 13.5,
+    fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 21,
-    marginTop: THEME.SPACING.sm,
+    lineHeight: 20,
+    marginTop: 6,
+    maxWidth: 280,
   },
   cta: {
-    marginTop: THEME.SPACING.xl,
+    marginTop: 20,
     minWidth: 180,
   },
 })

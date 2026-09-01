@@ -254,7 +254,7 @@ const MyOrdersScreen = ({ navigation }: any) => {
         ) : (
           <FlatList
             data={filtered}
-            keyExtractor={item => String(item.id ?? item.Id)}
+            keyExtractor={(item, index) => String(item.id ?? item.Id ?? index)}
             renderItem={({ item }) => (
               <OrderCard
                 item={item}

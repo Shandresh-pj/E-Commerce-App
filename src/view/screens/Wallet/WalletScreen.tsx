@@ -21,7 +21,7 @@ const TRANSACTIONS = [
     id: '1',
     title: 'Cashback Received',
     date: 'May 18, 2026',
-    amount: '+$25.00',
+    amount: '+₹250.00',
     type: 'credit',
     icon: 'coins' as const,
   },
@@ -29,7 +29,7 @@ const TRANSACTIONS = [
     id: '2',
     title: 'Payment to Order #SVK-8823',
     date: 'May 16, 2026',
-    amount: '-$99.00',
+    amount: '-₹990.00',
     type: 'debit',
     icon: 'bag' as const,
   },
@@ -37,7 +37,7 @@ const TRANSACTIONS = [
     id: '3',
     title: 'Money Added via Card',
     date: 'May 10, 2026',
-    amount: '+$100.00',
+    amount: '+₹1,000.00',
     type: 'credit',
     icon: 'card' as const,
   },
@@ -45,7 +45,7 @@ const TRANSACTIONS = [
 
 export const WalletScreen = ({ navigation }: any) => {
   const { tokens, isDark } = useTheme();
-  const [balance, setBalance] = useState(250.0);
+  const [balance, setBalance] = useState(2500.0);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: tokens.surface.base }]}>
@@ -67,17 +67,17 @@ export const WalletScreen = ({ navigation }: any) => {
             <Text style={styles.heroLabel}>Total Balance</Text>
             <SvkIcon name="wallet" size={28} color="#FBBF24" />
           </View>
-          <Text style={styles.heroBalance}>${balance.toFixed(2)}</Text>
+          <Text style={styles.heroBalance}>₹{balance.toFixed(2)}</Text>
 
           <View style={styles.subBalanceRow}>
             <View>
               <Text style={styles.subBalanceLabel}>Available Balance</Text>
-              <Text style={styles.subBalanceValue}>$180.00</Text>
+              <Text style={styles.subBalanceValue}>₹1,800.00</Text>
             </View>
             <View style={styles.subDivider} />
             <View>
               <Text style={styles.subBalanceLabel}>Rewards Balance</Text>
-              <Text style={styles.subBalanceValue}>$70.00</Text>
+              <Text style={styles.subBalanceValue}>₹700.00</Text>
             </View>
           </View>
         </Surface>

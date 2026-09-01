@@ -1,30 +1,39 @@
 export const BRAND_COLORS = {
-  primary: '#2563EB',        // Electric Blue
-  primaryPressed: '#1D4ED8',
-  primaryHover: '#3B82F6',
-  primarySoft: '#EFF6FF',
-  primaryGlow: 'rgba(37, 99, 235, 0.25)',
+  primary: '#2563EB',        // Sapphire Blue (Light) / Electric Blue
+  primaryHover: '#3B82F6',   // Secondary Blue
+  primaryPressed: '#1D4ED8', // Ultra Blue
+  primarySoft: 'rgba(37, 99, 235, 0.12)',
+  primaryGlow: 'rgba(37, 99, 235, 0.35)',
 
-  navy: '#0F172A',           // Deep Navy
-  navyLight: '#1E293B',
-  navyMuted: '#334155',
+  navy: '#050816',           // Midnight Navy Dark Background
+  navyLight: '#081126',      // Dark Secondary
+  navySurface: '#0D172B',    // Dark Surface
+  navyElevated: '#111D34',   // Dark Elevated
 
-  gold: '#FBBF24',           // Premium Gold / Accent Yellow
-  goldPressed: '#F59E0B',
-  goldSoft: '#FEF3C7',
-  goldGlow: 'rgba(251, 191, 36, 0.25)',
+  gold: '#F6C453',           // Champagne Gold
+  goldChampagne: '#F8D889',  // Champagne Accent
+  goldPressed: '#F59E0B',    // Warm Amber
+  goldSoft: 'rgba(246, 196, 83, 0.15)',
+  goldGlow: 'rgba(246, 196, 83, 0.35)',
+
+  auroraCyan: '#22D3EE',     // Cyan Accent
+  auroraViolet: '#8B5CF6',   // Violet Accent
+  auroraMagenta: '#D946EF',  // Magenta Accent
+  auroraEmerald: '#10B981',  // Emerald Accent
 
   white: '#FFFFFF',
-  slate50: '#F8FAFC',
-  slate100: '#F1F5F9',
+  lightBase: '#F5F7FB',      // Pearl Light Base
+  lightSecondary: '#EEF2F8', // Light Secondary
+  slate50: '#F5F7FB',
+  slate100: '#EEF2F8',
   slate200: '#E2E8F0',
   slate300: '#CBD5E1',
   slate400: '#94A3B8',
   slate500: '#64748B',
-  slate600: '#475569',
+  slate600: '#526078',
   slate700: '#334155',
   slate800: '#1E293B',
-  slate900: '#0F172A',
+  slate900: '#0B1220',
 } as const;
 
 export const SEMANTIC_COLORS = {
@@ -48,6 +57,8 @@ export interface ThemeColors {
     goldPressed: string;
     goldSoft: string;
     navy: string;
+    cyan: string;
+    violet: string;
   };
   surface: {
     base: string;
@@ -90,41 +101,43 @@ export interface ThemeColors {
 
 export const LIGHT_THEME_COLORS: ThemeColors = {
   brand: {
-    primary: BRAND_COLORS.primary,
-    primaryPressed: BRAND_COLORS.primaryPressed,
-    primaryHover: BRAND_COLORS.primaryHover,
-    primarySoft: BRAND_COLORS.primarySoft,
-    gold: BRAND_COLORS.gold,
-    goldPressed: BRAND_COLORS.goldPressed,
-    goldSoft: BRAND_COLORS.goldSoft,
-    navy: BRAND_COLORS.navy,
+    primary: '#2563EB',
+    primaryPressed: '#1D4ED8',
+    primaryHover: '#3B82F6',
+    primarySoft: 'rgba(37, 99, 235, 0.10)',
+    gold: '#F6C453',
+    goldPressed: '#F59E0B',
+    goldSoft: 'rgba(246, 196, 83, 0.15)',
+    navy: '#0B1220',
+    cyan: '#22D3EE',
+    violet: '#8B5CF6',
   },
   surface: {
-    base: BRAND_COLORS.slate50,
-    secondary: BRAND_COLORS.white,
-    card: BRAND_COLORS.white,
-    elevated: BRAND_COLORS.white,
-    floating: BRAND_COLORS.white,
-    interactive: BRAND_COLORS.slate100,
-    selected: BRAND_COLORS.primarySoft,
-    glass: 'rgba(255, 255, 255, 0.85)',
-    glassBorder: 'rgba(255, 255, 255, 0.4)',
+    base: '#F5F7FB',
+    secondary: '#EEF2F8',
+    card: '#FFFFFF',
+    elevated: '#FFFFFF',
+    floating: '#FFFFFF',
+    interactive: '#EEF2F8',
+    selected: 'rgba(37, 99, 235, 0.10)',
+    glass: 'rgba(255, 255, 255, 0.72)',
+    glassBorder: 'rgba(15, 23, 42, 0.08)',
   },
   content: {
-    primary: '#0F172A',
-    secondary: '#475569',
+    primary: '#0B1220',
+    secondary: '#526078',
     tertiary: '#94A3B8',
     disabled: '#CBD5E1',
     inverse: '#FFFFFF',
-    brand: BRAND_COLORS.primary,
+    brand: '#2563EB',
     gold: '#D97706',
   },
   border: {
-    subtle: '#F1F5F9',
-    default: '#E2E8F0',
-    strong: '#CBD5E1',
-    focus: BRAND_COLORS.primary,
-    gold: 'rgba(251, 191, 36, 0.4)',
+    subtle: 'rgba(15, 23, 42, 0.05)',
+    default: 'rgba(15, 23, 42, 0.08)',
+    strong: 'rgba(15, 23, 42, 0.16)',
+    focus: '#2563EB',
+    gold: 'rgba(246, 196, 83, 0.45)',
   },
   semantic: SEMANTIC_COLORS,
 };
@@ -134,39 +147,40 @@ export const DARK_THEME_COLORS: ThemeColors = {
     primary: '#3B82F6',
     primaryPressed: '#2563EB',
     primaryHover: '#60A5FA',
-    primarySoft: 'rgba(37, 99, 235, 0.2)',
-    gold: BRAND_COLORS.gold,
-    goldPressed: BRAND_COLORS.goldPressed,
-    goldSoft: 'rgba(251, 191, 36, 0.15)',
-    navy: BRAND_COLORS.navy,
+    primarySoft: 'rgba(59, 130, 246, 0.18)',
+    gold: '#F6C453',
+    goldPressed: '#F59E0B',
+    goldSoft: 'rgba(246, 196, 83, 0.18)',
+    navy: '#050816',
+    cyan: '#22D3EE',
+    violet: '#8B5CF6',
   },
   surface: {
-    base: '#0B1329',
-    secondary: '#0F172A',
-    card: '#1E293B',
-    elevated: '#334155',
-    floating: '#1E293B',
+    base: '#050816',
+    secondary: '#081126',
+    card: '#0D172B',
+    elevated: '#111D34',
+    floating: '#0D172B',
     interactive: 'rgba(255, 255, 255, 0.08)',
     selected: 'rgba(59, 130, 246, 0.25)',
-    glass: 'rgba(30, 41, 59, 0.85)',
-    glassBorder: 'rgba(255, 255, 255, 0.12)',
+    glass: 'rgba(17, 29, 52, 0.72)',
+    glassBorder: 'rgba(255, 255, 255, 0.10)',
   },
   content: {
     primary: '#F8FAFC',
-    secondary: '#CBD5E1',
+    secondary: '#A9B5C7',
     tertiary: '#94A3B8',
     disabled: '#475569',
-    inverse: '#0F172A',
+    inverse: '#050816',
     brand: '#60A5FA',
-    gold: BRAND_COLORS.gold,
+    gold: '#F6C453',
   },
   border: {
     subtle: 'rgba(255, 255, 255, 0.06)',
-    default: 'rgba(255, 255, 255, 0.12)',
-    strong: 'rgba(255, 255, 255, 0.24)',
+    default: 'rgba(255, 255, 255, 0.10)',
+    strong: 'rgba(255, 255, 255, 0.22)',
     focus: '#60A5FA',
-    gold: 'rgba(251, 191, 36, 0.35)',
+    gold: 'rgba(246, 196, 83, 0.40)',
   },
   semantic: SEMANTIC_COLORS,
 };
-

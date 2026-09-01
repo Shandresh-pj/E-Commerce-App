@@ -14,12 +14,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../../hooks/useTheme';
-import { Surface } from '../../../design-system/surfaces/Surface';
 import { SvkIcon } from '../../../design-system/icons/SvkIcon';
 import { Button } from '../../../design-system/components/Button';
 import { TextInput } from '../../../design-system/components/TextInput';
 import { EmptyState } from '../../../design-system/components/EmptyState';
+import { MovingBackground } from '../../elements/MovingBackground';
 import {
   fetchApiCart,
   addToApiCart,
@@ -28,7 +29,6 @@ import {
   validateCouponCode,
   calculateCouponDiscount,
 } from '../../../shared/services/main-service';
-import { TYPOGRAPHY } from '../../../design-system/tokens/typography';
 import { SPACING } from '../../../design-system/tokens/spacing';
 import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelper';
 import { BlurhashImage } from '../../../design-system/components/BlurhashImage';
@@ -87,7 +87,10 @@ export const CartScreen = ({ navigation }: any) => {
     setImageErrorMap((prev) => ({ ...prev, [id]: true }));
   };
 
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = cartItems.reduce(
+    (acc, item) => acc + (parseFloat(String(item.price ?? '0')) || 0) * (Number(item.quantity) || 1),
+    0
+  );
   const shipping = subtotal > 500 || subtotal === 0 ? 0 : 15;
   const discountAmount = (subtotal * appliedDiscount) / 100;
   const total = Math.max(0, subtotal + shipping - discountAmount);
@@ -126,22 +129,25 @@ export const CartScreen = ({ navigation }: any) => {
     }
   };
 
-  return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: tokens.surface.base }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+  const glassBg = isDark ? 'rgba(13, 23, 43, 0.88)' : 'rgba(255, 255, 255, 0.92)';
+  const glassBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)';
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) }]}>
+  return (
+    <MovingBackground theme={isDark ? 'dark' : 'yellow'} style={{ flex: 1 }}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
+
+      {/* Floating Glass Header */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16), backgroundColor: glassBg, borderColor: glassBorder }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <SvkIcon name="back" size={24} color={tokens.content.primary} />
+          <SvkIcon name="back" size={20} color={tokens.content.primary} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: tokens.content.primary }]}>My Cart</Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.headerTitle, { color: tokens.content.primary }]}>My Cart 🛒</Text>
+        <View style={{ width: 36 }} />
       </View>
 
       {cartItems.length === 0 ? (
         <EmptyState
-          icon="cart"
+          type="cart"
           title="Your Cart is Empty"
           subtitle="Explore our flagship collection and add items to your cart."
           actionTitle="Start Shopping"
@@ -164,7 +170,7 @@ export const CartScreen = ({ navigation }: any) => {
                 : buildImageUrl(item.image, nameStr, 'product');
 
               return (
-                <Surface key={item.id} variant="card" radius="lg" bordered style={styles.cartCard}>
+                <View key={item.id} style={[styles.cartCard, { backgroundColor: glassBg, borderColor: glassBorder }]}>
                   <BlurhashImage
                     category={nameStr}
                     source={{ uri: resolvedImage }}
@@ -175,7 +181,7 @@ export const CartScreen = ({ navigation }: any) => {
                     <Text numberOfLines={2} style={[styles.itemTitle, { color: tokens.content.primary }]}>
                       {nameStr}
                     </Text>
-                    <Text style={[styles.itemPrice, { color: tokens.content.brand }]}>
+                    <Text style={[styles.itemPrice, { color: isDark ? '#60A5FA' : '#2563EB' }]}>
                       ₹{item.price.toFixed(2)}
                     </Text>
 
@@ -183,27 +189,27 @@ export const CartScreen = ({ navigation }: any) => {
                     <View style={styles.stepperRow}>
                       <Pressable
                         onPress={() => updateQuantity(item.id, -1)}
-                        style={[styles.stepperBtn, { backgroundColor: tokens.surface.interactive }]}
+                        style={styles.stepperBtn}
                       >
-                        <SvkIcon name="minus" size={14} color={tokens.content.primary} />
+                        <SvkIcon name="minus" size={13} color="#FFFFFF" />
                       </Pressable>
                       <Text style={[styles.qtyText, { color: tokens.content.primary }]}>
                         {item.quantity}
                       </Text>
                       <Pressable
                         onPress={() => updateQuantity(item.id, 1)}
-                        style={[styles.stepperBtn, { backgroundColor: tokens.surface.interactive }]}
+                        style={styles.stepperBtn}
                       >
-                        <SvkIcon name="plus" size={14} color={tokens.content.primary} />
+                        <SvkIcon name="plus" size={13} color="#FFFFFF" />
                       </Pressable>
                     </View>
                   </View>
-                </Surface>
+                </View>
               );
             })}
 
             {/* Promo Code Card */}
-            <Surface variant="card" radius="lg" bordered style={styles.promoCard}>
+            <View style={[styles.promoCard, { backgroundColor: glassBg, borderColor: glassBorder }]}>
               <View style={styles.promoRow}>
                 <TextInput
                   placeholder="Apply Promo Code (e.g. SVK20)"
@@ -217,20 +223,20 @@ export const CartScreen = ({ navigation }: any) => {
                   variant="gold"
                   size="sm"
                   fullWidth={false}
-                  style={{ marginLeft: 8, height: 48 }}
+                  style={{ marginLeft: 8, height: 48, borderRadius: 16 }}
                 />
               </View>
               <TouchableOpacity
                 onPress={openCouponsModal}
                 style={styles.viewCouponsBtn}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
                 <Text style={styles.viewCouponsText}>🏷️ View Available Promo Codes</Text>
               </TouchableOpacity>
-            </Surface>
+            </View>
 
             {/* Order Summary */}
-            <Surface variant="card" radius="lg" bordered style={styles.billCard}>
+            <View style={[styles.billCard, { backgroundColor: glassBg, borderColor: glassBorder }]}>
               <Text style={[styles.billHeader, { color: tokens.content.primary }]}>
                 Order Summary
               </Text>
@@ -259,20 +265,20 @@ export const CartScreen = ({ navigation }: any) => {
               <View style={[styles.divider, { backgroundColor: tokens.border.default }]} />
               <View style={styles.billRow}>
                 <Text style={[styles.totalLabel, { color: tokens.content.primary }]}>Total Amount</Text>
-                <Text style={[styles.totalValue, { color: tokens.content.brand }]}>
+                <Text style={[styles.totalValue, { color: isDark ? '#60A5FA' : '#2563EB' }]}>
                   ₹{total.toFixed(2)}
                 </Text>
               </View>
-            </Surface>
+            </View>
           </ScrollView>
 
-          {/* Sticky Checkout Bar */}
+          {/* Sticky Floating Checkout Bar */}
           <View
             style={[
               styles.stickyFooter,
               {
-                backgroundColor: tokens.surface.card,
-                borderColor: tokens.border.default,
+                backgroundColor: glassBg,
+                borderColor: glassBorder,
                 bottom: Math.max(insets.bottom + 68, 78),
               },
             ]}
@@ -283,14 +289,22 @@ export const CartScreen = ({ navigation }: any) => {
                 ₹{total.toFixed(2)}
               </Text>
             </View>
-            <Button
-              title="Proceed to Checkout"
+            <Pressable
               onPress={() => navigation.navigate('PlaceOrder')}
-              variant="gold"
-              size="lg"
-              fullWidth={false}
-              style={{ minWidth: 200 }}
-            />
+              style={({ pressed }) => [
+                styles.checkoutBtn,
+                pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['#F6C453', '#F59E0B']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.checkoutGradient}
+              >
+                <Text style={styles.checkoutBtnText}>Proceed to Checkout →</Text>
+              </LinearGradient>
+            </Pressable>
           </View>
         </View>
       )}
@@ -303,128 +317,137 @@ export const CartScreen = ({ navigation }: any) => {
         onRequestClose={() => setCouponsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalSheet,
-              { backgroundColor: isDark ? '#0F172A' : '#FFFFFF', borderTopColor: tokens.border.default },
-            ]}
-          >
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCouponsModalVisible(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: glassBg, borderColor: glassBorder }]}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.modalBadge}>🏷️</Text>
-                <Text style={[styles.modalTitle, { color: tokens.content.primary }]}>Available Promo Codes</Text>
-              </View>
-              <TouchableOpacity onPress={() => setCouponsModalVisible(false)} style={styles.modalCloseBtn}>
-                <Text style={[styles.modalCloseText, { color: tokens.content.secondary }]}>✕</Text>
-              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: tokens.content.primary }]}>Available Promo Codes 🏷️</Text>
+              <Pressable onPress={() => setCouponsModalVisible(false)} style={styles.modalCloseBtn}>
+                <SvkIcon name="close" size={18} color={tokens.content.primary} />
+              </Pressable>
             </View>
 
             {loadingCoupons ? (
-              <View style={styles.centerLoading}>
-                <ActivityIndicator size="large" color="#3B82F6" />
-              </View>
+              <ActivityIndicator size="large" color="#2563EB" style={{ marginVertical: 40 }} />
+            ) : availableCoupons.length === 0 ? (
+              <Text style={[styles.noCouponsText, { color: tokens.content.secondary }]}>No promo coupons available right now.</Text>
             ) : (
-              <ScrollView style={{ maxHeight: 400 }}>
-                {availableCoupons.map((coupon) => (
-                  <Surface
-                    key={coupon.id || coupon.code}
-                    variant="card"
-                    radius="lg"
-                    bordered
-                    style={styles.couponCard}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <View style={styles.codeTag}>
-                          <Text style={styles.codeTagText}>{coupon.code}</Text>
-                        </View>
-                        <Text style={styles.couponTitle}>{coupon.title}</Text>
+              <ScrollView style={{ maxHeight: 380 }}>
+                {availableCoupons.map((coupon: any, idx: number) => {
+                  const codeStr = (coupon.code || coupon.Code || 'SVK20').toUpperCase();
+                  const descStr = coupon.description || coupon.title || 'Get special percentage off on your order';
+                  return (
+                    <View key={coupon.id || idx} style={[styles.couponCard, { backgroundColor: isDark ? '#081126' : '#EEF3FA' }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.couponCodeText}>{codeStr}</Text>
+                        <Text style={[styles.couponDescText, { color: tokens.content.secondary }]}>{descStr}</Text>
                       </View>
-                      <Text style={[styles.couponDesc, { color: tokens.content.secondary }]}>
-                        {coupon.description}
-                      </Text>
+                      <Pressable
+                        onPress={() => handleApplyPromoCode(codeStr)}
+                        style={styles.couponApplyBtn}
+                      >
+                        <Text style={styles.couponApplyText}>APPLY</Text>
+                      </Pressable>
                     </View>
-                    <TouchableOpacity
-                      style={styles.applyCouponBtn}
-                      onPress={() => handleApplyPromoCode(coupon.code)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.applyCouponText}>APPLY</Text>
-                    </TouchableOpacity>
-                  </Surface>
-                ))}
+                  );
+                })}
               </ScrollView>
             )}
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </MovingBackground>
   );
 };
 
 export default CartScreen;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 6,
   },
   backBtn: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    ...TYPOGRAPHY.headingM,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   scrollContent: {
     padding: SPACING.md,
   },
   cartCard: {
     flexDirection: 'row',
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    padding: 12,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginBottom: 12,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    width: 78,
+    height: 78,
+    borderRadius: 14,
+    marginRight: 12,
   },
   itemInfo: {
     flex: 1,
-    marginLeft: SPACING.md,
     justifyContent: 'space-between',
   },
   itemTitle: {
-    ...TYPOGRAPHY.title,
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   itemPrice: {
-    ...TYPOGRAPHY.price,
-    marginVertical: 4,
+    fontSize: 15,
+    fontWeight: '900',
+    marginTop: 2,
   },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 6,
   },
   stepperBtn: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 14,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyText: {
-    ...TYPOGRAPHY.label,
+    fontSize: 14,
+    fontWeight: '800',
     marginHorizontal: 12,
   },
   promoCard: {
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginBottom: 14,
   },
   promoRow: {
     flexDirection: 'row',
@@ -433,21 +456,23 @@ const styles = StyleSheet.create({
   viewCouponsBtn: {
     marginTop: 10,
     alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
   },
   viewCouponsText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2563EB',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#F59E0B',
   },
   billCard: {
-    padding: SPACING.lg,
-    marginBottom: SPACING.xl,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginBottom: 14,
   },
   billHeader: {
-    ...TYPOGRAPHY.headingS,
-    marginBottom: SPACING.md,
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 12,
+    letterSpacing: 0.3,
   },
   billRow: {
     flexDirection: 'row',
@@ -455,119 +480,120 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   billLabel: {
-    ...TYPOGRAPHY.bodyM,
+    fontSize: 13,
+    fontWeight: '600',
   },
   billValue: {
-    ...TYPOGRAPHY.title,
+    fontSize: 13.5,
+    fontWeight: '800',
   },
   divider: {
     height: 1,
-    marginVertical: SPACING.md,
+    marginVertical: 10,
   },
   totalLabel: {
-    ...TYPOGRAPHY.headingS,
+    fontSize: 15,
+    fontWeight: '800',
   },
   totalValue: {
-    ...TYPOGRAPHY.priceLarge,
+    fontSize: 18,
+    fontWeight: '900',
   },
   stickyFooter: {
     position: 'absolute',
-    left: 12,
-    right: 12,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: 20,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
   },
   footerTotalLabel: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 10.5,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   footerTotalValue: {
-    ...TYPOGRAPHY.headingL,
+    fontSize: 19,
+    fontWeight: '900',
+  },
+  checkoutBtn: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  checkoutGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  checkoutBtnText: {
+    color: '#050816',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.3,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(5, 8, 22, 0.65)',
   },
   modalSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: SPACING.lg,
-    borderTopWidth: 1,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 20,
+    borderTopWidth: 1.5,
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.md,
-  },
-  modalBadge: {
-    fontSize: 20,
-    marginRight: 8,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
   modalCloseBtn: {
     padding: 6,
   },
-  modalCloseText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  centerLoading: {
-    padding: 40,
-    alignItems: 'center',
+  noCouponsText: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginVertical: 20,
   },
   couponCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 10,
   },
-  codeTag: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    marginRight: 8,
-  },
-  codeTagText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1D4ED8',
-  },
-  couponTitle: {
+  couponCodeText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontWeight: '900',
+    color: '#F59E0B',
   },
-  couponDesc: {
-    fontSize: 12,
+  couponDescText: {
+    fontSize: 11.5,
     marginTop: 2,
   },
-  applyCouponBtn: {
-    backgroundColor: '#D97706',
+  couponApplyBtn: {
+    backgroundColor: '#2563EB',
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginLeft: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  applyCouponText: {
+  couponApplyText: {
     color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '900',
   },
 });

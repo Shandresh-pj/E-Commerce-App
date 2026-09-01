@@ -32,7 +32,7 @@ const QtyStepper = ({
         ]}
         onPress={onDecrement}
         disabled={disabledDecrement}
-        activeOpacity={0.8}
+        activeOpacity={0.75}
       >
         <Text style={styles.sign}>−</Text>
       </TouchableOpacity>
@@ -45,7 +45,7 @@ const QtyStepper = ({
         ]}
         onPress={onIncrement}
         disabled={disabledIncrement}
-        activeOpacity={0.8}
+        activeOpacity={0.75}
       >
         <Text style={styles.sign}>+</Text>
       </TouchableOpacity>
@@ -57,35 +57,42 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0C831F',
-    borderRadius: 11,
-    padding: 2,
+    backgroundColor: '#2563EB',
+    borderRadius: 16,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   btn: {
-    borderRadius: 9,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   sign: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontFamily: 'DMSans-Bold',
+    fontWeight: '800',
     lineHeight: 22,
   },
   value: {
-    minWidth: 32,
+    minWidth: 34,
     textAlign: 'center',
     fontSize: 15,
-    fontFamily: 'DMSans-Bold',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
   valueSm: {
     minWidth: 26,
-    fontSize: 14,
+    fontSize: 13.5,
   },
 })
 

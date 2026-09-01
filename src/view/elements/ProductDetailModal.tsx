@@ -82,7 +82,7 @@ const ProductDetailModal = ({
       )
       setActiveImageIndex(0)
     }
-  }, [productDetail?.Id])
+  }, [productDetail, productDetail.Id])
 
   if (!visible) return null
 
@@ -103,15 +103,18 @@ const ProductDetailModal = ({
   const productType: string = productDetail?.ProductType ?? 'Single'
   const isVariantType = productType === 'Variant'
 
+  const numStock = parseFloat(String(productDetail?.StockInHand ?? productDetail?.stock ?? '15'))
   const stock: number = isVariantType
     ? selectedVariant?.Stock ?? 10
-    : Math.floor(parseFloat(productDetail?.StockInHand ?? productDetail?.stock ?? '15'))
+    : isNaN(numStock) ? 15 : Math.floor(numStock)
 
   const isInCart = productDetail ? cartIds.has(productDetail.Id || productDetail.id) : false
 
-  const rawPrice = isVariantType && selectedVariant
-    ? parseFloat(selectedVariant.Price)
-    : parseFloat(productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '299')
+  const parsedPrice = isVariantType && selectedVariant
+    ? parseFloat(String(selectedVariant.Price ?? '0'))
+    : parseFloat(String(productDetail?.price ?? productDetail?.Price ?? productDetail?.Points ?? '299'))
+
+  const rawPrice = isNaN(parsedPrice) ? 299 : parsedPrice
 
   const scoreValue = rawPrice.toFixed(2)
   const originalPrice = (rawPrice * 1.25).toFixed(2)
@@ -238,8 +241,8 @@ const ProductDetailModal = ({
 
                 {/* Price Section */}
                 <View style={s.scoreRow}>
-                  <Text style={[s.scoreValue, { color: colors.textPrimary }]}>${scoreValue}</Text>
-                  <Text style={[s.originalPrice, { color: colors.textMuted }]}>${originalPrice}</Text>
+                  <Text style={[s.scoreValue, { color: colors.textPrimary }]}>₹{scoreValue}</Text>
+                  <Text style={[s.originalPrice, { color: colors.textMuted }]}>₹{originalPrice}</Text>
                   <View style={s.discountBadge}>
                     <Text style={s.discountText}>20% OFF</Text>
                   </View>
@@ -269,7 +272,7 @@ const ProductDetailModal = ({
                         {productDetail.ProductVariant.map((variant: any) => {
                           const isSelected = variant.Id === selectedVariantId
                           const variantLabel = variant.ProductVariantCode
-                          const variantPriceVal = parseFloat(variant.Price)
+                          const variantPriceVal = parseFloat(String(variant.Price ?? '0')) || 0
                           const variantStock: number = variant.Stock ?? 0
                           const isOutOfStock = variantStock === 0
 
@@ -295,7 +298,7 @@ const ProductDetailModal = ({
                                 {variantLabel}
                               </Text>
                               <Text style={[s.variantPrice, { color: colors.textSecondary }]}>
-                                ${variantPriceVal.toFixed(2)}
+                                ₹{variantPriceVal.toFixed(2)}
                               </Text>
                             </TouchableOpacity>
                           )
@@ -320,7 +323,7 @@ const ProductDetailModal = ({
           {!loading && productDetail && stock > 0 && onAddToCart && (
             <View style={[s.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
               <PrimaryButton
-                label={isInCart ? 'View Cart & Checkout' : 'Add to Cart — $' + scoreValue}
+                label={isInCart ? 'View Cart & Checkout' : 'Add to Cart — ₹' + scoreValue}
                 variant="primary"
                 style={s.actionBtn}
                 onPress={() => {
@@ -347,18 +350,25 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     maxHeight: '92%',
     paddingBottom: 0,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 24,
   },
   handle: {
-    width: 44,
+    width: 48,
     height: 5,
     borderRadius: 3,
     alignSelf: 'center',
     marginTop: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   headerActions: {
     flexDirection: 'row',
@@ -370,11 +380,13 @@ const s = StyleSheet.create({
     zIndex: 10,
   },
   iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   loaderBox: {
     alignItems: 'center',
@@ -382,7 +394,7 @@ const s = StyleSheet.create({
     paddingVertical: 60,
     gap: 12,
   },
-  loaderText: { fontSize: 14, fontWeight: '500' },
+  loaderText: { fontSize: 14, fontWeight: '700' },
 
   scrollContent: { paddingBottom: 24 },
 
@@ -395,7 +407,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   noImageEmoji: { fontSize: 44 },
-  noImageText: { fontSize: 14, fontWeight: '600' },
+  noImageText: { fontSize: 14, fontWeight: '700' },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -416,13 +428,13 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   brandBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
-  brandBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  brandBadgeText: { fontSize: 10.5, fontWeight: '900', letterSpacing: 0.5 },
   ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  ratingText: { fontSize: 13, fontWeight: '600' },
+  ratingText: { fontSize: 13, fontWeight: '700' },
 
   productTitle: {
     fontSize: 22,
@@ -439,7 +451,7 @@ const s = StyleSheet.create({
   },
   scoreValue: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: -0.5,
   },
   originalPrice: {
@@ -448,30 +460,35 @@ const s = StyleSheet.create({
     fontWeight: '500',
   },
   discountBadge: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: '#F6C453',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    shadowColor: '#F6C453',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  discountText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+  discountText: { color: '#050816', fontSize: 11, fontWeight: '900' },
 
   trustCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 1.5,
     marginBottom: 20,
   },
   trustItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  trustText: { fontSize: 12, fontWeight: '600' },
+  trustText: { fontSize: 12, fontWeight: '700' },
   trustDivider: { width: 1, height: 20, backgroundColor: 'rgba(100,116,139,0.3)' },
 
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -481,13 +498,13 @@ const s = StyleSheet.create({
   variantRow: { flexDirection: 'row', gap: 10 },
   variantChip: {
     borderWidth: 1.5,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     alignItems: 'center',
     gap: 2,
   },
-  variantChipText: { fontSize: 13, fontWeight: '700' },
+  variantChipText: { fontSize: 13, fontWeight: '800' },
   variantPrice: { fontSize: 11 },
 
   descSection: { marginBottom: 20 },
@@ -499,8 +516,10 @@ const s = StyleSheet.create({
 
   actionBar: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderTopWidth: 1,
+    paddingTop: 14,
+    paddingBottom: 24,
+    borderTopWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   actionBtn: { width: '100%' },
 })

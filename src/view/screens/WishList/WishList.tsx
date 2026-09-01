@@ -9,15 +9,19 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
+  Pressable,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import LinearGradient from 'react-native-linear-gradient'
 import Defaults from '../../../config/index'
 import { fetchMyWishlist, toggleWishlist, addToApiCart } from '../../../shared/services/main-service'
 import Toast from 'react-native-root-toast'
 import { useTheme } from '../../../shared/context/ThemeContext'
-import { ArrowLeftIcon, HeartIcon, CartIcon, TrashIcon } from '../../elements/SvgIcons'
+import { ArrowLeftIcon, HeartIcon, CartIcon } from '../../elements/SvgIcons'
 import { BlurhashImage } from '../../../design-system/components/BlurhashImage'
+import { MovingBackground } from '../../elements/MovingBackground'
+import { EmptyWishlistIllustration } from '../../elements/SvgIllustrations'
 
 const { width: W } = Dimensions.get('window')
 const GUTTER = 12
@@ -48,7 +52,7 @@ const WishCard = ({
   const [imgError, setImgError] = useState(false)
 
   const imageUrl = buildImageUrl(product.image || (product.images && product.images[0]))
-  const price = product.points || 0
+  const price = parseFloat(String(product.points ?? product.price ?? 0)) || 0
 
   const handleRemove = async () => {
     if (removing) return
@@ -61,22 +65,25 @@ const WishCard = ({
     try { await onMove(product) } finally { setMoving(false) }
   }
 
+  const glassBg = isDark ? 'rgba(13, 23, 43, 0.88)' : 'rgba(255, 255, 255, 0.92)'
+  const glassBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)'
+
   return (
-    <View style={[s.card, { width: CARD_WIDTH, backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-      <View style={[s.imgBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}>
+    <View style={[s.card, { width: CARD_WIDTH, backgroundColor: glassBg, borderColor: glassBorder }]}>
+      <View style={[s.imgBox, { backgroundColor: isDark ? '#081126' : '#EEF3FA' }]}>
         {imageUrl && !imgError ? (
           <BlurhashImage
             category={product.name}
             source={{ uri: imageUrl }}
             style={s.img}
-            resizeMode="contain"
+            resizeMode="cover"
             onError={() => setImgError(true)}
           />
         ) : (
           <Text style={[s.fallback, { color: colors.textMuted }]}>{product.name ? product.name[0].toUpperCase() : '🛍️'}</Text>
         )}
         <TouchableOpacity
-          style={[s.heartBtn, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}
+          style={[s.heartBtn, { backgroundColor: isDark ? 'rgba(5, 8, 22, 0.82)' : 'rgba(255, 255, 255, 0.88)' }]}
           onPress={handleRemove}
           activeOpacity={0.8}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -84,35 +91,38 @@ const WishCard = ({
           {removing ? (
             <ActivityIndicator size="small" color="#EF4444" />
           ) : (
-            <HeartIcon size={18} color="#EF4444" filled={true} />
+            <HeartIcon size={16} color="#EF4444" filled={true} />
           )}
         </TouchableOpacity>
       </View>
 
       <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={2}>{product.name}</Text>
-      <Text style={[s.price, { color: colors.textPrimary }]}>₹{price.toFixed(2)}</Text>
+      <Text style={[s.price, { color: isDark ? '#60A5FA' : '#2563EB' }]}>₹{price.toFixed(2)}</Text>
 
-      <TouchableOpacity
-        style={[
+      <Pressable
+        style={({ pressed }) => [
           s.addBtn,
-          {
-            backgroundColor: isDark ? colors.accentGlow : colors.surfaceSecondary,
-            borderColor: colors.borderStrong,
-          },
+          pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
         ]}
         onPress={handleMove}
         disabled={moving}
-        activeOpacity={0.85}
       >
-        {moving ? (
-          <ActivityIndicator size="small" color={colors.accent} />
-        ) : (
-          <View style={s.addBtnInner}>
-            <CartIcon size={15} color={colors.accent} />
-            <Text style={[s.addBtnText, { color: colors.accent }]}>Move to Cart</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        <LinearGradient
+          colors={['#F6C453', '#F59E0B']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={s.addBtnInner}
+        >
+          {moving ? (
+            <ActivityIndicator size="small" color="#050816" />
+          ) : (
+            <>
+              <CartIcon size={14} color="#050816" />
+              <Text style={s.addBtnText}>Move to Cart</Text>
+            </>
+          )}
+        </LinearGradient>
+      </Pressable>
     </View>
   )
 }
@@ -183,29 +193,34 @@ export default function WishListScreen() {
     }
   }
 
+  const glassBg = isDark ? 'rgba(13, 23, 43, 0.88)' : 'rgba(255, 255, 255, 0.92)'
+  const glassBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)'
+
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={['top']}>
-      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.statusBarBg} />
-      
+    <MovingBackground theme={isDark ? 'dark' : 'yellow'} style={{ flex: 1 }}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
+
       {/* Header */}
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: Math.max(insets.top, 16), backgroundColor: glassBg, borderColor: glassBorder }]}>
         <TouchableOpacity
-          style={[s.backBtn, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}
+          style={s.backBtn}
           onPress={() => navigation.goBack()}
         >
-          <ArrowLeftIcon size={20} color={colors.textPrimary} />
+          <ArrowLeftIcon size={18} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: colors.textPrimary }]}>Wishlist</Text>
-        {wishlistItems.length > 0 && (
-          <View style={[s.countBadge, { backgroundColor: colors.accent }]}>
-            <Text style={[s.countText, { color: colors.accentText }]}>{wishlistItems.length}</Text>
+        <Text style={[s.headerTitle, { color: colors.textPrimary }]}>Wishlist ♥</Text>
+        {wishlistItems.length > 0 ? (
+          <View style={s.countBadge}>
+            <Text style={s.countText}>{wishlistItems.length}</Text>
           </View>
+        ) : (
+          <View style={{ width: 36 }} />
         )}
       </View>
 
       {loading ? (
         <View style={s.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color="#2563EB" />
           <Text style={[s.loadingText, { color: colors.textSecondary }]}>Loading wishlist…</Text>
         </View>
       ) : (
@@ -214,7 +229,7 @@ export default function WishListScreen() {
           keyExtractor={item => item.id.toString()}
           numColumns={2}
           columnWrapperStyle={wishlistItems.length > 0 ? { gap: GUTTER } : undefined}
-          contentContainerStyle={s.listContent}
+          contentContainerStyle={[s.listContent, { paddingBottom: insets.bottom + 110 }]}
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => (
             <WishCard product={item} index={index} onRemove={removeItem} onMove={moveToCart} />
@@ -228,71 +243,80 @@ export default function WishListScreen() {
           }
           ListEmptyComponent={
             <View style={s.emptyState}>
-              <View style={[s.emptyIconBox, { backgroundColor: colors.surfaceCard }]}>
-                <HeartIcon size={44} color={colors.accent} filled={false} />
-              </View>
-              <Text style={[s.emptyTitle, { color: colors.textPrimary }]}>Your wishlist is empty</Text>
+              <EmptyWishlistIllustration size={160} isDark={isDark} />
+              <Text style={[s.emptyTitle, { color: colors.textPrimary }]}>Your Wishlist is Empty</Text>
               <Text style={[s.emptySub, { color: colors.textSecondary }]}>
                 Tap the heart icon on any product to save it here for later.
               </Text>
               <TouchableOpacity
-                style={[s.emptyCtaBtn, { backgroundColor: colors.accent }]}
+                style={s.emptyCtaBtn}
                 onPress={() => navigation.navigate('Home')}
                 activeOpacity={0.85}
               >
-                <Text style={[s.emptyCtaText, { color: colors.accentText }]}>Start Exploring →</Text>
+                <Text style={s.emptyCtaText}>Start Exploring →</Text>
               </TouchableOpacity>
             </View>
           }
         />
       )}
-    </SafeAreaView>
+    </MovingBackground>
   )
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1 },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingBottom: 14,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 6,
   },
   backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
   },
-  headerTitle: { flex: 1, fontWeight: '800', fontSize: 24, letterSpacing: -0.4 },
+  headerTitle: { fontWeight: '800', fontSize: 18, letterSpacing: 0.3 },
   countBadge: {
-    borderRadius: 14,
-    minWidth: 28,
-    height: 28,
-    paddingHorizontal: 9,
+    borderRadius: 12,
+    minWidth: 26,
+    height: 26,
+    backgroundColor: '#F6C453',
+    paddingHorizontal: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  countText: { fontWeight: '800', fontSize: 13 },
+  countText: { fontWeight: '900', fontSize: 11.5, color: '#050816' },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 32 },
-  loadingText: { fontSize: 14, fontWeight: '500' },
+  loadingText: { fontSize: 14, fontWeight: '700' },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: GUTTER },
-  subHeading: { fontWeight: '700', fontSize: 13, marginBottom: 12, marginTop: 2 },
+  listContent: { paddingHorizontal: 16, paddingTop: 14, gap: GUTTER },
+  subHeading: { fontWeight: '800', fontSize: 13, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   card: {
-    borderWidth: 1,
-    borderRadius: 20,
+    borderWidth: 1.5,
+    borderRadius: 22,
     padding: 10,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   imgBox: {
-    height: 130,
+    height: 136,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -304,56 +328,61 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   name: {
     fontWeight: '700',
-    fontSize: 13,
-    marginTop: 10,
-    lineHeight: 17,
-    height: 34,
+    fontSize: 12.5,
+    marginTop: 8,
+    lineHeight: 16,
+    height: 32,
   },
-  price: { fontWeight: '800', fontSize: 16, marginTop: 4 },
+  price: { fontWeight: '900', fontSize: 15, marginTop: 4 },
 
   addBtn: {
     marginTop: 10,
-    height: 38,
-    borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  addBtnInner: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 36,
+    gap: 6,
+    borderRadius: 14,
   },
-  addBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  addBtnText: { fontWeight: '700', fontSize: 12.5 },
+  addBtnText: { fontWeight: '900', fontSize: 12, color: '#050816' },
 
-  emptyState: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },
-  emptyIconBox: {
-    width: 90,
-    height: 90,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: { fontSize: 20, fontWeight: '800', marginBottom: 8 },
+  emptyState: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 19, fontWeight: '800', marginTop: 14, marginBottom: 6 },
   emptySub: {
-    fontSize: 13.5,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-    maxWidth: 260,
+    lineHeight: 19,
+    marginBottom: 20,
+    maxWidth: 280,
   },
   emptyCtaBtn: {
-    borderRadius: 16,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    borderRadius: 20,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 4,
   },
-  emptyCtaText: { fontSize: 15, fontWeight: '800' },
+  emptyCtaText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
 })

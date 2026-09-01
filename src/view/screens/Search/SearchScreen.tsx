@@ -52,16 +52,16 @@ import { buildImageUrl, getFallbackImage } from '../../../shared/utils/imageHelp
 const getPriceInfo = (item: any) => {
   if (item.product_type === 'variant' && item.variants?.length > 0) {
     const prices = item.variants
-      .map((v: any) => parseFloat(v.Price))
+      .map((v: any) => parseFloat(String(v.Price ?? '0')))
       .filter((p: number) => !isNaN(p))
     if (prices.length > 0) return { price: Math.min(...prices) }
   }
-  return { price: parseFloat(item.price) || 0 }
+  return { price: parseFloat(String(item.price ?? '0')) || 0 }
 }
 
 const getDiscountPercent = (item: any) => {
-  const price = parseFloat(item.price) || 0
-  const mrp = parseFloat(item.mrp || item.compare_at_price) || 0
+  const price = parseFloat(String(item.price ?? '0')) || 0
+  const mrp = parseFloat(String(item.mrp || item.compare_at_price || '0')) || 0
   if (mrp > price && price > 0) return Math.round(((mrp - price) / mrp) * 100)
   return 0
 }
@@ -255,12 +255,21 @@ const SearchScreen = () => {
   }
 
   // Cart helpers
-  const getQty = (id: number) => cartItems.find(i => i.id === id)?.quantity || 0
+  const getQty = useCallback((id: number) => cartItems.find(i => Number(i.id) === Number(id))?.quantity || 0, [cartItems])
 
   const addToCart = useCallback(async (id: number) => {
-    const product = allProducts.find(p => p.id === id)
+    const product = allProducts.find(p => Number(p.id) === Number(id))
     if (!product) return
-    const updated = [...cartItems, { ...product, quantity: 1, points: parseFloat(product.price) || 0 }]
+    const priceVal = parseFloat(String(product.price ?? '0')) || 0
+    const existingIndex = cartItems.findIndex(i => Number(i.id) === Number(id))
+    let updated: any[]
+    if (existingIndex >= 0) {
+      updated = cartItems.map((item, idx) =>
+        idx === existingIndex ? { ...item, quantity: (item.quantity || 1) + 1 } : item
+      )
+    } else {
+      updated = [...cartItems, { ...product, id, quantity: 1, points: priceVal, price: priceVal }]
+    }
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
 
@@ -279,10 +288,10 @@ const SearchScreen = () => {
       await addToCart(id)
     }
     navigation.navigate('PlaceOrder')
-  }, [cartItems, addToCart])
+  }, [getQty, navigation, addToCart])
 
   const increase = useCallback(async (id: number) => {
-    const updated = cartItems.map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
+    const updated = cartItems.map(i => Number(i.id) === Number(id) ? { ...i, quantity: (i.quantity || 1) + 1 } : i)
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
 
@@ -296,12 +305,12 @@ const SearchScreen = () => {
   }, [cartItems, loadCart])
 
   const decrease = useCallback(async (id: number) => {
-    const item = cartItems.find(i => i.id === id)
+    const item = cartItems.find(i => Number(i.id) === Number(id))
     if (!item) return
     const cartItemId = item.cartItemId
 
     const updated = cartItems
-      .map(i => i.id === id ? { ...i, quantity: (i.quantity || 1) - 1 } : i)
+      .map(i => Number(i.id) === Number(id) ? { ...i, quantity: (i.quantity || 1) - 1 } : i)
       .filter(i => (i.quantity || 0) > 0)
     setCartItems(updated)
     await setAsyncData('cart_items', updated as any)
@@ -312,7 +321,7 @@ const SearchScreen = () => {
         success = await removeFromApiCart(cartItemId)
       } else {
         const raw = await fetchApiCart()
-        const match = raw?.find((r: any) => (r.product?.id ?? r.product_id) === id)
+        const match = raw?.find((r: any) => Number(r.product?.id ?? r.product_id) === Number(id))
         if (match?.id) {
           success = await removeFromApiCart(match.id)
         }
@@ -331,7 +340,7 @@ const SearchScreen = () => {
 
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + (i.quantity || 1), 0), [cartItems])
   const cartTotal = useMemo(
-    () => cartItems.reduce((s, i) => s + (i.points || 0) * (i.quantity || 1), 0),
+    () => cartItems.reduce((s, i) => s + (parseFloat(String(i.points ?? i.price ?? '0')) || 0) * (i.quantity || 1), 0),
     [cartItems],
   )
 
@@ -357,7 +366,7 @@ const SearchScreen = () => {
         onBuy={handleBuy}
       />
     ),
-    [cartItems, addToCart, increase, decrease, openDetail, handleBuy],
+    [getQty, addToCart, increase, decrease, openDetail, handleBuy],
   )
 
   const renderIdle = () => (
@@ -413,7 +422,7 @@ const SearchScreen = () => {
                 key={cat.id}
                 style={s.catPill}
                 activeOpacity={0.82}
-                onPress={() => navigation.navigate('CategoryProducts', { category: cat })}
+                onPress={() => navigation.navigate('Categories', { category: cat })}
               >
                 <View style={[s.catPillIcon, { backgroundColor: CATEGORY_COLORS[idx % 8] }]}>
                   {cat.image ? (
@@ -434,7 +443,7 @@ const SearchScreen = () => {
           <Text style={[s.sectionTitle, { marginTop: 24, marginBottom: 4 }]}>POPULAR PRODUCTS</Text>
           <FlatList
             data={allProducts.slice(0, 8)}
-            keyExtractor={item => String(item.id)}
+            keyExtractor={(item, index) => String(item.id ?? index)}
             numColumns={2}
             scrollEnabled={false}
             renderItem={renderProduct}
@@ -449,7 +458,7 @@ const SearchScreen = () => {
   const renderResults = () => (
     <FlatList
       data={matchedProducts}
-      keyExtractor={item => String(item.id)}
+      keyExtractor={(item, index) => String(item.id ?? index)}
       numColumns={2}
       keyboardShouldPersistTaps="handled"
       renderItem={renderProduct}
@@ -471,7 +480,7 @@ const SearchScreen = () => {
                   key={cat.id}
                   style={s.catPill}
                   activeOpacity={0.82}
-                  onPress={() => navigation.navigate('CategoryProducts', { category: cat })}
+                  onPress={() => navigation.navigate('Categories', { category: cat })}
                 >
                   <View style={[s.catPillIcon, { backgroundColor: CATEGORY_COLORS[idx % 8] }]}>
                     {cat.image ? (

@@ -18,7 +18,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import Svg, { Path, Circle, Defs, RadialGradient, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
+import Svg, { Path, Circle, Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import { SvkLogo } from '../../../design-system/logo/SvkLogo';
 import { useResponsive } from '../../../hooks/useResponsive';
@@ -31,65 +31,73 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
   const { width: W, height: H } = useWindowDimensions();
   const { isTablet } = useResponsive();
 
-  // Animation shared values for staged entrance
+  // 6-Stage Animation Sequence Shared Values
+  // Stage 1: Background expand
+  const bgExpand = useSharedValue(0.1);
   const bgOpacity = useSharedValue(0);
-  const logoScale = useSharedValue(0.65);
+
+  // Stage 2: Logo reveal
+  const logoScale = useSharedValue(0.5);
   const logoOpacity = useSharedValue(0);
-  const titleTranslateY = useSharedValue(24);
+
+  // Stage 3: Product Ecosystem Floating Objects
+  const ecoOpacity = useSharedValue(0);
+  const ecoFloat = useSharedValue(0);
+
+  // Stage 4: Brand Typography reveal
+  const titleY = useSharedValue(30);
   const titleOpacity = useSharedValue(0);
-  const taglineOpacity = useSharedValue(0);
-  const chipsOpacity = useSharedValue(0);
-  const ctaTranslateY = useSharedValue(32);
+  const subtitleOpacity = useSharedValue(0);
+
+  // Stage 5: CTA reveal
+  const ctaY = useSharedValue(40);
   const ctaOpacity = useSharedValue(0);
 
-  // Ambient motion
-  const orbitRotation = useSharedValue(0);
-  const glowPulse = useSharedValue(1);
+  // Stage 6: Exit transition scale
+  const screenScale = useSharedValue(1);
+  const screenOpacity = useSharedValue(1);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then((reducedMotion) => {
       const durationMultiplier = reducedMotion ? 0.3 : 1;
 
-      // 1. Background fade in
-      bgOpacity.value = withTiming(1, { duration: 600 * durationMultiplier });
+      // STAGE 1 — Background Central Blue Light Expansion
+      bgOpacity.value = withTiming(1, { duration: 700 * durationMultiplier });
+      bgExpand.value = withSpring(1, { damping: 18, stiffness: 80 });
 
-      // 2. Logo scale & reveal
-      logoOpacity.value = withTiming(1, { duration: 700 * durationMultiplier });
-      logoScale.value = withSpring(1, { damping: 14, stiffness: 120 });
+      // STAGE 2 — Brand Reveal (Logo)
+      setTimeout(() => {
+        logoOpacity.value = withTiming(1, { duration: 600 * durationMultiplier });
+        logoScale.value = withSpring(1, { damping: 12, stiffness: 110 });
+      }, 250 * durationMultiplier);
 
-      // 3. Title reveal
+      // STAGE 3 — Product Ecosystem Floating Cards
+      setTimeout(() => {
+        ecoOpacity.value = withTiming(1, { duration: 700 * durationMultiplier });
+      }, 500 * durationMultiplier);
+
+      // STAGE 4 — Brand Typography Reveal
       setTimeout(() => {
         titleOpacity.value = withTiming(1, { duration: 600 * durationMultiplier });
-        titleTranslateY.value = withSpring(0, { damping: 16 });
-      }, 300 * durationMultiplier);
+        titleY.value = withSpring(0, { damping: 16 });
+      }, 700 * durationMultiplier);
 
-      // 4. Tagline reveal
       setTimeout(() => {
-        taglineOpacity.value = withTiming(1, { duration: 600 * durationMultiplier });
-      }, 550 * durationMultiplier);
+        subtitleOpacity.value = withTiming(1, { duration: 600 * durationMultiplier });
+      }, 900 * durationMultiplier);
 
-      // 5. Feature chips reveal
-      setTimeout(() => {
-        chipsOpacity.value = withTiming(1, { duration: 600 * durationMultiplier });
-      }, 750 * durationMultiplier);
-
-      // 6. CTA buttons reveal
+      // STAGE 5 — Primary CTA Reveal
       setTimeout(() => {
         ctaOpacity.value = withTiming(1, { duration: 700 * durationMultiplier });
-        ctaTranslateY.value = withSpring(0, { damping: 18 });
-      }, 950 * durationMultiplier);
+        ctaY.value = withSpring(0, { damping: 18, stiffness: 120 });
+      }, 1100 * durationMultiplier);
 
-      // Ambient background continuous subtle orbit rotation
+      // Continuous Floating Oscillation for Product Ecosystem
       if (!reducedMotion) {
-        orbitRotation.value = withRepeat(
-          withTiming(360, { duration: 24000, easing: Easing.linear }),
-          -1,
-          false
-        );
-        glowPulse.value = withRepeat(
+        ecoFloat.value = withRepeat(
           withSequence(
-            withTiming(1.15, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
-            withTiming(1.0, { duration: 4000, easing: Easing.inOut(Easing.ease) })
+            withTiming(-8, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+            withTiming(8, { duration: 2500, easing: Easing.inOut(Easing.ease) })
           ),
           -1,
           true
@@ -98,8 +106,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
     });
   }, []);
 
+  const handleGetStarted = () => {
+    // STAGE 6 — Smooth Liquid Morph Transition into App
+    screenOpacity.value = withTiming(0, { duration: 350 });
+    screenScale.value = withTiming(0.96, { duration: 350 });
+    setTimeout(() => {
+      navigation.navigate('Onboarding');
+    }, 360);
+  };
+
+  const handleSignIn = () => {
+    navigation.navigate('Login');
+  };
+
   const animatedBgStyle = useAnimatedStyle(() => ({
     opacity: bgOpacity.value,
+    transform: [{ scale: bgExpand.value }],
   }));
 
   const animatedLogoStyle = useAnimatedStyle(() => ({
@@ -107,154 +129,151 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
     transform: [{ scale: logoScale.value }],
   }));
 
+  const animatedEcoStyle = useAnimatedStyle(() => ({
+    opacity: ecoOpacity.value,
+    transform: [{ translateY: ecoFloat.value }],
+  }));
+
   const animatedTitleStyle = useAnimatedStyle(() => ({
     opacity: titleOpacity.value,
-    transform: [{ translateY: titleTranslateY.value }],
+    transform: [{ translateY: titleY.value }],
   }));
 
-  const animatedTaglineStyle = useAnimatedStyle(() => ({
-    opacity: taglineOpacity.value,
-  }));
-
-  const animatedChipsStyle = useAnimatedStyle(() => ({
-    opacity: chipsOpacity.value,
+  const animatedSubtitleStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
   }));
 
   const animatedCtaStyle = useAnimatedStyle(() => ({
     opacity: ctaOpacity.value,
-    transform: [{ translateY: ctaTranslateY.value }],
+    transform: [{ translateY: ctaY.value }],
   }));
 
-  const animatedOrbitStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${orbitRotation.value}deg` }],
-  }));
-
-  const animatedGlowStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: glowPulse.value }],
+  const animatedContainerStyle = useAnimatedStyle(() => ({
+    opacity: screenOpacity.value,
+    transform: [{ scale: screenScale.value }],
   }));
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B1329" translucent />
+    <Animated.View style={[styles.container, animatedContainerStyle]}>
+      <StatusBar barStyle="light-content" backgroundColor="#050816" translucent />
 
-      {/* Atmospheric Background & Ambient Network Lines */}
+      {/* STAGE 1: Liquid Aurora Atmospheric Background */}
       <Animated.View style={[StyleSheet.absoluteFill, animatedBgStyle]}>
         <View style={styles.bgCanvas}>
-          {/* Soft atmospheric blue glow */}
-          <Animated.View style={[styles.atmosphericGlow, animatedGlowStyle]}>
-            <Svg width={W * 1.6} height={W * 1.6} viewBox="0 0 400 400">
-              <Defs>
-                <RadialGradient id="blueAtmosphere" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0%" stopColor="#2563EB" stopOpacity="0.4" />
-                  <Stop offset="50%" stopColor="#1E40AF" stopOpacity="0.18" />
-                  <Stop offset="100%" stopColor="#0B1329" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Circle cx="200" cy="200" r="200" fill="url(#blueAtmosphere)" />
-            </Svg>
-          </Animated.View>
-
-          {/* Flowing tech network geometry lines */}
-          <Animated.View style={[styles.networkContainer, animatedOrbitStyle]}>
-            <Svg width={Math.min(W * 1.4, 520)} height={Math.min(W * 1.4, 520)} viewBox="0 0 400 400">
-              <Defs>
-                <SvgLinearGradient id="lineGrad1" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
-                  <Stop offset="100%" stopColor="#FBBF24" stopOpacity="0.15" />
-                </SvgLinearGradient>
-              </Defs>
-              <Circle cx="200" cy="200" r="160" stroke="url(#lineGrad1)" strokeWidth="1.2" strokeDasharray="6 8" fill="none" />
-              <Circle cx="200" cy="200" r="110" stroke="rgba(59, 130, 246, 0.25)" strokeWidth="1" fill="none" />
-              <Path d="M 60 200 Q 200 40 340 200 Q 200 360 60 200 Z" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1" fill="none" />
-              <Circle cx="200" cy="40" r="4.5" fill="#FBBF24" opacity="0.9" />
-              <Circle cx="340" cy="200" r="4" fill="#3B82F6" opacity="0.8" />
-              <Circle cx="90" cy="200" r="3.5" fill="#60A5FA" opacity="0.7" />
-            </Svg>
-          </Animated.View>
+          <Svg width={W * 1.8} height={W * 1.8} viewBox="0 0 400 400">
+            <Defs>
+              <RadialGradient id="auroraCore" cx="50%" cy="50%" r="50%">
+                <Stop offset="0%" stopColor="#2563EB" stopOpacity="0.45" />
+                <Stop offset="40%" stopColor="#22D3EE" stopOpacity="0.25" />
+                <Stop offset="75%" stopColor="#8B5CF6" stopOpacity="0.12" />
+                <Stop offset="100%" stopColor="#050816" stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Circle cx="200" cy="200" r="200" fill="url(#auroraCore)" />
+          </Svg>
         </View>
       </Animated.View>
 
-      {/* Main Content Hub */}
+      {/* Main Poster Layout Container */}
       <View style={[styles.content, isTablet && styles.contentTablet]}>
-        {/* Centered Staggered Logo & Branding */}
-        <Animated.View style={[styles.logoSection, animatedLogoStyle]}>
-          <SvkLogo variant="symbol" size="hero" />
+        
+        {/* Poster Top Headline */}
+        <Animated.View style={[styles.posterHeader, animatedSubtitleStyle]}>
+          <Text style={styles.posterBadge}>LIQUID AURORA OS</Text>
+          <Text style={styles.posterSubHeader}>PREMIUM COMMERCE</Text>
+          <Text style={styles.posterMeta}>Modern • Intelligent • Responsive • Fluid</Text>
         </Animated.View>
 
-        <Animated.View style={[styles.titleSection, animatedTitleStyle]}>
-          <Text style={styles.brandTitle}>
-            SVK <Text style={styles.goldText}>E-COM</Text>
+        {/* Hero Ecosystem Center: Logo + Floating 3D Cards */}
+        <View style={styles.heroCenter}>
+          {/* STAGE 3: Floating Product Ecosystem Objects */}
+          <Animated.View style={[styles.floatingCard, styles.cardTopLeft, animatedEcoStyle]}>
+            <LinearGradient colors={['rgba(37,99,235,0.25)', 'rgba(13,23,43,0.85)']} style={styles.glassCardInner}>
+              <Text style={styles.cardIcon}>🛍️</Text>
+              <Text style={styles.cardLabel}>Luxury Bag</Text>
+            </LinearGradient>
+          </Animated.View>
+
+          <Animated.View style={[styles.floatingCard, styles.cardTopRight, animatedEcoStyle]}>
+            <LinearGradient colors={['rgba(246,196,83,0.25)', 'rgba(13,23,43,0.85)']} style={styles.glassCardInner}>
+              <Text style={styles.cardIcon}>🎧</Text>
+              <Text style={styles.cardLabel}>Audio Pro</Text>
+            </LinearGradient>
+          </Animated.View>
+
+          <Animated.View style={[styles.floatingCard, styles.cardBottomLeft, animatedEcoStyle]}>
+            <LinearGradient colors={['rgba(34,211,238,0.25)', 'rgba(13,23,43,0.85)']} style={styles.glassCardInner}>
+              <Text style={styles.cardIcon}>⌚</Text>
+              <Text style={styles.cardLabel}>Smart Watch</Text>
+            </LinearGradient>
+          </Animated.View>
+
+          <Animated.View style={[styles.floatingCard, styles.cardBottomRight, animatedEcoStyle]}>
+            <LinearGradient colors={['rgba(139,92,246,0.25)', 'rgba(13,23,43,0.85)']} style={styles.glassCardInner}>
+              <Text style={styles.cardIcon}>📱</Text>
+              <Text style={styles.cardLabel}>Flagship Phone</Text>
+            </LinearGradient>
+          </Animated.View>
+
+          {/* STAGE 2: Central Brand Logo Reveal */}
+          <Animated.View style={[styles.logoWrapper, animatedLogoStyle]}>
+            <View style={styles.logoGlowRing} />
+            <SvkLogo variant="symbol" size="hero" />
+          </Animated.View>
+        </View>
+
+        {/* STAGE 4: Brand Typography */}
+        <Animated.View style={[styles.brandTypographySection, animatedTitleStyle]}>
+          <Text style={styles.brandTitleText}>
+            SVK <Text style={styles.goldTitleText}>E-COM</Text>
           </Text>
-        </Animated.View>
-
-        <Animated.View style={[styles.taglineSection, animatedTaglineStyle]}>
           <Text style={styles.taglineText}>Shop Smart. Live Better.</Text>
-          <View style={styles.accentDivider}>
-            <View style={styles.dividerLine} />
-            <Text style={{ color: '#FBBF24', fontSize: 10, marginHorizontal: 6 }}>✦</Text>
-            <View style={styles.dividerLine} />
-          </View>
+
+          {/* Feature Highlights Pills */}
+          <Animated.View style={[styles.featureRow, animatedSubtitleStyle]}>
+            <View style={styles.featurePill}>
+              <Text style={styles.featurePillText}>Floating Navigation</Text>
+            </View>
+            <View style={styles.featurePill}>
+              <Text style={styles.featurePillText}>Liquid Product Cards</Text>
+            </View>
+            <View style={styles.featurePill}>
+              <Text style={styles.featurePillText}>Aurora Motion</Text>
+            </View>
+            <View style={styles.featurePill}>
+              <Text style={styles.featurePillText}>120Hz Quality</Text>
+            </View>
+          </Animated.View>
         </Animated.View>
 
-        {/* Feature Highlight Chips */}
-        <Animated.View style={[styles.chipsContainer, animatedChipsStyle]}>
-          <View style={styles.chipItem}>
-            <Text style={styles.chipText}>⚡ Flash Deals</Text>
-          </View>
-          <View style={styles.chipItem}>
-            <Text style={styles.chipText}>📍 Live Map Tracking</Text>
-          </View>
-          <View style={styles.chipItem}>
-            <Text style={styles.chipText}>💳 SVK Wallet</Text>
-          </View>
-          <View style={styles.chipItem}>
-            <Text style={styles.chipText}>🚚 8-Min Express</Text>
-          </View>
-        </Animated.View>
-
-        {/* Floating Trust Banner */}
-        <Animated.View style={[styles.trustBanner, animatedChipsStyle]}>
-          <Text style={styles.trustText}>✨ 100% Authentic Warranty & Official Distributors</Text>
-        </Animated.View>
       </View>
 
-      {/* Bottom CTA Actions */}
+      {/* STAGE 5: Bottom CTA Action */}
       <Animated.View style={[styles.bottomSection, isTablet && styles.bottomSectionTablet, animatedCtaStyle]}>
-        {/* Primary CTA: Get Started */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Get Started with SVK E-COM"
-          onPress={() => navigation.navigate('Onboarding')}
+          accessibilityLabel="Get Started with SHOPX"
+          onPress={handleGetStarted}
           style={({ pressed }) => [
             styles.primaryButton,
-            pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+            pressed && { transform: [{ scale: 0.97 }] },
           ]}
         >
           <LinearGradient
-            colors={['#2563EB', '#1D4ED8', '#1E40AF']}
+            colors={['#2563EB', '#3B82F6', '#1D4ED8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.primaryGradient}
           >
-            <Text style={styles.primaryButtonText}>Get Started</Text>
-            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M5 12H19M19 12L13 6M19 12L13 18"
-                stroke="#FFFFFF"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+            <Text style={styles.primaryButtonText}>Get Started →</Text>
           </LinearGradient>
         </Pressable>
 
-        {/* Secondary Action: Sign In */}
         <TouchableOpacity
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Sign In to existing account"
-          onPress={() => navigation.navigate('Login')}
+          onPress={handleSignIn}
           style={styles.secondaryButton}
         >
           <Text style={styles.secondaryButtonText}>
@@ -262,7 +281,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -271,11 +290,11 @@ export default WelcomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1329',
+    backgroundColor: '#050816',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: '14%',
-    paddingBottom: 44,
+    paddingTop: '12%',
+    paddingBottom: 36,
   },
   bgCanvas: {
     ...StyleSheet.absoluteFillObject,
@@ -283,94 +302,157 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  atmosphericGlow: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  networkContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   content: {
     alignItems: 'center',
     width: '100%',
+    flex: 1,
+    justifyContent: 'space-between',
   },
   contentTablet: {
-    maxWidth: 500,
+    maxWidth: 540,
     alignSelf: 'center',
   },
-  logoSection: {
-    marginBottom: 20,
+  posterHeader: {
     alignItems: 'center',
+    marginTop: 8,
   },
-  titleSection: {
+  posterBadge: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#22D3EE',
+    letterSpacing: 3,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  posterSubHeader: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    letterSpacing: 1.2,
+  },
+  posterMeta: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 4,
+    letterSpacing: 0.8,
+  },
+  heroCenter: {
+    width: 280,
+    height: 240,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginVertical: 12,
+  },
+  logoWrapper: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(13, 23, 43, 0.90)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(246, 196, 83, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 12,
+    zIndex: 10,
+  },
+  logoGlowRing: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(37, 99, 235, 0.20)',
+  },
+  floatingCard: {
+    position: 'absolute',
+    width: 95,
+    height: 72,
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 5,
+  },
+  glassCardInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  cardIcon: {
+    fontSize: 22,
+  },
+  cardLabel: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    marginTop: 2,
+  },
+  cardTopLeft: {
+    top: 0,
+    left: 0,
+  },
+  cardTopRight: {
+    top: 0,
+    right: 0,
+  },
+  cardBottomLeft: {
+    bottom: 0,
+    left: 0,
+  },
+  cardBottomRight: {
+    bottom: 0,
+    right: 0,
+  },
+  brandTypographySection: {
     alignItems: 'center',
     marginBottom: 8,
   },
-  brandTitle: {
-    fontSize: 36,
+  brandTitleText: {
+    fontSize: 42,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
   },
-  goldText: {
-    color: '#FBBF24',
-  },
-  taglineSection: {
-    alignItems: 'center',
+  goldTitleText: {
+    color: '#F6C453',
   },
   taglineText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: '#CBD5E1',
+    marginTop: 4,
     letterSpacing: 0.5,
   },
-  accentDivider: {
+  featureRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-    width: 140,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(251, 191, 36, 0.3)',
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 26,
     flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 18,
     justifyContent: 'center',
   },
-  chipItem: {
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+  featurePill: {
+    backgroundColor: 'rgba(17, 29, 52, 0.85)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
   },
-  chipText: {
-    color: '#CBD5E1',
-    fontSize: 12,
+  featurePillText: {
+    color: '#94A3B8',
+    fontSize: 11,
     fontWeight: '600',
-  },
-  trustBanner: {
-    marginTop: 20,
-    backgroundColor: 'rgba(251, 191, 36, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  trustText: {
-    color: '#FBBF24',
-    fontSize: 11.5,
-    fontWeight: '700',
   },
   bottomSection: {
     width: '100%',
@@ -387,34 +469,35 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
-    marginBottom: 16,
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 10,
+    marginBottom: 14,
   },
   primaryGradient: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   primaryButtonText: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginRight: 10,
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   secondaryButton: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 16,
   },
   secondaryButtonText: {
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#94A3B8',
   },
   signInText: {
-    color: '#FBBF24',
+    color: '#F6C453',
     fontWeight: '700',
   },
 });

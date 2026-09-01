@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../../../hooks/useTheme';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { Surface } from '../../../design-system/surfaces/Surface';
@@ -23,6 +24,7 @@ import { SkeletonState } from '../../../design-system/components/SkeletonState';
 import { EmptyState } from '../../../design-system/components/EmptyState';
 import { AttractiveProductCard } from '../../elements/AttractiveProductCard';
 import ApiProductDetailModal, { ApiProductDetail } from '../../elements/ApiProductDetailModal';
+import { MovingBackground } from '../../elements/MovingBackground';
 import { fetchAllProducts, fetchCategories, addToApiCart, fetchApiCart, removeFromApiCart } from '../../../shared/services/main-service';
 import { TYPOGRAPHY } from '../../../design-system/tokens/typography';
 import { SPACING } from '../../../design-system/tokens/spacing';
@@ -42,6 +44,7 @@ export const HomeScreen = ({ navigation }: any) => {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<ApiProductDetail | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<number | null>(null);
 
   const loadCart = useCallback(async () => {
     try {
@@ -139,9 +142,9 @@ export const HomeScreen = ({ navigation }: any) => {
     : 0;
 
   const heroCampaign = {
-    title: 'SVK Flagship Clearance',
-    subtitle: 'Exclusive Deals Direct from Official Distributors',
-    cta: 'Explore Catalog',
+    title: 'LIQUID AURORA COMMERCE OS',
+    subtitle: '100% Official Certified Distributors & Direct Warranty',
+    cta: 'Explore Catalog →',
     bannerUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
   };
 
@@ -173,94 +176,115 @@ export const HomeScreen = ({ navigation }: any) => {
     }, [loadDeliveryAddress])
   );
 
+  const glassBg = isDark ? 'rgba(13, 23, 43, 0.85)' : 'rgba(255, 255, 255, 0.90)';
+  const glassBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.65)';
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: tokens.surface.base }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <MovingBackground theme={isDark ? 'dark' : 'yellow'} style={{ flex: 1 }}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
 
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: Math.max(insets.top, 12),
+            paddingTop: Math.max(insets.top, 16),
             paddingBottom: insets.bottom + 110,
           },
         ]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
       >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={[styles.greeting, { color: tokens.content.secondary }]}>
-              Hello, Member 👋
-            </Text>
-            <Pressable
-              onPress={() => navigation.navigate('Addresses')}
-              style={styles.locationRow}
-              activeOpacity={0.8}
-            >
-              <SvkIcon name="mapPin" size={14} color={tokens.brand.primary} />
-              <Text
-                style={[styles.locationText, { color: tokens.content.primary }]}
-                numberOfLines={1}
-              >
-                {deliveryLocation}
+        {/* Floating Glass Header Row */}
+        <View style={[styles.headerRow, { backgroundColor: glassBg, borderColor: glassBorder }]}>
+          <View style={styles.headerLeft}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>SVK</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.greeting, { color: tokens.content.secondary }]}>
+                Welcome back 👋
               </Text>
-              <SvkIcon name="chevronDown" size={12} color={tokens.content.tertiary} />
-            </Pressable>
+              <Pressable
+                onPress={() => navigation.navigate('Addresses')}
+                style={styles.locationRow}
+              >
+                <SvkIcon name="mapPin" size={13} color="#2563EB" />
+                <Text
+                  style={[styles.locationText, { color: tokens.content.primary }]}
+                  numberOfLines={1}
+                >
+                  {deliveryLocation}
+                </Text>
+                <SvkIcon name="chevronDown" size={11} color={tokens.content.tertiary} />
+              </Pressable>
+            </View>
           </View>
 
-          <View style={styles.headerIcons}>
-            <Pressable
-              onPress={() => navigation.navigate('Notifications')}
-              style={[styles.iconBtn, { backgroundColor: tokens.surface.secondary }]}
-            >
-              <SvkIcon name="bell" size={20} color={tokens.content.primary} />
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={() => navigation.navigate('Notifications')}
+            style={[styles.iconBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#EEF3FA' }]}
+          >
+            <SvkIcon name="bell" size={18} color={tokens.content.primary} />
+            <View style={styles.notificationDot} />
+          </Pressable>
         </View>
 
-        {/* Search Bar Header */}
+        {/* Floating Search Bar */}
         <Pressable
           onPress={() => navigation.navigate('Search')}
           style={[
             styles.searchBar,
             {
-              backgroundColor: tokens.surface.secondary,
-              borderColor: tokens.border.default,
+              backgroundColor: glassBg,
+              borderColor: glassBorder,
             },
           ]}
         >
-          <SvkIcon name="search" size={20} color={tokens.content.tertiary} />
+          <SvkIcon name="search" size={19} color="#3B82F6" />
           <Text style={[styles.searchPlaceholder, { color: tokens.content.tertiary }]}>
-            Search products, brands, categories...
+            Search products, categories, deals...
           </Text>
-          <SvkIcon name="filter" size={18} color={tokens.brand.primary} />
+          <View style={styles.filterBtn}>
+            <SvkIcon name="filter" size={16} color="#FFFFFF" />
+          </View>
         </Pressable>
 
-        {/* Promotional Campaign Hero */}
-        <Surface variant="glass" radius="xl" elevation="medium" style={styles.heroCard}>
+        {/* Premium Promotional Campaign Hero Banner */}
+        <View style={[styles.heroCard, { borderColor: glassBorder }]}>
           <Image source={{ uri: heroCampaign.bannerUrl }} style={styles.heroImage} />
-          <View style={styles.heroOverlay}>
-            <Badge label="EXCLUSIVE OFFER" variant="gold" size="md" />
+          <LinearGradient
+            colors={isDark ? ['rgba(5,8,22,0.2)', 'rgba(5,8,22,0.92)'] : ['rgba(37,99,235,0.2)', 'rgba(5,8,22,0.88)']}
+            style={styles.heroOverlay}
+          >
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>✦ AURORA EXCLUSIVE</Text>
+            </View>
             <Text style={styles.heroTitle}>{heroCampaign.title}</Text>
             <Text style={styles.heroSubtitle}>{heroCampaign.subtitle}</Text>
-            <Button
-              title={heroCampaign.cta}
+            <Pressable
               onPress={() => navigation.navigate('Categories')}
-              variant="gold"
-              size="sm"
-              fullWidth={false}
-              style={{ marginTop: 12 }}
-            />
-          </View>
-        </Surface>
+              style={({ pressed }) => [
+                styles.heroCtaBtn,
+                pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['#F6C453', '#F59E0B']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.heroCtaGradient}
+              >
+                <Text style={styles.heroCtaText}>{heroCampaign.cta}</Text>
+              </LinearGradient>
+            </Pressable>
+          </LinearGradient>
+        </View>
 
-        {/* Dynamic Categories Rail from API */}
+        {/* Categories Rail */}
         {loading ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRail}>
             {[1, 2, 3, 4, 5].map((n) => (
               <View key={n} style={{ marginRight: SPACING.xs, marginVertical: 4 }}>
-                <SkeletonState width={110} height={36} radius="xl" />
+                <SkeletonState width={110} height={38} radius="xl" />
               </View>
             ))}
           </ScrollView>
@@ -271,37 +295,52 @@ export const HomeScreen = ({ navigation }: any) => {
                 Explore Categories
               </Text>
               <Pressable onPress={() => navigation.navigate('Categories')}>
-                <Text style={[styles.seeAll, { color: tokens.brand.primary }]}>See All</Text>
+                <Text style={styles.seeAllText}>See All →</Text>
               </Pressable>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRail}>
-              {categories.map((cat: any, idx: number) => (
-                <Pressable
-                  key={cat.id || cat._id || idx}
-                  onPress={() => navigation.navigate('Categories', { categoryId: cat.id, categoryName: cat.name || cat.CategoryName })}
-                  style={[styles.categoryChip, { backgroundColor: tokens.surface.secondary }]}
-                >
-                  <View style={[styles.categoryIconCircle, { backgroundColor: tokens.brand.primarySoft }]}>
-                    <SvkIcon name="categories" size={16} color={tokens.brand.primary} />
-                  </View>
-                  <Text style={[styles.categoryText, { color: tokens.content.primary }]}>
-                    {cat.name || cat.CategoryName || cat.title || 'Category'}
-                  </Text>
-                </Pressable>
-              ))}
+              {categories.map((cat: any, idx: number) => {
+                const isActive = activeCategory === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id || cat._id || idx}
+                    onPress={() => {
+                      setActiveCategory(cat.id);
+                      navigation.navigate('Categories', { categoryId: cat.id, categoryName: cat.name || cat.CategoryName });
+                    }}
+                    style={[
+                      styles.categoryChip,
+                      {
+                        backgroundColor: isActive ? '#2563EB' : glassBg,
+                        borderColor: isActive ? '#F6C453' : glassBorder,
+                      },
+                    ]}
+                  >
+                    <View style={[styles.categoryIconCircle, { backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(37,99,235,0.12)' }]}>
+                      <SvkIcon name="categories" size={15} color={isActive ? '#FFFFFF' : '#2563EB'} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        { color: isActive ? '#FFFFFF' : tokens.content.primary },
+                      ]}
+                    >
+                      {cat.name || cat.CategoryName || cat.title || 'Category'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </>
         ) : null}
 
-        {/* Flash Deals API Section */}
+        {/* Flash Deals Section */}
         <View style={styles.sectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={[styles.sectionTitle, { color: tokens.content.primary }]}>Flash Deals</Text>
-            <View style={[styles.timerBadge, { backgroundColor: tokens.semantic.errorSoft }]}>
-              <Text style={{ ...TYPOGRAPHY.caption, color: tokens.semantic.error, fontWeight: '700' }}>
-                LIVE DEALS
-              </Text>
+            <View style={styles.timerBadge}>
+              <Text style={styles.timerBadgeText}>⚡ LIVE DEALS</Text>
             </View>
           </View>
         </View>
@@ -309,8 +348,8 @@ export const HomeScreen = ({ navigation }: any) => {
         {loading ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 10 }}>
             {[1, 2, 3, 4].map((n) => (
-              <View key={n} style={{ width: 155, marginRight: 10 }}>
-                <SkeletonState width={155} height={190} radius="lg" />
+              <View key={n} style={{ width: 165, marginRight: 10 }}>
+                <SkeletonState width={165} height={200} radius="lg" />
               </View>
             ))}
           </ScrollView>
@@ -331,7 +370,7 @@ export const HomeScreen = ({ navigation }: any) => {
                 category={item.category || item.category_name}
                 onPress={() => handleProductPress(item)}
                 onAddToCart={() => handleAddToCart(Number(item.id))}
-                style={{ width: 155 }}
+                style={{ width: 165 }}
               />
             )}
           />
@@ -339,7 +378,7 @@ export const HomeScreen = ({ navigation }: any) => {
           <EmptyState title="No Flash Deals Available" subtitle="Check back shortly for updated live inventory." />
         )}
 
-        {/* Recommended Products Grid from API */}
+        {/* Recommended Products Grid */}
         <View style={[styles.sectionHeader, { marginTop: SPACING.lg }]}>
           <Text style={[styles.sectionTitle, { color: tokens.content.primary }]}>
             Recommended For You
@@ -377,7 +416,7 @@ export const HomeScreen = ({ navigation }: any) => {
         )}
       </ScrollView>
 
-      {/* Product Detail Modal */}
+      {/* Product Detail Modal Sheet */}
       {selectedProduct && (
         <ApiProductDetailModal
           visible={modalVisible}
@@ -394,27 +433,55 @@ export const HomeScreen = ({ navigation }: any) => {
           }}
         />
       )}
-    </SafeAreaView>
+    </MovingBackground>
   );
 };
 
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   scrollContent: {
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 22,
+    borderWidth: 1.5,
     marginBottom: SPACING.md,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  avatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    borderWidth: 1.5,
+    borderColor: '#F6C453',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
   },
   greeting: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 11,
     fontWeight: '600',
   },
   locationRow: {
@@ -423,40 +490,69 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   locationText: {
-    ...TYPOGRAPHY.bodyS,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '800',
     marginHorizontal: 4,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
   },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F6C453',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
+    paddingLeft: 16,
+    paddingRight: 6,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1.5,
     marginBottom: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   searchPlaceholder: {
     flex: 1,
-    marginLeft: SPACING.sm,
-    ...TYPOGRAPHY.bodyS,
+    marginLeft: 10,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  filterBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroCard: {
-    height: 180,
+    height: 190,
     marginBottom: SPACING.lg,
+    borderRadius: 24,
+    borderWidth: 1.5,
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 8,
   },
   heroImage: {
     ...StyleSheet.absoluteFillObject,
@@ -465,39 +561,80 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    padding: SPACING.md,
+    padding: 16,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
+  heroBadge: {
+    backgroundColor: 'rgba(246, 196, 83, 0.25)',
+    borderWidth: 1,
+    borderColor: '#F6C453',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  heroBadgeText: {
+    color: '#F6C453',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
   heroTitle: {
-    ...TYPOGRAPHY.headingL,
+    fontSize: 20,
+    fontWeight: '900',
     color: '#FFFFFF',
-    marginTop: 6,
+    letterSpacing: 0.5,
   },
   heroSubtitle: {
-    ...TYPOGRAPHY.bodyS,
-    color: '#94A3B8',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#CBD5E1',
+    marginTop: 3,
+  },
+  heroCtaBtn: {
+    marginTop: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  heroCtaGradient: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  heroCtaText: {
+    color: '#050816',
+    fontSize: 12.5,
+    fontWeight: '900',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
+    marginBottom: 10,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.headingM,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
-  seeAll: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
+  seeAllText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#3B82F6',
   },
   timerBadge: {
+    backgroundColor: 'rgba(246, 196, 83, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(246, 196, 83, 0.35)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: 10,
     marginLeft: 8,
+  },
+  timerBadgeText: {
+    color: '#F59E0B',
+    fontSize: 10,
+    fontWeight: '900',
   },
   categoriesRail: {
     marginBottom: SPACING.md,
@@ -505,22 +642,28 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 20,
-    marginRight: SPACING.xs,
+    borderWidth: 1.5,
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   categoryIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
   categoryText: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
   },
   gridContainer: {
     flexDirection: 'row',

@@ -74,10 +74,10 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.96,
+      toValue: 0.97,
       useNativeDriver: true,
       friction: 8,
-      tension: 100,
+      tension: 140,
     }).start();
   };
 
@@ -86,7 +86,7 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
       toValue: 1,
       useNativeDriver: true,
       friction: 8,
-      tension: 100,
+      tension: 140,
     }).start();
   };
 
@@ -94,8 +94,8 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
     const nextState = !wishlisted;
     setWishlisted(nextState);
     Animated.sequence([
-      Animated.timing(wishAnim, { toValue: 1.3, duration: 120, useNativeDriver: true }),
-      Animated.spring(wishAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+      Animated.timing(wishAnim, { toValue: 1.18, duration: 120, useNativeDriver: true }),
+      Animated.spring(wishAnim, { toValue: 1, friction: 5, useNativeDriver: true }),
     ]).start();
     try {
       if (id != null) {
@@ -111,8 +111,8 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
   const handleAddPress = async () => {
     setAdded(true);
     Animated.sequence([
-      Animated.timing(plusAnim, { toValue: 1.25, duration: 100, useNativeDriver: true }),
-      Animated.spring(plusAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+      Animated.timing(plusAnim, { toValue: 1.22, duration: 100, useNativeDriver: true }),
+      Animated.spring(plusAnim, { toValue: 1, friction: 5, useNativeDriver: true }),
     ]).start();
 
     try {
@@ -134,13 +134,16 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
     if (pct > 0) discountPercent = `${pct}% OFF`;
   }
 
+  const glassBg = isDark ? 'rgba(13, 23, 43, 0.88)' : 'rgba(255, 255, 255, 0.92)';
+  const glassBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.65)';
+
   return (
     <Animated.View
       style={[
         styles.cardContainer,
         {
-          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : '#FFFFFF',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(226, 232, 240, 0.8)',
+          backgroundColor: glassBg,
+          borderColor: glassBorder,
           transform: [{ scale: scaleAnim }],
         },
         style,
@@ -152,8 +155,8 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
         onPressOut={handlePressOut}
         style={styles.cardInner}
       >
-        {/* Compact Image Container */}
-        <View style={[styles.imageContainer, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
+        {/* Floating Image Container */}
+        <View style={[styles.imageContainer, { backgroundColor: isDark ? '#081126' : '#EEF3FA' }]}>
           <BlurhashImage
             category={category || title}
             source={{ uri: resolvedImage }}
@@ -162,27 +165,27 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
             onError={() => setImageError(true)}
           />
 
-          {/* Discount Badge */}
+          {/* Premium Aurora Gold Discount Badge */}
           {discountPercent ? (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>{discountPercent}</Text>
             </View>
           ) : null}
 
-          {/* Animated Wishlist Toggle */}
-          <Animated.View style={{ transform: [{ scale: wishAnim }], position: 'absolute', top: 6, right: 6 }}>
+          {/* Floating Glass Circular Wishlist Button */}
+          <Animated.View style={{ transform: [{ scale: wishAnim }], position: 'absolute', top: 8, right: 8 }}>
             <Pressable
               onPress={handleWishlistPress}
               style={[
                 styles.wishlistBtn,
-                { backgroundColor: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.9)' },
+                { backgroundColor: isDark ? 'rgba(5, 8, 22, 0.82)' : 'rgba(255, 255, 255, 0.88)', borderColor: glassBorder },
               ]}
               hitSlop={6}
             >
               <SvkIcon
                 name={wishlisted ? 'heartFilled' : 'heart'}
-                size={15}
-                color={wishlisted ? '#EF4444' : tokens.content.primary}
+                size={14}
+                color={wishlisted ? '#EF4444' : (isDark ? '#F8FAFC' : '#0F172A')}
               />
             </Pressable>
           </Animated.View>
@@ -199,7 +202,7 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
 
           <View style={styles.ratingRow}>
             <View style={styles.ratingBadge}>
-              <SvkIcon name="star" size={11} color="#F59E0B" />
+              <SvkIcon name="star" size={11} color="#F6C453" />
               <Text style={styles.ratingText}>{rating}</Text>
             </View>
             {reviewCount != null && reviewCount > 0 ? (
@@ -212,7 +215,7 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
           {/* Price & Action Row */}
           <View style={styles.priceRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.price, { color: tokens.brand.primary }]}>
+              <Text style={[styles.price, { color: isDark ? '#60A5FA' : '#2563EB' }]}>
                 ₹{numPrice.toFixed(2)}
               </Text>
               {numOrigPrice && numOrigPrice > numPrice ? (
@@ -227,8 +230,8 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
                 onPress={handleAddPress}
                 style={({ pressed }) => [
                   styles.addButton,
-                  { backgroundColor: added ? '#10B981' : tokens.brand.primary },
-                  pressed && { opacity: 0.82 },
+                  { backgroundColor: added ? '#10B981' : '#2563EB' },
+                  pressed && { opacity: 0.85 },
                 ]}
               >
                 <SvkIcon name={added ? 'checkCircle' : 'plus'} size={15} color="#FFFFFF" />
@@ -244,23 +247,25 @@ export const AttractiveProductCard: React.FC<ProductCardProps> = ({
 const styles = StyleSheet.create({
   cardContainer: {
     margin: SPACING.xs,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 22,
+    borderWidth: 1.5,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    elevation: 6,
   },
   cardInner: {
     flex: 1,
   },
   imageContainer: {
     width: '100%',
-    height: 132,
+    height: 136,
     position: 'relative',
     overflow: 'hidden',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   image: {
     width: '100%',
@@ -268,40 +273,47 @@ const styles = StyleSheet.create({
   },
   discountBadge: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    top: 8,
+    left: 8,
+    backgroundColor: '#F6C453',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    shadowColor: '#F6C453',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   discountText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: '#050816',
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   wishlistBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   content: {
-    padding: 10,
+    padding: 12,
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    lineHeight: 16,
-    height: 32,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 17,
+    height: 34,
     marginBottom: 4,
   },
   ratingRow: {
@@ -312,15 +324,15 @@ const styles = StyleSheet.create({
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    paddingHorizontal: 5,
+    backgroundColor: 'rgba(246, 196, 83, 0.15)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   ratingText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#D97706',
+    fontWeight: '800',
+    color: '#F59E0B',
     marginLeft: 3,
   },
   reviewCount: {
@@ -334,24 +346,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   price: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
   originalPrice: {
-    fontSize: 10,
+    fontSize: 10.5,
     textDecorationLine: 'line-through',
     marginTop: -1,
   },
   addButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
 });
