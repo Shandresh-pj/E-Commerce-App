@@ -11,13 +11,13 @@ import {
   Platform,
   StatusBar,
   StyleSheet,
-  Image,
+  Image, 
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { updateMyProfile } from '../../../shared/services/main-service'
 import { launchImageLibrary } from 'react-native-image-picker'
-import Defaults from '../../../config'
+import Defaults from '../../../config/index'
 import LinearGradient from 'react-native-linear-gradient'
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (

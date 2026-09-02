@@ -47,6 +47,8 @@ interface Address {
   pincode: string
   isDefault: boolean
   receiverType: 'myself' | 'other'
+  latitude?: number
+  longitude?: number
 }
 
 interface FormState {
@@ -59,6 +61,8 @@ interface FormState {
   pincode: string
   isDefault: boolean
   receiverType: 'myself' | 'other'
+  latitude?: number
+  longitude?: number
 }
 
 const emptyForm = (): FormState => ({
@@ -71,6 +75,8 @@ const emptyForm = (): FormState => ({
   pincode: '',
   isDefault: false,
   receiverType: 'myself',
+  latitude: undefined,
+  longitude: undefined,
 })
 
 const ADDRESS_TYPES: AddressType[] = ['Home', 'Work', 'Other']
@@ -690,6 +696,8 @@ const AddressScreen = () => {
   // Open modal to save current pinned location as a permanent address
   const handleSaveCurrentMapLocation = () => {
     setEditingId(null)
+    const currentLat = mapCenter.latitude || coords.latitude
+    const currentLng = mapCenter.longitude || coords.longitude
     setForm({
       label: 'Home',
       name: profileName,
@@ -700,6 +708,8 @@ const AddressScreen = () => {
       pincode: geocodedDetails?.pincode || '',
       isDefault: addresses.length === 0,
       receiverType: 'myself',
+      latitude: currentLat && currentLat !== 0 ? currentLat : undefined,
+      longitude: currentLng && currentLng !== 0 ? currentLng : undefined,
     })
     setReceiverType('myself')
 
@@ -728,6 +738,8 @@ const AddressScreen = () => {
         pincode: a.pincode,
         isDefault: !!a.isDefault,
         receiverType: (a.receiverType || a.receiver_type || 'myself') as 'myself' | 'other',
+        latitude: a.latitude !== undefined && a.latitude !== null ? Number(a.latitude) : undefined,
+        longitude: a.longitude !== undefined && a.longitude !== null ? Number(a.longitude) : undefined,
       }))
       setAddresses(mapped)
     } catch (e) {
@@ -772,10 +784,14 @@ const AddressScreen = () => {
         pincode: addr.pincode,
         isDefault: addr.isDefault,
         receiverType: addr.receiverType,
+        latitude: addr.latitude,
+        longitude: addr.longitude,
       })
       setReceiverType(addr.receiverType || 'myself')
     } else {
       setEditingId(null)
+      const currentLat = mapCenter.latitude || coords.latitude
+      const currentLng = mapCenter.longitude || coords.longitude
       setForm({
         ...emptyForm(),
         name: profileName,
@@ -784,6 +800,8 @@ const AddressScreen = () => {
         city: geocodedDetails?.city || '',
         state: geocodedDetails?.state || '',
         pincode: geocodedDetails?.pincode || '',
+        latitude: currentLat && currentLat !== 0 ? currentLat : undefined,
+        longitude: currentLng && currentLng !== 0 ? currentLng : undefined,
       })
       setReceiverType('myself')
     }
@@ -829,7 +847,7 @@ const AddressScreen = () => {
     }
     setSaving(true)
     try {
-      const payload = {
+      const payload: any = {
         label: form.label,
         name: form.name,
         phone: form.phone,
@@ -839,6 +857,8 @@ const AddressScreen = () => {
         pincode: form.pincode,
         isDefault: form.isDefault,
         receiver_type: receiverType,
+        latitude: form.latitude !== undefined && form.latitude !== null ? Number(form.latitude) : undefined,
+        longitude: form.longitude !== undefined && form.longitude !== null ? Number(form.longitude) : undefined,
       }
 
       if (editingId) {
@@ -912,7 +932,15 @@ const AddressScreen = () => {
             ...chosen,
             isCurrentLocation: false,
             fullAddress: [chosen.line1, chosen.city, chosen.pincode].filter(Boolean).join(', '),
+            latitude: chosen.latitude,
+            longitude: chosen.longitude,
           })
+          if (chosen.latitude && chosen.longitude) {
+            await setAsyncData('last_location_coords', {
+              latitude: Number(chosen.latitude),
+              longitude: Number(chosen.longitude),
+            })
+          }
         }
       }
     } catch (e) {
@@ -1135,6 +1163,9 @@ const AddressScreen = () => {
                   onSelect={() => {
                     setSelectedType('saved')
                     setSelectedSavedId(addr.id)
+                    if (addr.latitude && addr.longitude) {
+                      setMapCenter({ latitude: addr.latitude, longitude: addr.longitude })
+                    }
                   }}
                   onEdit={() => openModal(addr)}
                   onDelete={() => handleDeleteAddress(addr.id)}
